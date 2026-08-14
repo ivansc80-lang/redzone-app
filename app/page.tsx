@@ -606,10 +606,10 @@ export default function Home() {
           </div>
         )}
 
-        {/* NAVEGACIÓN PESTAÑAS (Ajustado tamaños y sombras de bordes) */}
+        {/* NAVEGACIÓN PESTAÑAS (Anchos uniformes en móvil y sin sombra, solo borde blanco) */}
         <nav className="w-full bg-[#5c0000] py-2 px-2 shadow-lg font-['Orbitron']">
           <div className="flex flex-col gap-2 md:hidden">
-            <div className="flex justify-evenly items-center">
+            <div className="flex justify-between items-center gap-2">
               {[
                 { id: 'clasificacion', label: 'RANKING' },
                 { id: 'pronosticos', label: 'PORRA' },
@@ -618,9 +618,9 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setPestanaActiva(tab.id)}
-                  className={`px-3 py-1.5 text-[0.825rem] font-bold uppercase tracking-wider rounded transition-all border border-white/20 shadow-[0_0_5px_rgba(255,255,255,0.3)] ${
+                  className={`flex-1 py-1.5 text-[0.825rem] font-bold uppercase tracking-wider rounded transition-all border border-white text-center ${
                     pestanaActiva === tab.id
-                      ? 'bg-white text-[#d32f2f] shadow'
+                      ? 'bg-white text-[#d32f2f]'
                       : 'text-white hover:bg-[#7a0000]'
                   }`}
                 >
@@ -628,7 +628,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div className="flex justify-evenly items-center">
+            <div className="flex justify-between items-center gap-2">
               {[
                 { id: 'equipos', label: 'EQUIPOS' },
                 { id: 'noticias', label: 'NOTICIAS' },
@@ -637,9 +637,9 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setPestanaActiva(tab.id)}
-                  className={`px-3 py-1.5 text-[0.825rem] font-bold uppercase tracking-wider rounded transition-all border border-white/20 shadow-[0_0_5px_rgba(255,255,255,0.3)] ${
+                  className={`flex-1 py-1.5 text-[0.825rem] font-bold uppercase tracking-wider rounded transition-all border border-white text-center ${
                     pestanaActiva === tab.id
-                      ? 'bg-white text-[#d32f2f] shadow'
+                      ? 'bg-white text-[#d32f2f]'
                       : 'text-white hover:bg-[#7a0000]'
                   }`}
                 >
@@ -661,9 +661,9 @@ export default function Home() {
               <button
                 key={tab.id}
                 onClick={() => setPestanaActiva(tab.id)}
-                className={`px-9 py-2.5 text-[0.9rem] font-bold uppercase tracking-wider rounded transition-all border border-white/30 shadow-[0_0_8px_rgba(255,255,255,0.4)] ${
+                className={`px-9 py-2.5 text-[0.9rem] font-bold uppercase tracking-wider rounded transition-all border border-white ${
                   pestanaActiva === tab.id
-                    ? 'bg-white text-[#d32f2f] shadow'
+                    ? 'bg-white text-[#d32f2f]'
                     : 'text-white hover:bg-[#7a0000]'
                 }`}
               >
@@ -734,22 +734,30 @@ export default function Home() {
           )}
 
           {pestanaActiva === 'pronosticos' && (
-            <section className="space-y-6 max-w-xl mx-auto">
-              <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 shadow-2xl">
-                <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-3">
+            <section className="space-y-6 max-w-5xl mx-auto">
+              <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 md:p-6 shadow-2xl">
+                <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4">
                   <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">
                     PORRA - JORNADA {jornadaActual}
                   </h1>
                 </div>
 
-                <div className="space-y-2">
-                  {datosUsuarioActual.pronosticos.map((p) => {
+                {/* Grid 1 columna en móvil y 2 columnas en Ordenador con partido impar centrado */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {datosUsuarioActual.pronosticos.map((p, index, array) => {
                     const isLocalSelected = p.eleccion === '1';
                     const isVsSelected = p.eleccion === 'X';
                     const isVisitorSelected = p.eleccion === '2';
+                    
+                    const esUltimoEImpar = (array.length % 2 !== 0) && (index === array.length - 1);
 
                     return (
-                      <div key={p.id} className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16">
+                      <div 
+                        key={p.id} 
+                        className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${
+                          esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''
+                        }`}
+                      >
                         {/* Botón Local */}
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
@@ -759,8 +767,9 @@ export default function Home() {
                               : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
-                          <img src={p.localLogo} alt={p.local} className="w-7 h-7 md:w-9 md:h-9 object-contain flex-shrink-0" />
-                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
+                          {/* Logo +25% en móvil (w-[2.25rem]), texto oculto en móvil */}
+                          <img src={p.localLogo} alt={p.local} className="w-[2.25rem] h-[2.25rem] md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
                         </button>
 
                         {/* Botón VS Cuadrado */}
@@ -784,18 +793,19 @@ export default function Home() {
                               : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
-                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
-                          <img src={p.visitanteLogo} alt={p.visitante} className="w-7 h-7 md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          {/* Texto oculto en móvil, Logo +25% en móvil */}
+                          <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
+                          <img src={p.visitanteLogo} alt={p.visitante} className="w-[2.25rem] h-[2.25rem] md:w-9 md:h-9 object-contain flex-shrink-0" />
                         </button>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="mt-3 pt-2 text-center">
+                <div className="mt-6 pt-2 text-center">
                   <button
                     onClick={handleConfirmarPronosticos}
-                    className={`w-full font-black text-sm py-3 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${
                       estadoBotonConfirmar === 'confirmado'
                         ? 'bg-emerald-500 text-black'
                         : estadoBotonConfirmar === 'incompleto'
