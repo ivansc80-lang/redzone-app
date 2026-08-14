@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 
-export default function PorraPage() {
+export default function Page() {
+  // Estado para controlar la pestaña activa (PORRA por defecto)
   const [activeTab, setActiveTab] = useState('porra');
 
-  // Datos de ejemplo para los partidos
+  // Datos de los partidos con logos originales
   const matches = [
     { id: 1, home: 'Seahawks', homeLogo: '/logos/seahawks.png', away: 'Patriots', awayLogo: '/logos/patriots.png' },
     { id: 2, home: 'Rams', homeLogo: '/logos/rams.png', away: '49ers', awayLogo: '/logos/49ers.png' },
@@ -21,9 +22,10 @@ export default function PorraPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#8b0000] text-white flex flex-col items-center">
-      {/* 1. HEADER CON LOGOS (redzone1_logo en Desktop, redzone2_logo en Móvil) */}
-      <header className="w-full bg-[#8b0000] py-4 flex justify-center items-center border-b border-red-900">
+    <div className="min-h-screen bg-[#8b0000] text-white flex flex-col items-center font-sans">
+      
+      {/* 1. HEADER / LOGO APP */}
+      <header className="w-full bg-[#8b0000] py-3 flex justify-center items-center">
         <picture className="flex justify-center">
           <source media="(max-width: 768px)" srcSet="/redzone2_logo.png" />
           <img
@@ -34,34 +36,34 @@ export default function PorraPage() {
         </picture>
       </header>
 
-      {/* 2. MENÚ DE PESTAÑAS (En 2 filas para móvil, 1 fila para ordenador) */}
-      <nav className="w-full bg-[#660000] py-2 px-4 shadow-md">
-        {/* Vista Móvil (< md): 2 filas de 3 elementos */}
+      {/* 2. NAVEGACIÓN PESTAÑAS (Móvil: 2 filas | Desktop: 1 fila) */}
+      <nav className="w-full bg-[#5c0000] py-2 px-2 shadow-lg">
+        {/* Vista Móvil (< md): 2 filas */}
         <div className="flex flex-col gap-2 md:hidden">
-          <div className="flex justify-around items-center">
+          <div className="flex justify-evenly items-center">
             {['ranking', 'porra', 'jornada'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${
                   activeTab === tab
                     ? 'bg-white text-[#d32f2f] shadow'
-                    : 'text-white hover:bg-red-800'
+                    : 'text-white hover:bg-[#7a0000]'
                 }`}
               >
                 {tab}
               </button>
             ))}
           </div>
-          <div className="flex justify-around items-center">
+          <div className="flex justify-evenly items-center">
             {['equipos', 'noticias', 'perfil'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+                className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${
                   activeTab === tab
                     ? 'bg-white text-[#d32f2f] shadow'
-                    : 'text-[#ffffff] hover:bg-red-800'
+                    : 'text-white hover:bg-[#7a0000]'
                 }`}
               >
                 {tab}
@@ -70,16 +72,16 @@ export default function PorraPage() {
           </div>
         </div>
 
-        {/* Vista Escritorio (>= md): 1 fila con las 6 pestañas */}
-        <div className="hidden md:flex justify-center items-center gap-4 max-w-4xl mx-auto">
+        {/* Vista Escritorio (>= md): 1 fila */}
+        <div className="hidden md:flex justify-center items-center gap-2 max-w-5xl mx-auto">
           {['ranking', 'porra', 'jornada', 'equipos', 'noticias', 'perfil'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 text-sm font-bold uppercase tracking-wider rounded-md transition-all ${
+              className={`px-8 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
                 activeTab === tab
                   ? 'bg-white text-[#d32f2f] shadow'
-                  : 'text-white hover:bg-red-800'
+                  : 'text-white hover:bg-[#7a0000]'
               }`}
             >
               {tab}
@@ -88,52 +90,98 @@ export default function PorraPage() {
         </div>
       </nav>
 
-      {/* CONTENEDOR PRINCIPAL */}
-      <main className="w-full max-w-2xl px-4 py-6">
-        <div className="bg-[#0a0a0a] rounded-2xl overflow-hidden border border-red-950 shadow-2xl">
-          
-          {/* 3. CABECERA DE LA PORRA (Fondo blanco, texto rojo sin paréntesis) */}
-          <div className="bg-white py-4 px-6 text-center border-b border-gray-200">
-            <h1 className="text-xl md:text-2xl font-black text-[#d32f2f] tracking-wide uppercase">
-              PORRA - JORNADA 1
-            </h1>
-          </div>
+      {/* 3. CONTENIDO DINÁMICO SEGÚN PESTAÑA */}
+      <main className="w-full max-w-xl px-2 py-6">
+        
+        {/* PESTAÑA PORRA / JORNADA */}
+        {(activeTab === 'porra' || activeTab === 'jornada') && (
+          <div className="bg-[#0d0d0d] rounded-2xl overflow-hidden border border-[#222] shadow-2xl p-3">
+            
+            {/* CABECERA (Blanco con texto rojo sin el nombre) */}
+            <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-3">
+              <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">
+                PORRA - JORNADA 1
+              </h1>
+            </div>
 
-          {/* 4. LISTADO DE PARTIDOS CON EL ASPECTO MÓVIL EN TODAS LAS PANTALLAS */}
-          <div className="p-4 space-y-3">
-            {matches.map((match) => (
-              <div
-                key={match.id}
-                className="bg-[#1e1e1e] hover:bg-[#282828] border border-[#333333] rounded-xl p-3 flex items-center justify-between transition-colors duration-200 shadow-md"
-              >
-                {/* Equipo Local */}
-                <button className="flex-1 flex items-center justify-start gap-3 bg-[#121212] hover:bg-[#222222] border border-gray-800 p-2.5 rounded-lg transition-all">
-                  <span className="font-semibold text-sm text-gray-200 truncate">{match.home}</span>
-                </button>
+            {/* LISTA DE PARTIDOS (LAYOUT Y TAMAÑO ORIGINAL) */}
+            <div className="space-y-2">
+              {matches.map((match) => (
+                <div
+                  key={match.id}
+                  className="bg-[#181818] hover:bg-[#222222] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between transition-colors"
+                >
+                  {/* Botón Equipo Local: Logo A LA IZQUIERDA + Nombre */}
+                  <button className="flex-1 flex items-center justify-start gap-2 bg-[#121212] hover:bg-[#252525] border border-[#333] px-3 py-2 rounded-lg transition-all">
+                    <img
+                      src={match.homeLogo}
+                      alt={match.home}
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                    <span className="font-bold text-xs text-gray-200">{match.home}</span>
+                  </button>
 
-                {/* VS */}
-                <div className="px-3">
-                  <span className="text-xs font-bold text-gray-400 bg-[#121212] border border-gray-800 px-2.5 py-1 rounded-md">
-                    VS
-                  </span>
+                  {/* Etiqueta VS Central */}
+                  <div className="px-2">
+                    <span className="text-[10px] font-bold text-gray-400 bg-[#121212] border border-[#333] px-2 py-1 rounded">
+                      VS
+                    </span>
+                  </div>
+
+                  {/* Botón Equipo Visitante: Nombre + Logo A LA DERECHA */}
+                  <button className="flex-1 flex items-center justify-end gap-2 bg-[#121212] hover:bg-[#252525] border border-[#333] px-3 py-2 rounded-lg transition-all">
+                    <span className="font-bold text-xs text-gray-200">{match.away}</span>
+                    <img
+                      src={match.awayLogo}
+                      alt={match.away}
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  </button>
                 </div>
+              ))}
+            </div>
 
-                {/* Equipo Visitante */}
-                <button className="flex-1 flex items-center justify-end gap-3 bg-[#121212] hover:bg-[#222222] border border-gray-800 p-2.5 rounded-lg transition-all">
-                  <span className="font-semibold text-sm text-gray-200 truncate">{match.away}</span>
-                </button>
-              </div>
-            ))}
+            {/* BOTÓN CONFIRMAR */}
+            <div className="mt-3 pt-2 text-center">
+              <button className="w-full bg-white text-[#d32f2f] font-black text-sm py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-colors uppercase tracking-wider">
+                CONFIRMAR PRONÓSTICO
+              </button>
+            </div>
+
           </div>
+        )}
 
-          {/* BOTÓN CONFIRMAR */}
-          <div className="p-4 bg-[#0a0a0a] border-t border-gray-900 text-center">
-            <button className="w-full bg-white text-[#d32f2f] font-black text-lg py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-colors uppercase tracking-wider">
-              Confirmar Pronóstico
-            </button>
+        {/* CONTENIDO RESTO DE PESTAÑAS */}
+        {activeTab === 'ranking' && (
+          <div className="bg-[#0d0d0d] p-6 rounded-2xl text-center border border-[#222]">
+            <h2 className="text-xl font-bold uppercase text-white">RANKING</h2>
+            <p className="text-gray-400 mt-2">Clasificación general en desarrollo...</p>
           </div>
+        )}
 
-        </div>
+        {activeTab === 'equipos' && (
+          <div className="bg-[#0d0d0d] p-6 rounded-2xl text-center border border-[#222]">
+            <h2 className="text-xl font-bold uppercase text-white">EQUIPOS</h2>
+            <p className="text-gray-400 mt-2">Sección de equipos en desarrollo...</p>
+          </div>
+        )}
+
+        {activeTab === 'noticias' && (
+          <div className="bg-[#0d0d0d] p-6 rounded-2xl text-center border border-[#222]">
+            <h2 className="text-xl font-bold uppercase text-white">NOTICIAS</h2>
+            <p className="text-gray-400 mt-2">Últimas noticias de la NFL...</p>
+          </div>
+        )}
+
+        {activeTab === 'perfil' && (
+          <div className="bg-[#0d0d0d] p-6 rounded-2xl text-center border border-[#222]">
+            <h2 className="text-xl font-bold uppercase text-white">PERFIL</h2>
+            <p className="text-gray-400 mt-2">Ajustes y datos de usuario...</p>
+          </div>
+        )}
+
       </main>
     </div>
   );
