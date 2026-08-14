@@ -161,7 +161,8 @@ const DIVISIONES_BASE: Division[] = [
 ];
 
 export default function Home() {
-  const [pestanaActiva, setPestanaActiva] = useState<string>('pronosticos');
+  // Pestaña inicial por defecto: Clasificación / Ranking
+  const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
   const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
   
   const [showSearch, setShowSearch] = useState(false);
@@ -197,8 +198,8 @@ export default function Home() {
     {
       id: 'cace',
       nombre: 'Cace',
-      nombreEquipo: 'Kansas City Chiefs',
-      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png',
+      nombreEquipo: 'PATRIOTS',
+      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png',
       email: 'Cace230514@gmail.com',
       avatar: '/kc.png',
       avatarJornada: '/kc_jornada.png',
@@ -213,7 +214,7 @@ export default function Home() {
     {
       id: 'juanjo',
       nombre: 'Juanjo',
-      nombreEquipo: 'San Francisco 49ers',
+      nombreEquipo: '49ERS',
       logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png',
       email: 'jjgodprimi1978@gmail.com',
       avatar: '/Primi.png',
@@ -229,8 +230,8 @@ export default function Home() {
     {
       id: 'ivan',
       nombre: 'Iván',
-      nombreEquipo: 'Green Bay Packers',
-      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png',
+      nombreEquipo: 'CHIEFS',
+      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png',
       email: 'ivansc80@gmail.com',
       avatar: '/Ivi.png',
       avatarJornada: '/ivi_jornada.png',
@@ -606,7 +607,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* NAVEGACIÓN PESTAÑAS (Anchos uniformes en móvil y sin sombra, solo borde blanco) */}
+        {/* NAVEGACIÓN PESTAÑAS */}
         <nav className="w-full bg-[#5c0000] py-2 px-2 shadow-lg font-['Orbitron']">
           <div className="flex flex-col gap-2 md:hidden">
             <div className="flex justify-between items-center gap-2">
@@ -682,24 +683,39 @@ export default function Home() {
               </h2>
               <div className="space-y-4">
                 {usuarios.map((usr) => (
-                  <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all hover:scale-[1.005]`}>
+                  <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all relative overflow-hidden`}>
+                    
+                    {/* Logo en Esquina Superior Derecha solo en Móvil */}
+                    <img 
+                      src={usr.logoEquipo} 
+                      alt={usr.nombreEquipo} 
+                      className="md:hidden absolute top-3 right-3 w-12 h-12 object-contain opacity-90 drop-shadow-md" 
+                    />
+
                     <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start">
                       <div className="flex items-center gap-3 md:gap-5">
                         <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
                         
-                        <img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg" />
+                        {/* Avatar */}
+                        <img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0" />
                         
-                        {/* SECCIÓN INFORMACIÓN PARTICIPANTE / HEADCOACH */}
+                        {/* SECCIÓN INFORMACIÓN PARTICIPANTE */}
                         <div className="flex flex-col justify-center">
                           <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span>
                           
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span>
                             
-                            {/* Logo + Nombre Equipo en PC */}
-                            <div className="hidden md:flex items-center gap-2 ml-3 bg-black/40 px-3 py-1 rounded-lg border border-white/10">
-                              <img src={usr.logoEquipo} alt={usr.nombreEquipo} className="w-6 h-6 object-contain" />
-                              <span className="text-xs font-bold text-amber-300 uppercase font-['Orbitron']">{usr.nombreEquipo}</span>
+                            {/* Nombre del equipo en texto transparente/blanco + Logo al 80% del avatar en Ordenador */}
+                            <div className="hidden md:flex items-center gap-3">
+                              <span className="text-sm font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">
+                                {usr.nombreEquipo}
+                              </span>
+                              <img 
+                                src={usr.logoEquipo} 
+                                alt={usr.nombreEquipo} 
+                                className="h-16 w-16 object-contain drop-shadow-lg" 
+                              />
                             </div>
                           </div>
                         </div>
@@ -742,7 +758,6 @@ export default function Home() {
                   </h1>
                 </div>
 
-                {/* Grid 1 columna en móvil y 2 columnas en Ordenador con partido impar centrado */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {datosUsuarioActual.pronosticos.map((p, index, array) => {
                     const isLocalSelected = p.eleccion === '1';
@@ -758,7 +773,6 @@ export default function Home() {
                           esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''
                         }`}
                       >
-                        {/* Botón Local */}
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
@@ -767,12 +781,10 @@ export default function Home() {
                               : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
-                          {/* Logo +25% en móvil (w-[2.25rem]), texto oculto en móvil */}
                           <img src={p.localLogo} alt={p.local} className="w-[2.25rem] h-[2.25rem] md:w-9 md:h-9 object-contain flex-shrink-0" />
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
                         </button>
 
-                        {/* Botón VS Cuadrado */}
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
                           className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${
@@ -784,7 +796,6 @@ export default function Home() {
                           VS
                         </button>
 
-                        {/* Botón Visitante */}
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
@@ -793,7 +804,6 @@ export default function Home() {
                               : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
-                          {/* Texto oculto en móvil, Logo +25% en móvil */}
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
                           <img src={p.visitanteLogo} alt={p.visitante} className="w-[2.25rem] h-[2.25rem] md:w-9 md:h-9 object-contain flex-shrink-0" />
                         </button>
@@ -899,7 +909,6 @@ export default function Home() {
 
           {pestanaActiva === 'equipos' && (
             <section className="space-y-6">
-              {/* SUBPESTAÑAS SCORE Y GAMES */}
               <div className="flex justify-center items-center gap-4 border-b border-red-900/50 pb-4">
                 <button
                   onClick={() => setSubPestanaEquipos('score')}
@@ -1068,7 +1077,7 @@ export default function Home() {
                         type="text" 
                         value={nombreEquipo} 
                         onChange={(e) => setNombreEquipo(e.target.value)}
-                        placeholder="Ej: Kansas City Chiefs"
+                        placeholder="Ej: PATRIOTS"
                         className="w-full bg-[#9e0101] text-white placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
                       />
                     </div>
