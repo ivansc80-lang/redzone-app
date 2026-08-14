@@ -10,6 +10,7 @@ interface PronosticoPartido {
   visitante: string;
   visitanteLogo: string;
   eleccion: '1' | 'X' | '2' | null;
+  resultadoReal?: '1' | 'X' | '2';
 }
 
 interface Usuario {
@@ -53,31 +54,26 @@ interface Division {
   equipos: EquipoPosicion[];
 }
 
-interface PartidoJornada {
-  id: number;
-  local: string;
-  localLogo: string;
-  visitante: string;
-  visitanteLogo: string;
-}
-
-const PARTIDOS_JORNADA_1: PartidoJornada[] = [
-  { id: 1, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png' },
-  { id: 2, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png' },
-  { id: 3, local: 'Falcons', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', visitante: 'Steelers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png' },
-  { id: 4, local: 'Bills', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png' },
-  { id: 5, local: 'Bears', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', visitante: 'Titans', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png' },
-  { id: 6, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png' },
-  { id: 7, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Texans', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png' },
-  { id: 8, local: 'Dolphins', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', visitante: 'Jaguars', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png' },
-  { id: 9, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Vikings', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png' },
-  { id: 10, local: 'Saints', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', visitante: 'Panthers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png' },
-  { id: 11, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Raiders', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png' },
-  { id: 12, local: 'Browns', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png' },
-  { id: 13, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png' },
-  { id: 14, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Rams', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png' },
-  { id: 15, local: '49ers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png' },
-];
+const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
+  1: [
+    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null, resultadoReal: '1' },
+    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null, resultadoReal: '1' },
+    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null, resultadoReal: '1' },
+    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null, resultadoReal: '1' },
+    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null, resultadoReal: '1' },
+    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null, resultadoReal: '1' },
+    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null, resultadoReal: '1' },
+    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null, resultadoReal: '1' },
+    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null, resultadoReal: '1' },
+    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null, resultadoReal: '1' },
+    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null, resultadoReal: '1' },
+    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null, resultadoReal: '1' },
+    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null, resultadoReal: '1' },
+    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null, resultadoReal: '1' },
+    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null, resultadoReal: '1' },
+    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null, resultadoReal: '1' },
+  ]
+};
 
 const DIVISIONES_BASE: Division[] = [
   {
@@ -163,9 +159,38 @@ const DIVISIONES_BASE: Division[] = [
 ];
 
 export default function Home() {
-  const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
+  const [pestanaActiva, setPestanaActiva] = useState<string>('ranking');
+  const [subPestanaEquipos, setSubPestanaEquipos] = useState<'SCORE' | 'GAMES'>('SCORE');
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
+  const [commandBuffer, setCommandBuffer] = useState('');
+  const [jornadaActual] = useState<number>(1);
+  const [nombrePerfil, setNombrePerfil] = useState('');
+  const [nombreEquipo, setNombreEquipo] = useState('');
+  const [avatarUrlInput, setAvatarUrlInput] = useState('');
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+  const [verPassword, setVerPassword] = useState(false);
 
-  const usuarios: Usuario[] = [
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const char = e.key;
+      const newBuffer = (commandBuffer + char).slice(-4);
+      setCommandBuffer(newBuffer);
+
+      if (newBuffer.endsWith('/BB')) {
+        setShowSearch(prev => !prev);
+        setCommandBuffer('');
+      } else if (newBuffer.endsWith('/mbb')) {
+        setSearchPosition(prev => prev === 'top' ? 'bottom' : 'top');
+        setCommandBuffer('');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [commandBuffer]);
+
+  const [usuarios, setUsuarios] = useState<Usuario[]>([
     {
       id: 'cace',
       nombre: 'Cace',
@@ -208,50 +233,78 @@ export default function Home() {
       posicion: '3º',
       esLider: false,
     },
-  ];
-
-  // Usuario actualmente logueado/activo (por defecto Cace)
+  ]);
   const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
-
-  // Estado de pronósticos individuales por usuario para mantenerlos separados y privados
-  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean }>>({
-    cace: { pronosticos: PARTIDOS_JORNADA_1.map(p => ({ ...p, eleccion: null })), confirmado: false },
-    juanjo: { pronosticos: PARTIDOS_JORNADA_1.map(p => ({ ...p, eleccion: null })), confirmado: false },
-    ivan: { pronosticos: PARTIDOS_JORNADA_1.map(p => ({ ...p, eleccion: null })), confirmado: false },
+  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean }>>>({
+    1: {
+      cace: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
+      juanjo: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
+      ivan: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
+    },
   });
-
   const [estadoBotonConfirmar, setEstadoBotonConfirmar] = useState<'normal' | 'incompleto' | 'confirmado'>('normal');
-
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
-
   const [divisiones, setDivisiones] = useState<Division[]>(DIVISIONES_BASE);
   const [sincronizandoPosiciones, setSincronizandoPosiciones] = useState<boolean>(false);
 
-  // Estados para el formulario de Login
   const [usuarioLogueado, setUsuarioLogueado] = useState<any>(null);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [errorLogin, setErrorLogin] = useState('');
 
-  // Comprobar si ya hay una sesión activa al cargar la app
+  const cargarPerfil = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (data) {
+      setNombrePerfil(data.nombre || '');
+      setNombreEquipo(data.nombre_equipo || '');
+      setAvatarUrlInput(data.avatar_url || '');
+    }
+  };
+
+  const handleGuardarPerfil = async () => {
+    if (!usuarioLogueado) return;
+    setGuardandoPerfil(true);
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: usuarioLogueado.id,
+        nombre: nombrePerfil,
+        nombre_equipo: nombreEquipo,
+        avatar_url: avatarUrlInput,
+        updated_at: new Date(),
+      });
+
+    setGuardandoPerfil(false);
+    if (error) {
+      alert('Error al guardar el perfil: ' + error.message);
+    } else {
+      alert('¡Perfil guardado con éxito!');
+    }
+  };
+
   useEffect(() => {
     const comprobarSesion = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUsuarioLogueado(session.user);
+        cargarPerfil(session.user.id);
         const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === session.user.email?.toLowerCase());
         if (usuarioEncontrado) {
           setUsuarioActivoId(usuarioEncontrado.id);
         }
       }
     };
-
     comprobarSesion();
-
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUsuarioLogueado(session.user);
+        cargarPerfil(session.user.id);
         const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === session.user.email?.toLowerCase());
         if (usuarioEncontrado) {
           setUsuarioActivoId(usuarioEncontrado.id);
@@ -266,7 +319,6 @@ export default function Home() {
     };
   }, []);
 
-  // Función para iniciar sesión corregida
   const handleLogin = async () => {
     setErrorLogin('');
     const { error } = await supabase.auth.signInWithPassword({
@@ -279,11 +331,63 @@ export default function Home() {
     }
   };
 
-  // Función para cerrar sesión
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUsuarioLogueado(null);
   };
+
+  const calcularPuntosJornada = (userId: string, numJornada: number) => {
+    const dataJornada = pronosticosPorUsuario[numJornada]?.[userId];
+    if (!dataJornada || !dataJornada.confirmado) return 0;
+
+    let aciertos = 0;
+    dataJornada.pronosticos.forEach(p => {
+      if (p.eleccion && p.eleccion === p.resultadoReal) {
+        aciertos++;
+      }
+    });
+    return aciertos;
+  };
+
+  useEffect(() => {
+    setUsuarios(prevUsuarios => {
+      const nuevosUsuarios = prevUsuarios.map(usr => {
+        let totalPuntos = 0;
+        let totalAciertosPartidos = 0;
+        let totalPronosticados = 0;
+
+        [jornadaActual].forEach(jNum => {
+          const jData = pronosticosPorUsuario[jNum]?.[usr.id];
+          if (jData && jData.confirmado) {
+            jData.pronosticos.forEach(p => {
+              totalPronosticados++;
+              if (p.eleccion && p.eleccion === p.resultadoReal) {
+                totalPuntos++;
+                totalAciertosPartidos++;
+              }
+            });
+          }
+        });
+
+        const efectividadCalc = totalPronosticados > 0 
+          ? Math.round((totalAciertosPartidos / totalPronosticados) * 100) + '%' 
+          : '0%';
+
+        return {
+          ...usr,
+          puntos: totalPuntos,
+          efectividad: efectividadCalc,
+        };
+      });
+
+      nuevosUsuarios.sort((a, b) => b.puntos - a.puntos);
+      return nuevosUsuarios.map((usr, index) => ({
+        ...usr,
+        posicion: `${index + 1}º`,
+        esLider: index === 0,
+      }));
+    });
+  }, [pronosticosPorUsuario, jornadaActual]);
 
   useEffect(() => {
     if (pestanaActiva === 'noticias' && noticias.length === 0) {
@@ -302,7 +406,7 @@ export default function Home() {
               titulo: art.headline,
               descripcion: art.description || 'Sin descripción disponible.',
               enlace: urlTraducida,
-              imagen: art.images?.[0]?.url || '/redzone_logo.png',
+              imagen: art.images?.[0]?.url || '/redzone1_logo.png',
               fecha: new Date(art.published).toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: 'short',
@@ -366,29 +470,30 @@ export default function Home() {
             setDivisiones(listaDivisiones);
           }
         })
-        .catch((err) => console.log('Sincronizando posiciones 2026:', err))
+        .catch((err) => console.log('Sincronizando posiciones:', err))
         .finally(() => setSincronizandoPosiciones(false));
     }
   }, [pestanaActiva]);
 
-  // Actualizar el estado del botón de confirmar al cambiar de usuario registrado
   useEffect(() => {
-    const actual = pronosticosPorUsuario[usuarioActivoId];
+    const actual = pronosticosPorUsuario[jornadaActual]?.[usuarioActivoId];
     if (actual?.confirmado) {
       setEstadoBotonConfirmar('confirmado');
     } else {
       setEstadoBotonConfirmar('normal');
     }
-  }, [usuarioActivoId, pronosticosPorUsuario]);
+  }, [usuarioActivoId, jornadaActual, pronosticosPorUsuario]);
 
-  const datosUsuarioActual = pronosticosPorUsuario[usuarioActivoId] || {
-    pronosticos: PARTIDOS_JORNADA_1.map(p => ({ ...p, eleccion: null })),
+  const datosUsuarioActual = pronosticosPorUsuario[jornadaActual]?.[usuarioActivoId] || {
+    pronosticos: [],
     confirmado: false,
   };
 
   const handleSeleccionPronostico = (idPartido: number, eleccion: '1' | 'X' | '2') => {
     setPronosticosPorUsuario(prev => {
-      const usuarioActualData = prev[usuarioActivoId];
+      const jornadaData = prev[jornadaActual] || {};
+      const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
+
       const nuevosPronosticos = usuarioActualData.pronosticos.map(p => {
         if (p.id === idPartido) {
           const nuevaEleccion = p.eleccion === eleccion ? null : eleccion;
@@ -399,10 +504,13 @@ export default function Home() {
 
       return {
         ...prev,
-        [usuarioActivoId]: {
-          ...usuarioActualData,
-          pronosticos: nuevosPronosticos,
-          confirmado: false,
+        [jornadaActual]: {
+          ...jornadaData,
+          [usuarioActivoId]: {
+            ...usuarioActualData,
+            pronosticos: nuevosPronosticos,
+            confirmado: false,
+          },
         },
       };
     });
@@ -417,21 +525,26 @@ export default function Home() {
       return;
     }
 
-    setPronosticosPorUsuario(prev => ({
-      ...prev,
-      [usuarioActivoId]: {
-        ...prev[usuarioActivoId],
-        confirmado: true,
-      },
-    }));
+    setPronosticosPorUsuario(prev => {
+      const jornadaData = prev[jornadaActual] || {};
+      const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
+
+      return {
+        ...prev,
+        [jornadaActual]: {
+          ...jornadaData,
+          [usuarioActivoId]: {
+            ...usuarioActualData,
+            confirmado: true,
+          },
+        },
+      };
+    });
     setEstadoBotonConfirmar('confirmado');
   };
 
   const renderTablaDivision = (div: Division, idx: number) => (
-    <div
-      key={idx}
-      className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden shadow-lg"
-    >
+    <div key={idx} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden shadow-lg">
       <div className="bg-red-950/80 px-4 py-2.5 border-b border-red-900/60 font-['Orbitron'] text-sm md:text-base font-bold uppercase tracking-wider text-white">
         {div.nombre}
       </div>
@@ -453,18 +566,10 @@ export default function Home() {
                   <img src={eq.logo} alt={eq.nombre} className="w-7 h-7 md:w-8 md:h-8 object-contain" />
                   <span className="truncate">{eq.nombre}</span>
                 </td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">
-                  {eq.victorias}
-                </td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-red-400 text-base md:text-lg">
-                  {eq.derrotas}
-                </td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-zinc-300 text-base md:text-lg">
-                  {eq.empates}
-                </td>
-                <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-400 text-base md:text-lg">
-                  {eq.pct}
-                </td>
+                <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
+                <td className="py-3 px-2 text-center font-mono font-bold text-red-400 text-base md:text-lg">{eq.derrotas}</td>
+                <td className="py-3 px-2 text-center font-mono font-bold text-zinc-300 text-base md:text-lg">{eq.empates}</td>
+                <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-400 text-base md:text-lg">{eq.pct}</td>
               </tr>
             ))}
           </tbody>
@@ -475,96 +580,123 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#9e0101] text-white w-full font-sans">
-      <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:ital,wght@0,700;0,900;1,700;1,900&display=swap"
-        rel="stylesheet"
-      />
-
+      <link href="https://fonts.googleapis.com/css2?family=Orbitron:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
       <main className="w-full pb-12">
-        {/* Header */}
         <header className="sticky top-0 z-50 bg-[#9e0101] border-b border-red-900/50 p-3 flex items-center justify-center shadow-md w-full">
-          <img
-            src="/redzone_logo.png"
-            alt="NFL REDZONE"
-            className="h-[84px] md:h-24 object-contain"
-          />
+          <img src="/redzone2_logo.png" alt="NFL REDZONE" className="block md:hidden h-[70px] object-contain" />
+          <img src="/redzone1_logo.png" alt="NFL REDZONE" className="hidden md:block h-24 object-contain" />
         </header>
+        {showSearch && (
+          <div className={`fixed z-50 p-4 transition-all duration-500 ${searchPosition === 'top' ? 'top-20' : 'bottom-4'} right-4 bg-white text-black rounded-full shadow-xl font-bold font-['Orbitron']`}>
+             🔍
+          </div>
+        )}
 
-        {/* Menú de Navegación */}
-        <nav className="sticky top-[108px] md:top-[120px] z-40 bg-red-950/90 backdrop-blur-md border-b border-red-900/50 grid grid-cols-6 p-2 gap-1 text-[10px] sm:text-xs md:text-sm font-bold text-center w-full font-['Orbitron']">
-          {[
-            { id: 'clasificacion', label: '1. CLASIFICACIÓN' },
-            { id: 'pronosticos', label: '2. PRONÓSTICOS' },
-            { id: 'jornada', label: '3. JORNADA' },
-            { id: 'equipos', label: '4. EQUIPOS' },
-            { id: 'noticias', label: '5. NOTICIAS' },
-            { id: 'perfil', label: '6. PERFIL' },
-          ].map((tab) => {
-            const esActiva = pestanaActiva === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setPestanaActiva(tab.id)}
-                className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight ${
-                  esActiva
-                    ? 'bg-white text-[#9e0101] font-black shadow-md scale-105'
-                    : 'bg-red-950/60 text-red-100 hover:bg-red-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* NAVEGACIÓN Y PESTAÑAS */}
+        <nav className="sticky top-[96px] md:top-[120px] z-40 bg-red-950/90 backdrop-blur-md border-b border-red-900/50 p-2 text-[11px] sm:text-xs md:text-sm font-bold text-center w-full font-['Orbitron']">
+          {/* VISTA ESCRITORIO (1 FILA DE 6 PESTAÑAS) */}
+          <div className="hidden md:grid md:grid-cols-6 gap-1.5">
+            {[
+              { id: 'ranking', label: 'RANKING' },
+              { id: 'porra', label: 'PORRA' },
+              { id: 'jornada', label: 'JORNADA' },
+              { id: 'equipos', label: 'EQUIPOS' },
+              { id: 'noticias', label: 'NOTICIAS' },
+              { id: 'perfil', label: 'PERFIL' },
+            ].map((tab) => {
+              const esActiva = pestanaActiva === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setPestanaActiva(tab.id)}
+                  className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight ${
+                    esActiva ? 'bg-white text-[#9e0101] font-black shadow-md scale-105' : 'bg-red-950/60 text-red-100 hover:bg-red-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* VISTA MÓVIL (2 FILAS ESPECÍFICAS) */}
+          <div className="grid md:hidden space-y-1.5">
+            {/* FILA SUPERIOR: RANKING, PORRA, JORNADA */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { id: 'ranking', label: 'RANKING' },
+                { id: 'porra', label: 'PORRA' },
+                { id: 'jornada', label: 'JORNADA' },
+              ].map((tab) => {
+                const esActiva = pestanaActiva === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setPestanaActiva(tab.id)}
+                    className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight ${
+                      esActiva ? 'bg-white text-[#9e0101] font-black shadow-md scale-105' : 'bg-red-950/60 text-red-100 hover:bg-red-900'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* FILA INFERIOR: JORNADA, EQUIPOS, NOTICIAS, PERFIL */}
+            <div className="grid grid-cols-4 gap-1">
+              {[
+                { id: 'jornada', label: 'JORNADA' },
+                { id: 'equipos', label: 'EQUIPOS' },
+                { id: 'noticias', label: 'NOTICIAS' },
+                { id: 'perfil', label: 'PERFIL' },
+              ].map((tab) => {
+                const esActiva = pestanaActiva === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setPestanaActiva(tab.id)}
+                    className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight text-[10px] ${
+                      esActiva ? 'bg-white text-[#9e0101] font-black shadow-md scale-105' : 'bg-red-950/60 text-red-100 hover:bg-red-900'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </nav>
 
         <div className="p-4 md:p-8 w-full max-w-[1600px] mx-auto">
-          {/* 1. CLASIFICACIÓN */}
-          {pestanaActiva === 'clasificacion' && (
+          {pestanaActiva === 'ranking' && (
             <section className="space-y-4">
               <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron'] italic">
                 Tabla General de Posiciones
               </h2>
               <div className="space-y-4">
                 {usuarios.map((usr) => (
-                  <div
-                    key={usr.id}
-                    className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all hover:scale-[1.005]`}
-                  >
+                  <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all hover:scale-[1.005]`}>
                     <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
                       <div className="flex items-center gap-4 md:gap-6">
-                        <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">
-                          {usr.posicion}
-                        </span>
-                        <img
-                          src={usr.avatar}
-                          alt={usr.nombre}
-                          className="w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 border-white object-cover shadow-lg"
-                        />
+                        <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
+                        <img src={usr.avatar} alt={usr.nombre} className="w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 border-white object-cover shadow-lg" />
                         <div>
-                          <p className="text-2xl md:text-4xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">
-                            {usr.nombre}
-                          </p>
+                          <p className="text-2xl md:text-4xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between md:justify-end gap-6 md:gap-12 w-full md:w-auto border-t md:border-t-0 border-white/20 pt-3 md:pt-0">
                       <div className="text-left md:text-right">
-                        <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">
-                          Puntuación
-                        </p>
+                        <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Puntuación Total</p>
                         <p className="text-2xl md:text-4xl font-black text-white leading-none font-['Orbitron'] italic">
                           {usr.puntos} <span className="text-sm md:text-lg font-bold opacity-80">pts</span>
                         </p>
                       </div>
 
                       <div className="text-left md:text-right">
-                        <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">
-                          Aciertos
-                        </p>
-                        <p className="text-xl md:text-3xl font-black text-white leading-none font-['Orbitron'] italic">
-                          {usr.efectividad}
-                        </p>
+                        <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Efectividad</p>
+                        <p className="text-xl md:text-3xl font-black text-white leading-none font-['Orbitron'] italic">{usr.efectividad}</p>
                       </div>
 
                       {usr.esLider ? (
@@ -581,13 +713,12 @@ export default function Home() {
             </section>
           )}
 
-          {/* 2. PRONÓSTICOS */}
-          {pestanaActiva === 'pronosticos' && (
+          {pestanaActiva === 'porra' && (
             <section className="space-y-6 max-w-3xl mx-auto">
               <div className="bg-black/90 border border-red-900/80 rounded-2xl p-3 md:p-6 shadow-2xl space-y-3">
                 <div className="text-center py-2 border-b border-red-800/60 mb-3">
                   <h2 className="text-xl md:text-2xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase drop-shadow-md">
-                    PRONÓSTICOS JORNADA 1
+                    PORRA - JORNADA {jornadaActual} ({usuarios.find(u => u.id === usuarioActivoId)?.nombre})
                   </h2>
                 </div>
 
@@ -608,35 +739,32 @@ export default function Home() {
                     };
 
                     return (
-                      <div
-                        key={p.id}
-                        className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 bg-black border border-zinc-800/80 p-2 rounded-xl shadow-md"
-                      >
+                      <div key={p.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 bg-black border border-zinc-800/80 p-2 rounded-xl shadow-md">
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
-                          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all border ${getButtonStyle(isLocalSelected)}`}
+                          className={`flex items-center justify-center sm:justify-start px-2 sm:px-3 py-2.5 rounded-lg transition-all border ${getButtonStyle(isLocalSelected)}`}
                         >
-                          <img src={p.localLogo} alt={p.local} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
-                          <span className="font-['Orbitron'] font-bold truncate text-xs md:text-sm text-center">
-                            {p.local}
-                          </span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img src={p.localLogo} alt={p.local} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
+                            <span className="hidden sm:inline font-['Orbitron'] font-bold truncate text-xs md:text-sm text-left">{p.local}</span>
+                          </div>
                         </button>
 
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
-                          className={`px-4 py-2.5 rounded-lg transition-all border font-['Orbitron'] text-xs md:text-sm font-bold text-center ${getButtonStyle(isVsSelected)}`}
+                          className={`px-3 sm:px-4 py-2.5 rounded-lg transition-all border font-['Orbitron'] text-xs md:text-sm font-bold text-center ${getButtonStyle(isVsSelected)}`}
                         >
                           VS
                         </button>
 
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
-                          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all border ${getButtonStyle(isVisitorSelected)}`}
+                          className={`flex items-center justify-center sm:justify-end px-2 sm:px-3 py-2.5 rounded-lg transition-all border ${getButtonStyle(isVisitorSelected)}`}
                         >
-                          <span className="font-['Orbitron'] font-bold truncate text-xs md:text-sm text-center">
-                            {p.visitante}
-                          </span>
-                          <img src={p.visitanteLogo} alt={p.visitante} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          <div className="flex items-center gap-2 min-w-0 justify-end">
+                            <span className="hidden sm:inline font-['Orbitron'] font-bold truncate text-xs md:text-sm text-right">{p.visitante}</span>
+                            <img src={p.visitanteLogo} alt={p.visitante} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          </div>
                         </button>
                       </div>
                     );
@@ -645,7 +773,7 @@ export default function Home() {
 
                 <button
                   onClick={handleConfirmarPronosticos}
-                  className={`w-full py-4 rounded-xl shadow-xl transition-all font-['Orbitron'] text-sm md:text-base font-black uppercase tracking-wider italic mt-4 border ${
+                  className={`w-full py-4 rounded-xl shadow-xl transition-all font-['Orbitron'] text-sm md:text-base font-black uppercase tracking-wider italic mt-2 border ${
                     estadoBotonConfirmar === 'confirmado'
                       ? 'bg-emerald-500 text-black border-emerald-400 shadow-emerald-500/40'
                       : estadoBotonConfirmar === 'incompleto'
@@ -654,101 +782,83 @@ export default function Home() {
                   }`}
                 >
                   {estadoBotonConfirmar === 'confirmado'
-                    ? '✓ Pronósticos Confirmados y Enviados'
+                    ? `✓ Pronósticos de ${usuarios.find(u => u.id === usuarioActivoId)?.nombre} Confirmados`
                     : estadoBotonConfirmar === 'incompleto'
                     ? '⚠ Pronósticos Incompletos - Faltan partidos por marcar'
-                    : 'Confirmar Pronósticos'}
+                    : `Confirmar Pronósticos de ${usuarios.find(u => u.id === usuarioActivoId)?.nombre}`}
                 </button>
               </div>
             </section>
           )}
 
-          {/* 3. JORNADA */}
           {pestanaActiva === 'jornada' && (
-            <section className="space-y-6 bg-[#9e0101] p-2 md:p-6 rounded-2xl shadow-2xl border border-red-800/80">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-center">
-                {usuarios.map((usr) => (
-                  <div key={usr.id} className="relative flex flex-col items-center">
-                    <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border-2 border-red-900/80 shadow-2xl relative group">
-                      <img
-                        src={usr.avatarJornada}
-                        alt={usr.nombre}
-                        className="w-full h-full object-cover filter brightness-95 group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2 left-2 bg-black/80 px-3 py-1 rounded text-xs font-['Orbitron'] font-bold text-white border border-white/20 uppercase">
-                        {usr.nombre}
-                      </div>
-                    </div>
-
-                    <div className={`w-full ${usr.colorBg} border border-white/20 text-white font-['Orbitron'] text-center py-2.5 font-black text-lg md:text-xl rounded-b-lg shadow-md mt-1 tracking-wider`}>
-                      0-0
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-center py-2 border-y border-red-800/60 my-4 bg-red-950/40 rounded-lg">
+            <section className="space-y-8 bg-[#9e0101] p-2 md:p-6 rounded-2xl shadow-2xl border border-red-800/80">
+              <div className="text-center py-2 border-y border-red-800/60 my-2 bg-red-950/40 rounded-lg">
                 <h1 className="text-2xl md:text-4xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase drop-shadow-md">
-                  JORNADA 1
+                  RESULTADOS JORNADA {jornadaActual}
                 </h1>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {usuarios.map((usr) => {
-                  const pronosticosUsr = pronosticosPorUsuario[usr.id]?.pronosticos || [];
-                  const confirmadoUsr = pronosticosPorUsuario[usr.id]?.confirmado || false;
+                  const pronosticosUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.pronosticos || [];
+                  const confirmadoUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.confirmado || false;
+                  const puntosJornadaActual = calcularPuntosJornada(usr.id, jornadaActual);
 
                   return (
-                    <div key={usr.id} className="flex flex-col space-y-3">
-                      <div className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-xl p-2 md:p-3 space-y-2">
-                        {PARTIDOS_JORNADA_1.map((p) => {
-                          const pronPart = pronosticosUsr.find(item => item.id === p.id);
-                          const eleccion = pronPart?.eleccion;
+                    <div key={usr.id} className="flex flex-col space-y-3 bg-black/40 p-3 rounded-2xl border border-red-900/60 shadow-xl">
+                      {/* FOTO DEL PARTICIPANTE */}
+                      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border-2 border-red-900/80 shadow-2xl relative group">
+                        <img src={usr.avatarJornada} alt={usr.nombre} className="w-full h-full object-cover filter brightness-95 group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+
+                      {/* MARCADORES */}
+                      <div className="space-y-1">
+                        <div className={`${usr.colorBg} border border-white/20 rounded-t-lg py-3 text-center text-white font-['Orbitron'] font-black text-2xl leading-none shadow`}>
+                          {confirmadoUsr ? `${puntosJornadaActual} aciertos` : '0 aciertos'}
+                        </div>
+                        <div className={`${usr.colorBg} border border-white/20 rounded-b-lg py-3 text-center text-white font-['Orbitron'] font-bold text-xl leading-none tracking-wider`}>
+                          Total Acumulado: {usr.puntos} pts
+                        </div>
+                      </div>
+
+                      {/* CAJA DE PRONÓSTICOS DE ESTE JUGADOR (SEGUIDA DIRECTAMENTE EN MÓVIL Y ORDENADOR) */}
+                      <div className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-xl p-2 space-y-2">
+                        {pronosticosUsr.map((p) => {
+                          const eleccion = p.eleccion;
+                          const resultadoOficial = p.resultadoReal;
+
+                          let estiloCajaEleccion = 'bg-black text-amber-400 border-zinc-700';
+                          if (confirmadoUsr && eleccion) {
+                            if (eleccion === resultadoOficial) {
+                              estiloCajaEleccion = 'bg-emerald-500 text-black border-emerald-400 font-black shadow-lg shadow-emerald-500/30';
+                            } else {
+                              estiloCajaEleccion = 'bg-red-600 text-white border-red-500 font-black shadow-lg shadow-red-600/30';
+                            }
+                          } else if (eleccion) {
+                            estiloCajaEleccion = 'bg-white text-black border-white font-black';
+                          }
 
                           return (
-                            <div
-                              key={p.id}
-                              className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 bg-zinc-900/60 hover:bg-zinc-800/80 px-2 py-2 rounded transition-colors border border-zinc-800/40"
-                            >
-                              <div className="flex items-center justify-center gap-2 min-w-0">
-                                <img src={p.localLogo} alt={p.local} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-xs md:text-sm text-center">
-                                  {p.local}
-                                </span>
+                            <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1 bg-zinc-900/60 px-2 py-1.5 rounded transition-colors border border-zinc-800/40 text-xs">
+                              <div className="flex items-center justify-center gap-1 min-w-0">
+                                <img src={p.localLogo} alt={p.local} className="w-6 h-6 object-contain flex-shrink-0" />
+                                <span className="font-['Orbitron'] font-bold text-white truncate text-[10px] text-center">{p.local}</span>
                               </div>
 
-                              <span className="font-['Orbitron'] font-bold text-zinc-400 text-xs md:text-sm px-1 text-center">
-                                vs
-                              </span>
+                              <span className="font-['Orbitron'] font-bold text-zinc-400 text-[10px] px-0.5 text-center">vs</span>
 
-                              <div className="flex items-center justify-center gap-2 min-w-0">
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-xs md:text-sm text-center">
-                                  {p.visitante}
-                                </span>
-                                <img src={p.visitanteLogo} alt={p.visitante} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
+                              <div className="flex items-center justify-center gap-1 min-w-0">
+                                <span className="font-['Orbitron'] font-bold text-white truncate text-[10px] text-center">{p.visitante}</span>
+                                <img src={p.visitanteLogo} alt={p.visitante} className="w-6 h-6 object-contain flex-shrink-0" />
                               </div>
 
-                              <div className={`w-7 h-7 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs md:text-sm ml-1 flex-shrink-0 justify-self-end ${
-                                confirmadoUsr && eleccion
-                                  ? 'bg-emerald-400 text-black border-emerald-300'
-                                  : eleccion
-                                  ? 'bg-white text-black border-white'
-                                  : 'bg-black text-amber-400 border-zinc-700'
-                              }`}>
-                                {eleccion === '1' ? p.local.charAt(0) : eleccion === 'X' ? 'X' : eleccion === '2' ? p.visitante.charAt(0) : '-'}
+                              <div className={`w-6 h-6 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
+                                {eleccion === '1' ? '1' : eleccion === 'X' ? 'X' : eleccion === '2' ? '2' : '-'}
                               </div>
                             </div>
                           );
                         })}
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className={`${usr.colorBg} border border-white/20 rounded-t-lg py-4 text-center text-white font-['Orbitron'] font-black text-2xl md:text-3xl leading-none shadow`}>
-                          0
-                        </div>
-                        <div className={`${usr.colorBg} border border-white/20 rounded-b-lg py-4 text-center text-white font-['Orbitron'] font-bold text-2xl md:text-3xl leading-none tracking-wider`}>
-                          0-0
-                        </div>
                       </div>
                     </div>
                   );
@@ -757,53 +867,72 @@ export default function Home() {
             </section>
           )}
 
-          {/* 4. EQUIPOS */}
           {pestanaActiva === 'equipos' && (
             <section className="space-y-8">
-              <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
-                <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
-                  POSICIONES OFICIALES NFL 2026
-                </h2>
-                {sincronizandoPosiciones && (
-                  <span className="text-[10px] text-red-300 font-mono animate-pulse">
-                    Actualizando datos desde ESPN...
-                  </span>
-                )}
+              {/* SUBPESTAÑAS SCORE Y GAMES */}
+              <div className="flex items-center justify-center gap-4 mb-4 font-['Orbitron']">
+                <button
+                  onClick={() => setSubPestanaEquipos('SCORE')}
+                  className={`py-2 px-6 rounded-lg font-black transition-all ${
+                    subPestanaEquipos === 'SCORE'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'bg-red-950/60 text-red-100 hover:bg-red-900'
+                  }`}
+                >
+                  SCORE
+                </button>
+                <button
+                  onClick={() => setSubPestanaEquipos('GAMES')}
+                  className={`py-2 px-6 rounded-lg font-black transition-all ${
+                    subPestanaEquipos === 'GAMES'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'bg-red-950/60 text-red-100 hover:bg-red-900'
+                  }`}
+                >
+                  GAMES
+                </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 border-b-2 border-red-700 pb-2">
-                  <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                  <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">
-                    Conferencia Americana (AFC)
-                  </h3>
-                </div>
+              {subPestanaEquipos === 'SCORE' ? (
+                <>
+                  <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
+                    <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
+                      POSICIONES OFICIALES NFL
+                    </h2>
+                    {sincronizandoPosiciones && (
+                      <span className="text-[10px] text-red-300 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
+                    )}
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {divisiones
-                    .filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC'))
-                    .map((div, idx) => renderTablaDivision(div, idx))}
-                </div>
-              </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 border-b-2 border-red-700 pb-2">
+                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Americana (AFC)</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}
+                    </div>
+                  </div>
 
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                  <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">
-                    Conferencia Nacional (NFC)
-                  </h3>
+                  <div className="space-y-4 pt-4">
+                    <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Nacional (NFC)</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-black/80 border border-red-900/60 p-6 rounded-xl text-center font-['Orbitron']">
+                  <h3 className="text-lg font-bold text-white mb-2">SECCIÓN GAMES</h3>
+                  <p className="text-zinc-400 text-xs">Calendario e historial de partidos de los equipos disponible próximamente.</p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {divisiones
-                    .filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC'))
-                    .map((div, idx) => renderTablaDivision(div, idx))}
-                </div>
-              </div>
+              )}
             </section>
           )}
 
-          {/* 5. NOTICIAS */}
           {pestanaActiva === 'noticias' && (
             <section className="space-y-4">
               <h2 className="text-xs md:text-sm font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-1 font-['Orbitron'] italic">
@@ -811,46 +940,25 @@ export default function Home() {
               </h2>
 
               {cargandoNoticias ? (
-                <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">
-                  Cargando noticias en castellano...
-                </div>
+                <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">Cargando noticias en castellano...</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {noticias.map((item) => (
-                    <article
-                      key={item.id}
-                      className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-600 transition-all shadow-lg"
-                    >
+                    <article key={item.id} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-600 transition-all shadow-lg">
                       <div>
                         {item.imagen && (
                           <div className="h-44 w-full overflow-hidden bg-zinc-900">
-                            <img
-                              src={item.imagen}
-                              alt={item.titulo}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
+                            <img src={item.imagen} alt={item.titulo} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                           </div>
                         )}
                         <div className="p-4 space-y-2">
-                          <span className="text-[10px] font-mono text-red-400 font-semibold uppercase">
-                            {item.fecha}
-                          </span>
-                          <h3 className="font-['Orbitron'] text-sm font-bold leading-snug text-white">
-                            {item.titulo}
-                          </h3>
-                          <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">
-                            {item.descripcion}
-                          </p>
+                          <span className="text-[10px] font-mono text-red-400 font-semibold uppercase">{item.fecha}</span>
+                          <h3 className="font-['Orbitron'] text-sm font-bold leading-snug text-white">{item.titulo}</h3>
+                          <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">{item.descripcion}</p>
                         </div>
                       </div>
-
                       <div className="p-4 pt-0">
-                        <a
-                          href={item.enlace}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block w-full text-center bg-red-950/80 hover:bg-red-900 text-red-100 text-xs font-['Orbitron'] py-2 rounded border border-red-800 transition-colors uppercase"
-                        >
+                        <a href={item.enlace} target="_blank" rel="noopener noreferrer" className="inline-block w-full text-center bg-red-950/80 hover:bg-red-900 text-red-100 text-xs font-['Orbitron'] py-2 rounded border border-red-800 transition-colors uppercase">
                           Leer Noticia Completa 🇪🇸
                         </a>
                       </div>
@@ -861,48 +969,102 @@ export default function Home() {
             </section>
           )}
 
-          {/* 6. PERFIL */}
           {pestanaActiva === 'perfil' && (
             <section className="space-y-4 max-w-md mx-auto">
-              <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron']">
-                Ajustes de Perfil Privado
-              </h2>
-
               {!usuarioLogueado ? (
-                <div className="bg-black/90 border border-red-800 rounded-xl p-6 space-y-4 shadow-xl">
-                  <h3 className="text-sm font-['Orbitron'] text-white font-bold uppercase text-center">Iniciar Sesión</h3>
+                <div className="bg-black border border-red-800 rounded-xl p-6 space-y-4 shadow-xl">
+                  <h3 className="text-base font-['Orbitron'] text-white font-bold uppercase text-center border-b border-zinc-800 pb-2">Iniciar Sesión</h3>
                   {errorLogin && (
                     <p className="text-red-400 text-xs text-center font-mono">{errorLogin}</p>
                   )}
-                  <input 
-                    type="email" 
-                    placeholder="Correo electrónico" 
-                    value={emailInput} 
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-white text-xs font-mono"
-                  />
-                  <input 
-                    type="password" 
-                    placeholder="Contraseña" 
-                    value={passwordInput} 
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-white text-xs font-mono"
-                  />
-                  <button 
-                    onClick={handleLogin}
-                    className="w-full py-2.5 bg-red-700 hover:bg-red-800 text-white font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors"
-                  >
-                    Entrar
-                  </button>
+                  <div className="space-y-3">
+                    <input 
+                      type="email" 
+                      placeholder="Usuario o correo electrónico" 
+                      value={emailInput} 
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white text-xs font-mono focus:outline-none"
+                    />
+                    
+                    <div className="relative">
+                      <input 
+                        type={verPassword ? "text" : "password"} 
+                        placeholder="Contraseña" 
+                        value={passwordInput} 
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 pr-10 text-white text-xs font-mono focus:outline-none"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setVerPassword(!verPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-base focus:outline-none"
+                      >
+                        {verPassword ? '👁️' : '🙈'}
+                      </button>
+                    </div>
+
+                    <button 
+                      onClick={handleLogin}
+                      className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer mt-2"
+                    >
+                      Entrar
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="bg-black/90 border border-red-800 rounded-xl p-6 space-y-4 shadow-xl text-center">
-                  <p className="text-xs font-['Orbitron'] text-zinc-300">
-                    Sesión activa con: <strong className="text-white">{usuarioLogueado.email}</strong>
-                  </p>
+                <div className="bg-white border border-red-800 rounded-xl p-6 space-y-4 shadow-2xl text-black font-sans">
+                  {/* CABECERA ROJA CON DATOS DE SESIÓN */}
+                  <div className="text-center p-3 bg-[#9e0101] rounded-lg shadow-inner">
+                    <p className="text-[10px] text-red-200 font-['Orbitron'] uppercase">Estado de la sesión: ACTIVA</p>
+                    <strong className="text-white text-xs font-mono">{usuarioLogueado.email}</strong>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <label className="block text-[#002244] font-bold mb-1">Nombre de Usuario</label>
+                      <input 
+                        type="text" 
+                        value={nombrePerfil} 
+                        onChange={(e) => setNombrePerfil(e.target.value)}
+                        placeholder="Nombre del participante"
+                        className="w-full bg-white text-[#9e0101] placeholder-red-300 border border-zinc-300 rounded-lg p-2.5 font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#002244] font-bold mb-1">Nombre de tu Equipo</label>
+                      <input 
+                        type="text" 
+                        value={nombreEquipo} 
+                        onChange={(e) => setNombreEquipo(e.target.value)}
+                        placeholder="Nombre de equipo NFL deseado"
+                        className="w-full bg-white text-[#9e0101] placeholder-red-300 border border-zinc-300 rounded-lg p-2.5 font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#002244] font-bold mb-1">URL de la imagen (Avatar Clasificación)</label>
+                      <input 
+                        type="text" 
+                        value={avatarUrlInput} 
+                        onChange={(e) => setAvatarUrlInput(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full bg-white text-[#9e0101] placeholder-red-300 border border-zinc-300 rounded-lg p-2.5 font-mono focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleGuardarPerfil}
+                    disabled={guardandoPerfil}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer"
+                  >
+                    {guardandoPerfil ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 bg-zinc-800 hover:bg-red-900 text-white font-['Orbitron'] text-xs font-bold rounded-lg border border-zinc-700 transition-colors uppercase"
+                    className="w-full py-2 bg-[#9e0101] hover:bg-red-900 text-white font-['Orbitron'] text-xs font-bold rounded-lg border border-red-700 transition-colors uppercase cursor-pointer shadow"
                   >
                     Cerrar Sesión
                   </button>
@@ -910,7 +1072,6 @@ export default function Home() {
               )}
             </section>
           )}
-
         </div>
       </main>
     </div>
