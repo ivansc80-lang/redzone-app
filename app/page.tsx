@@ -25,7 +25,7 @@ export default function PorraPage() {
       {/* 1. HEADER CON LOGOS (redzone1_logo en Desktop, redzone2_logo en Móvil) */}
       <header className="w-full bg-[#8b0000] py-4 flex justify-center items-center border-b border-red-900">
         <picture className="flex justify-center">
-          <source media="(max-width: 768px)" srcset="/redzone2_logo.png" />
+          <source media="(max-width: 768px)" srcSet="/redzone2_logo.png" />
           <img
             src="/redzone1_logo.png"
             alt="NFL REDZONE"
@@ -61,7 +61,7 @@ export default function PorraPage() {
                 className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
                   activeTab === tab
                     ? 'bg-white text-[#d32f2f] shadow'
-                    : 'text-white hover:bg-red-800'
+                    : 'text-[#ffffff] hover:bg-red-800'
                 }`}
               >
                 {tab}
