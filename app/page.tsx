@@ -1,1077 +1,138 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import React, { useState } from 'react';
 
-interface PronosticoPartido {
-  id: number;
-  local: string;
-  localLogo: string;
-  visitante: string;
-  visitanteLogo: string;
-  eleccion: '1' | 'X' | '2' | null;
-  resultadoReal?: '1' | 'X' | '2';
-}
+export default function PorraPage() {
+  const [activeTab, setActiveTab] = useState('porra');
 
-interface Usuario {
-  id: string;
-  nombre: string;
-  email: string;
-  avatar: string;
-  avatarJornada: string;
-  colorBg: string;
-  colorBorder: string;
-  colorBadge: string;
-  puntos: number;
-  efectividad: string;
-  posicion: string;
-  esLider: boolean;
-}
-
-interface Noticia {
-  id: string;
-  titulo: string;
-  descripcion: string;
-  enlace: string;
-  imagen: string;
-  fecha: string;
-}
-
-interface EquipoPosicion {
-  id: string;
-  nombre: string;
-  abrev: string;
-  logo: string;
-  victorias: string | number;
-  derrotas: string | number;
-  empates: string | number;
-  pct: string;
-}
-
-interface Division {
-  nombre: string;
-  conferencia: 'AFC' | 'NFC';
-  equipos: EquipoPosicion[];
-}
-
-const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
-  1: [
-    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null, resultadoReal: '1' },
-    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null, resultadoReal: '1' },
-    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null, resultadoReal: '1' },
-    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null, resultadoReal: '1' },
-    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null, resultadoReal: '1' },
-    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null, resultadoReal: '1' },
-    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null, resultadoReal: '1' },
-    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null, resultadoReal: '1' },
-    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null, resultadoReal: '1' },
-    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null, resultadoReal: '1' },
-    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null, resultadoReal: '1' },
-    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null, resultadoReal: '1' },
-    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null, resultadoReal: '1' },
-    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null, resultadoReal: '1' },
-    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null, resultadoReal: '1' },
-    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null, resultadoReal: '1' },
-  ]
-};
-
-const DIVISIONES_BASE: Division[] = [
-  {
-    nombre: 'AFC Este',
-    conferencia: 'AFC',
-    equipos: [
-      { id: '1', nombre: 'Buffalo Bills', abrev: 'BUF', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '2', nombre: 'Miami Dolphins', abrev: 'MIA', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '3', nombre: 'New England Patriots', abrev: 'NE', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '4', nombre: 'New York Jets', abrev: 'NYJ', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'AFC Norte',
-    conferencia: 'AFC',
-    equipos: [
-      { id: '6', nombre: 'Cincinnati Bengals', abrev: 'CIN', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '7', nombre: 'Cleveland Browns', abrev: 'CLE', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '8', nombre: 'Pittsburgh Steelers', abrev: 'PIT', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '5', nombre: 'Baltimore Ravens', abrev: 'BAL', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'AFC Sur',
-    conferencia: 'AFC',
-    equipos: [
-      { id: '12', nombre: 'Tennessee Titans', abrev: 'TEN', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '10', nombre: 'Indianapolis Colts', abrev: 'IND', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '11', nombre: 'Jacksonville Jaguars', abrev: 'JAX', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '9', nombre: 'Houston Texans', abrev: 'HOU', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'AFC Oeste',
-    conferencia: 'AFC',
-    equipos: [
-      { id: '13', nombre: 'Denver Broncos', abrev: 'DEN', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '14', nombre: 'Kansas City Chiefs', abrev: 'KC', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '15', nombre: 'Las Vegas Raiders', abrev: 'LV', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '16', nombre: 'Los Angeles Chargers', abrev: 'LAC', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'NFC Este',
-    conferencia: 'NFC',
-    equipos: [
-      { id: '17', nombre: 'Dallas Cowboys', abrev: 'DAL', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '18', nombre: 'New York Giants', abrev: 'NYG', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '19', nombre: 'Philadelphia Eagles', abrev: 'PHI', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '20', nombre: 'Washington Commanders', abrev: 'WAS', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'NFC Norte',
-    conferencia: 'NFC',
-    equipos: [
-      { id: '21', nombre: 'Chicago Bears', abrev: 'CHI', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '22', nombre: 'Detroit Lions', abrev: 'DET', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '23', nombre: 'Green Bay Packers', abrev: 'GB', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '24', nombre: 'Minnesota Vikings', abrev: 'MIN', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'NFC Sur',
-    conferencia: 'NFC',
-    equipos: [
-      { id: '25', nombre: 'Atlanta Falcons', abrev: 'ATL', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '26', nombre: 'Carolina Panthers', abrev: 'CAR', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '27', nombre: 'New Orleans Saints', abrev: 'NO', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '28', nombre: 'Tampa Bay Buccaneers', abrev: 'TB', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-  {
-    nombre: 'NFC Oeste',
-    conferencia: 'NFC',
-    equipos: [
-      { id: '29', nombre: 'Arizona Cardinals', abrev: 'ARI', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '30', nombre: 'Los Angeles Rams', abrev: 'LAR', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '31', nombre: 'San Francisco 49ers', abrev: 'SF', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '32', nombre: 'Seattle Seahawks', abrev: 'SEA', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-];
-
-export default function Home() {
-  const [pestanaActiva, setPestanaActiva] = useState<string>('ranking');
-  const [subPestanaEquipos, setSubPestanaEquipos] = useState<'SCORE' | 'GAMES'>('SCORE');
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
-  const [commandBuffer, setCommandBuffer] = useState('');
-  const [jornadaActual] = useState<number>(1);
-  const [nombrePerfil, setNombrePerfil] = useState('');
-  const [nombreEquipo, setNombreEquipo] = useState('');
-  const [avatarUrlInput, setAvatarUrlInput] = useState('');
-  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
-  const [verPassword, setVerPassword] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const char = e.key;
-      const newBuffer = (commandBuffer + char).slice(-4);
-      setCommandBuffer(newBuffer);
-
-      if (newBuffer.endsWith('/BB')) {
-        setShowSearch(prev => !prev);
-        setCommandBuffer('');
-      } else if (newBuffer.endsWith('/mbb')) {
-        setSearchPosition(prev => prev === 'top' ? 'bottom' : 'top');
-        setCommandBuffer('');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [commandBuffer]);
-
-  const [usuarios, setUsuarios] = useState<Usuario[]>([
-    {
-      id: 'cace',
-      nombre: 'Cace',
-      email: 'Cace230514@gmail.com',
-      avatar: '/kc.png',
-      avatarJornada: '/kc_jornada.png',
-      colorBg: 'bg-[#002244]',
-      colorBorder: 'border-[#C60C30]',
-      colorBadge: 'bg-[#C60C30] text-white',
-      puntos: 0,
-      efectividad: '0%',
-      posicion: '1º',
-      esLider: true,
-    },
-    {
-      id: 'juanjo',
-      nombre: 'Juanjo',
-      email: 'jjgodprimi1978@gmail.com',
-      avatar: '/Primi.png',
-      avatarJornada: '/primi_jornada.png',
-      colorBg: 'bg-[#B3995D]',
-      colorBorder: 'border-[#AA0000]',
-      colorBadge: 'bg-[#AA0000] text-white',
-      puntos: 0,
-      efectividad: '0%',
-      posicion: '2º',
-      esLider: false,
-    },
-    {
-      id: 'ivan',
-      nombre: 'Iván',
-      email: 'ivansc80@gmail.com',
-      avatar: '/Ivi.png',
-      avatarJornada: '/ivi_jornada.png',
-      colorBg: 'bg-[#E31837]',
-      colorBorder: 'border-[#FFB81C]',
-      colorBadge: 'bg-[#FFB81C] text-black',
-      puntos: 0,
-      efectividad: '0%',
-      posicion: '3º',
-      esLider: false,
-    },
-  ]);
-  const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
-  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean }>>>({
-    1: {
-      cace: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
-      juanjo: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
-      ivan: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
-    },
-  });
-  const [estadoBotonConfirmar, setEstadoBotonConfirmar] = useState<'normal' | 'incompleto' | 'confirmado'>('normal');
-  const [noticias, setNoticias] = useState<Noticia[]>([]);
-  const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
-  const [divisiones, setDivisiones] = useState<Division[]>(DIVISIONES_BASE);
-  const [sincronizandoPosiciones, setSincronizandoPosiciones] = useState<boolean>(false);
-
-  const [usuarioLogueado, setUsuarioLogueado] = useState<any>(null);
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [errorLogin, setErrorLogin] = useState('');
-
-  const cargarPerfil = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (data) {
-      setNombrePerfil(data.nombre || '');
-      setNombreEquipo(data.nombre_equipo || '');
-      setAvatarUrlInput(data.avatar_url || '');
-    }
-  };
-
-  const handleGuardarPerfil = async () => {
-    if (!usuarioLogueado) return;
-    setGuardandoPerfil(true);
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: usuarioLogueado.id,
-        nombre: nombrePerfil,
-        nombre_equipo: nombreEquipo,
-        avatar_url: avatarUrlInput,
-        updated_at: new Date(),
-      });
-
-    setGuardandoPerfil(false);
-    if (error) {
-      alert('Error al guardar el perfil: ' + error.message);
-    } else {
-      alert('¡Perfil guardado con éxito!');
-    }
-  };
-
-  useEffect(() => {
-    const comprobarSesion = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUsuarioLogueado(session.user);
-        cargarPerfil(session.user.id);
-        const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === session.user.email?.toLowerCase());
-        if (usuarioEncontrado) {
-          setUsuarioActivoId(usuarioEncontrado.id);
-        }
-      }
-    };
-    comprobarSesion();
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUsuarioLogueado(session.user);
-        cargarPerfil(session.user.id);
-        const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === session.user.email?.toLowerCase());
-        if (usuarioEncontrado) {
-          setUsuarioActivoId(usuarioEncontrado.id);
-        }
-      } else {
-        setUsuarioLogueado(null);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleLogin = async () => {
-    setErrorLogin('');
-    const { error } = await supabase.auth.signInWithPassword({
-      email: emailInput,
-      password: passwordInput,
-    });
-
-    if (error) {
-      setErrorLogin('Correo o contraseña incorrectos.');
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUsuarioLogueado(null);
-  };
-
-  const calcularPuntosJornada = (userId: string, numJornada: number) => {
-    const dataJornada = pronosticosPorUsuario[numJornada]?.[userId];
-    if (!dataJornada || !dataJornada.confirmado) return 0;
-
-    let aciertos = 0;
-    dataJornada.pronosticos.forEach(p => {
-      if (p.eleccion && p.eleccion === p.resultadoReal) {
-        aciertos++;
-      }
-    });
-    return aciertos;
-  };
-
-  useEffect(() => {
-    setUsuarios(prevUsuarios => {
-      const nuevosUsuarios = prevUsuarios.map(usr => {
-        let totalPuntos = 0;
-        let totalAciertosPartidos = 0;
-        let totalPronosticados = 0;
-
-        [jornadaActual].forEach(jNum => {
-          const jData = pronosticosPorUsuario[jNum]?.[usr.id];
-          if (jData && jData.confirmado) {
-            jData.pronosticos.forEach(p => {
-              totalPronosticados++;
-              if (p.eleccion && p.eleccion === p.resultadoReal) {
-                totalPuntos++;
-                totalAciertosPartidos++;
-              }
-            });
-          }
-        });
-
-        const efectividadCalc = totalPronosticados > 0 
-          ? Math.round((totalAciertosPartidos / totalPronosticados) * 100) + '%' 
-          : '0%';
-
-        return {
-          ...usr,
-          puntos: totalPuntos,
-          efectividad: efectividadCalc,
-        };
-      });
-
-      nuevosUsuarios.sort((a, b) => b.puntos - a.puntos);
-      return nuevosUsuarios.map((usr, index) => ({
-        ...usr,
-        posicion: `${index + 1}º`,
-        esLider: index === 0,
-      }));
-    });
-  }, [pronosticosPorUsuario, jornadaActual]);
-
-  useEffect(() => {
-    if (pestanaActiva === 'noticias' && noticias.length === 0) {
-      setCargandoNoticias(true);
-      fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=50&lang=es&region=es')
-        .then((res) => res.json())
-        .then((data) => {
-          const noticiasMapeadas: Noticia[] = data.articles?.map((art: any, index: number) => {
-            const urlOriginal = art.links?.web?.href || '#';
-            const urlTraducida = urlOriginal !== '#' 
-              ? `https://translate.google.com/translate?sl=auto&tl=es&u=${encodeURIComponent(urlOriginal)}`
-              : '#';
-
-            return {
-              id: art.id || String(index),
-              titulo: art.headline,
-              descripcion: art.description || 'Sin descripción disponible.',
-              enlace: urlTraducida,
-              imagen: art.images?.[0]?.url || '/redzone1_logo.png',
-              fecha: new Date(art.published).toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-            };
-          }) || [];
-          setNoticias(noticiasMapeadas);
-        })
-        .catch((err) => console.error('Error cargando noticias:', err))
-        .finally(() => setCargandoNoticias(false));
-    }
-  }, [pestanaActiva, noticias.length]);
-
-  useEffect(() => {
-    if (pestanaActiva === 'equipos') {
-      setSincronizandoPosiciones(true);
-      fetch('https://site.api.espn.com/apis/v2/sports/football/nfl/standings')
-        .then((res) => res.json())
-        .then((data) => {
-          const listaDivisiones: Division[] = [];
-
-          data.children?.forEach((conf: any) => {
-            const esAFC = conf.name?.toLowerCase().includes('american') || conf.abbreviation === 'AFC';
-            const conferenciaTag: 'AFC' | 'NFC' = esAFC ? 'AFC' : 'NFC';
-
-            conf.children?.forEach((div: any) => {
-              const equiposDiv: EquipoPosicion[] = div.standings?.entries?.map((entry: any) => {
-                const getStat = (name: string) => {
-                  const stat = entry.stats?.find(
-                    (s: any) => s.name === name || s.abbreviation === name || s.type === name
-                  );
-                  return stat ? stat.displayValue : '0';
-                };
-
-                return {
-                  id: entry.team?.id || String(Math.random()),
-                  nombre: entry.team?.displayName || entry.team?.name || 'Equipo',
-                  abrev: entry.team?.abbreviation || '',
-                  logo: entry.team?.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/nfl/500/${entry.team?.abbreviation?.toLowerCase()}.png`,
-                  victorias: getStat('wins'),
-                  derrotas: getStat('losses'),
-                  empates: getStat('ties'),
-                  pct: getStat('winPercent'),
-                };
-              }) || [];
-
-              if (equiposDiv.length > 0) {
-                listaDivisiones.push({
-                  nombre: div.name || `${conferenciaTag} - División`,
-                  conferencia: conferenciaTag,
-                  equipos: equiposDiv,
-                });
-              }
-            });
-          });
-
-          if (listaDivisiones.length > 0) {
-            setDivisiones(listaDivisiones);
-          }
-        })
-        .catch((err) => console.log('Sincronizando posiciones:', err))
-        .finally(() => setSincronizandoPosiciones(false));
-    }
-  }, [pestanaActiva]);
-
-  useEffect(() => {
-    const actual = pronosticosPorUsuario[jornadaActual]?.[usuarioActivoId];
-    if (actual?.confirmado) {
-      setEstadoBotonConfirmar('confirmado');
-    } else {
-      setEstadoBotonConfirmar('normal');
-    }
-  }, [usuarioActivoId, jornadaActual, pronosticosPorUsuario]);
-
-  const datosUsuarioActual = pronosticosPorUsuario[jornadaActual]?.[usuarioActivoId] || {
-    pronosticos: [],
-    confirmado: false,
-  };
-
-  const handleSeleccionPronostico = (idPartido: number, eleccion: '1' | 'X' | '2') => {
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
-
-      const nuevosPronosticos = usuarioActualData.pronosticos.map(p => {
-        if (p.id === idPartido) {
-          const nuevaEleccion = p.eleccion === eleccion ? null : eleccion;
-          return { ...p, eleccion: nuevaEleccion };
-        }
-        return p;
-      });
-
-      return {
-        ...prev,
-        [jornadaActual]: {
-          ...jornadaData,
-          [usuarioActivoId]: {
-            ...usuarioActualData,
-            pronosticos: nuevosPronosticos,
-            confirmado: false,
-          },
-        },
-      };
-    });
-    setEstadoBotonConfirmar('normal');
-  };
-
-  const handleConfirmarPronosticos = () => {
-    const hayIncompletos = datosUsuarioActual.pronosticos.some(p => p.eleccion === null);
-
-    if (hayIncompletos) {
-      setEstadoBotonConfirmar('incompleto');
-      return;
-    }
-
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
-
-      return {
-        ...prev,
-        [jornadaActual]: {
-          ...jornadaData,
-          [usuarioActivoId]: {
-            ...usuarioActualData,
-            confirmado: true,
-          },
-        },
-      };
-    });
-    setEstadoBotonConfirmar('confirmado');
-  };
-
-  const renderTablaDivision = (div: Division, idx: number) => (
-    <div key={idx} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden shadow-lg">
-      <div className="bg-red-950/80 px-4 py-2.5 border-b border-red-900/60 font-['Orbitron'] text-sm md:text-base font-bold uppercase tracking-wider text-white">
-        {div.nombre}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left font-sans">
-          <thead className="bg-zinc-900/80 text-zinc-400 uppercase font-mono text-xs md:text-sm">
-            <tr>
-              <th className="py-2.5 px-3">Equipo</th>
-              <th className="py-2.5 px-2 text-center">G</th>
-              <th className="py-2.5 px-2 text-center">P</th>
-              <th className="py-2.5 px-2 text-center">E</th>
-              <th className="py-2.5 px-3 text-right">%</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/60 text-sm md:text-base">
-            {div.equipos.map((eq) => (
-              <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
-                <td className="py-3 px-3 flex items-center gap-2.5 font-['Orbitron'] font-bold text-white">
-                  <img src={eq.logo} alt={eq.nombre} className="w-7 h-7 md:w-8 md:h-8 object-contain" />
-                  <span className="truncate">{eq.nombre}</span>
-                </td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-red-400 text-base md:text-lg">{eq.derrotas}</td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-zinc-300 text-base md:text-lg">{eq.empates}</td>
-                <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-400 text-base md:text-lg">{eq.pct}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  // Datos de ejemplo para los partidos
+  const matches = [
+    { id: 1, home: 'Seahawks', homeLogo: '/logos/seahawks.png', away: 'Patriots', awayLogo: '/logos/patriots.png' },
+    { id: 2, home: 'Rams', homeLogo: '/logos/rams.png', away: '49ers', awayLogo: '/logos/49ers.png' },
+    { id: 3, home: 'Lions', homeLogo: '/logos/lions.png', away: 'Saints', awayLogo: '/logos/saints.png' },
+    { id: 4, home: 'Bengals', homeLogo: '/logos/bengals.png', away: 'Buccaneers', awayLogo: '/logos/buccaneers.png' },
+    { id: 5, home: 'Colts', homeLogo: '/logos/colts.png', away: 'Ravens', awayLogo: '/logos/ravens.png' },
+    { id: 6, home: 'Jaguars', homeLogo: '/logos/jaguars.png', away: 'Browns', awayLogo: '/logos/browns.png' },
+    { id: 7, home: 'Titans', homeLogo: '/logos/titans.png', away: 'Jets', awayLogo: '/logos/jets.png' },
+    { id: 8, home: 'Texans', homeLogo: '/logos/texans.png', away: 'Bills', awayLogo: '/logos/bills.png' },
+    { id: 9, home: 'Steelers', homeLogo: '/logos/steelers.png', away: 'Falcons', awayLogo: '/logos/falcons.png' },
+    { id: 10, home: 'Panthers', homeLogo: '/logos/panthers.png', away: 'Bears', awayLogo: '/logos/bears.png' },
+    { id: 11, home: 'Vikings', homeLogo: '/logos/vikings.png', away: 'Packers', awayLogo: '/logos/packers.png' },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#9e0101] text-white w-full font-sans">
-      <link href="https://fonts.googleapis.com/css2?family=Orbitron:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
-      <main className="w-full pb-12">
-        <header className="sticky top-0 z-50 bg-[#9e0101] border-b border-red-900/50 p-3 flex items-center justify-center shadow-md w-full">
-          <img src="/redzone2_logo.png" alt="NFL REDZONE" className="block md:hidden h-[70px] object-contain" />
-          <img src="/redzone1_logo.png" alt="NFL REDZONE" className="hidden md:block h-24 object-contain" />
-        </header>
-        {showSearch && (
-          <div className={`fixed z-50 p-4 transition-all duration-500 ${searchPosition === 'top' ? 'top-20' : 'bottom-4'} right-4 bg-white text-black rounded-full shadow-xl font-bold font-['Orbitron']`}>
-             🔍
+    <div className="min-h-screen bg-[#8b0000] text-white flex flex-col items-center">
+      {/* 1. HEADER CON LOGOS (redzone1_logo en Desktop, redzone2_logo en Móvil) */}
+      <header className="w-full bg-[#8b0000] py-4 flex justify-center items-center border-b border-red-900">
+        <picture className="flex justify-center">
+          <source media="(max-width: 768px)" srcset="/redzone2_logo.png" />
+          <img
+            src="/redzone1_logo.png"
+            alt="NFL REDZONE"
+            className="h-10 md:h-12 object-contain"
+          />
+        </picture>
+      </header>
+
+      {/* 2. MENÚ DE PESTAÑAS (En 2 filas para móvil, 1 fila para ordenador) */}
+      <nav className="w-full bg-[#660000] py-2 px-4 shadow-md">
+        {/* Vista Móvil (< md): 2 filas de 3 elementos */}
+        <div className="flex flex-col gap-2 md:hidden">
+          <div className="flex justify-around items-center">
+            {['ranking', 'porra', 'jornada'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+                  activeTab === tab
+                    ? 'bg-white text-[#d32f2f] shadow'
+                    : 'text-white hover:bg-red-800'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
-        )}
+          <div className="flex justify-around items-center">
+            {['equipos', 'noticias', 'perfil'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
+                  activeTab === tab
+                    ? 'bg-white text-[#d32f2f] shadow'
+                    : 'text-white hover:bg-red-800'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        {/* NAVEGACIÓN Y PESTAÑAS */}
-        <nav className="sticky top-[96px] md:top-[120px] z-40 bg-red-950/90 backdrop-blur-md border-b border-red-900/50 p-2 text-[11px] sm:text-xs md:text-sm font-bold text-center w-full font-['Orbitron']">
-          {/* VISTA ESCRITORIO (1 FILA DE 6 PESTAÑAS) */}
-          <div className="hidden md:grid md:grid-cols-6 gap-1.5">
-            {[
-              { id: 'ranking', label: 'RANKING' },
-              { id: 'porra', label: 'PORRA' },
-              { id: 'jornada', label: 'JORNADA' },
-              { id: 'equipos', label: 'EQUIPOS' },
-              { id: 'noticias', label: 'NOTICIAS' },
-              { id: 'perfil', label: 'PERFIL' },
-            ].map((tab) => {
-              const esActiva = pestanaActiva === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setPestanaActiva(tab.id)}
-                  className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight ${
-                    esActiva ? 'bg-white text-[#9e0101] font-black shadow-md scale-105' : 'bg-red-950/60 text-red-100 hover:bg-red-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+        {/* Vista Escritorio (>= md): 1 fila con las 6 pestañas */}
+        <div className="hidden md:flex justify-center items-center gap-4 max-w-4xl mx-auto">
+          {['ranking', 'porra', 'jornada', 'equipos', 'noticias', 'perfil'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-2 text-sm font-bold uppercase tracking-wider rounded-md transition-all ${
+                activeTab === tab
+                  ? 'bg-white text-[#d32f2f] shadow'
+                  : 'text-white hover:bg-red-800'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* CONTENEDOR PRINCIPAL */}
+      <main className="w-full max-w-2xl px-4 py-6">
+        <div className="bg-[#0a0a0a] rounded-2xl overflow-hidden border border-red-950 shadow-2xl">
+          
+          {/* 3. CABECERA DE LA PORRA (Fondo blanco, texto rojo sin paréntesis) */}
+          <div className="bg-white py-4 px-6 text-center border-b border-gray-200">
+            <h1 className="text-xl md:text-2xl font-black text-[#d32f2f] tracking-wide uppercase">
+              PORRA - JORNADA 1
+            </h1>
           </div>
 
-          {/* VISTA MÓVIL (2 FILAS ESPECÍFICAS) */}
-          <div className="grid md:hidden space-y-1.5">
-            {/* FILA SUPERIOR: RANKING, PORRA, JORNADA */}
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { id: 'ranking', label: 'RANKING' },
-                { id: 'porra', label: 'PORRA' },
-                { id: 'jornada', label: 'JORNADA' },
-              ].map((tab) => {
-                const esActiva = pestanaActiva === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setPestanaActiva(tab.id)}
-                    className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight ${
-                      esActiva ? 'bg-white text-[#9e0101] font-black shadow-md scale-105' : 'bg-red-950/60 text-red-100 hover:bg-red-900'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-            {/* FILA INFERIOR: JORNADA, EQUIPOS, NOTICIAS, PERFIL */}
-            <div className="grid grid-cols-4 gap-1">
-              {[
-                { id: 'jornada', label: 'JORNADA' },
-                { id: 'equipos', label: 'EQUIPOS' },
-                { id: 'noticias', label: 'NOTICIAS' },
-                { id: 'perfil', label: 'PERFIL' },
-              ].map((tab) => {
-                const esActiva = pestanaActiva === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setPestanaActiva(tab.id)}
-                    className={`py-2 px-1 rounded transition-all duration-150 uppercase tracking-tight text-[10px] ${
-                      esActiva ? 'bg-white text-[#9e0101] font-black shadow-md scale-105' : 'bg-red-950/60 text-red-100 hover:bg-red-900'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+          {/* 4. LISTADO DE PARTIDOS CON EL ASPECTO MÓVIL EN TODAS LAS PANTALLAS */}
+          <div className="p-4 space-y-3">
+            {matches.map((match) => (
+              <div
+                key={match.id}
+                className="bg-[#1e1e1e] hover:bg-[#282828] border border-[#333333] rounded-xl p-3 flex items-center justify-between transition-colors duration-200 shadow-md"
+              >
+                {/* Equipo Local */}
+                <button className="flex-1 flex items-center justify-start gap-3 bg-[#121212] hover:bg-[#222222] border border-gray-800 p-2.5 rounded-lg transition-all">
+                  <span className="font-semibold text-sm text-gray-200 truncate">{match.home}</span>
+                </button>
+
+                {/* VS */}
+                <div className="px-3">
+                  <span className="text-xs font-bold text-gray-400 bg-[#121212] border border-gray-800 px-2.5 py-1 rounded-md">
+                    VS
+                  </span>
+                </div>
+
+                {/* Equipo Visitante */}
+                <button className="flex-1 flex items-center justify-end gap-3 bg-[#121212] hover:bg-[#222222] border border-gray-800 p-2.5 rounded-lg transition-all">
+                  <span className="font-semibold text-sm text-gray-200 truncate">{match.away}</span>
+                </button>
+              </div>
+            ))}
           </div>
-        </nav>
 
-        <div className="p-4 md:p-8 w-full max-w-[1600px] mx-auto">
-          {pestanaActiva === 'ranking' && (
-            <section className="space-y-4">
-              <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron'] italic">
-                Tabla General de Posiciones
-              </h2>
-              <div className="space-y-4">
-                {usuarios.map((usr) => (
-                  <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all hover:scale-[1.005]`}>
-                    <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
-                      <div className="flex items-center gap-4 md:gap-6">
-                        <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
-                        <img src={usr.avatar} alt={usr.nombre} className="w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 border-white object-cover shadow-lg" />
-                        <div>
-                          <p className="text-2xl md:text-4xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</p>
-                        </div>
-                      </div>
-                    </div>
+          {/* BOTÓN CONFIRMAR */}
+          <div className="p-4 bg-[#0a0a0a] border-t border-gray-900 text-center">
+            <button className="w-full bg-white text-[#d32f2f] font-black text-lg py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-colors uppercase tracking-wider">
+              Confirmar Pronóstico
+            </button>
+          </div>
 
-                    <div className="flex items-center justify-between md:justify-end gap-6 md:gap-12 w-full md:w-auto border-t md:border-t-0 border-white/20 pt-3 md:pt-0">
-                      <div className="text-left md:text-right">
-                        <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Puntuación Total</p>
-                        <p className="text-2xl md:text-4xl font-black text-white leading-none font-['Orbitron'] italic">
-                          {usr.puntos} <span className="text-sm md:text-lg font-bold opacity-80">pts</span>
-                        </p>
-                      </div>
-
-                      <div className="text-left md:text-right">
-                        <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Efectividad</p>
-                        <p className="text-xl md:text-3xl font-black text-white leading-none font-['Orbitron'] italic">{usr.efectividad}</p>
-                      </div>
-
-                      {usr.esLider ? (
-                        <span className={`text-sm md:text-base px-4 py-2 rounded-xl font-black shadow-lg font-['Orbitron'] italic ${usr.colorBadge}`}>
-                          Líder 🏆
-                        </span>
-                      ) : (
-                        <div className="w-20 hidden md:block"></div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {pestanaActiva === 'porra' && (
-            <section className="space-y-6 max-w-3xl mx-auto">
-              <div className="bg-black/90 border border-red-900/80 rounded-2xl p-3 md:p-6 shadow-2xl space-y-3">
-                <div className="text-center py-2 border-b border-red-800/60 mb-3">
-                  <h2 className="text-xl md:text-2xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase drop-shadow-md">
-                    PORRA - JORNADA {jornadaActual} ({usuarios.find(u => u.id === usuarioActivoId)?.nombre})
-                  </h2>
-                </div>
-
-                <div className="space-y-2.5">
-                  {datosUsuarioActual.pronosticos.map((p) => {
-                    const isLocalSelected = p.eleccion === '1';
-                    const isVsSelected = p.eleccion === 'X';
-                    const isVisitorSelected = p.eleccion === '2';
-
-                    const getButtonStyle = (isSelected: boolean) => {
-                      if (!isSelected) {
-                        return 'bg-zinc-900/80 text-zinc-300 hover:bg-zinc-800 border-zinc-800/60';
-                      }
-                      if (datosUsuarioActual.confirmado) {
-                        return 'bg-emerald-400 text-black shadow-lg shadow-emerald-500/30 border-emerald-300 font-black';
-                      }
-                      return 'bg-white text-black shadow-lg shadow-white/20 border-white font-black';
-                    };
-
-                    return (
-                      <div key={p.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 bg-black border border-zinc-800/80 p-2 rounded-xl shadow-md">
-                        <button
-                          onClick={() => handleSeleccionPronostico(p.id, '1')}
-                          className={`flex items-center justify-center sm:justify-start px-2 sm:px-3 py-2.5 rounded-lg transition-all border ${getButtonStyle(isLocalSelected)}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <img src={p.localLogo} alt={p.local} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
-                            <span className="hidden sm:inline font-['Orbitron'] font-bold truncate text-xs md:text-sm text-left">{p.local}</span>
-                          </div>
-                        </button>
-
-                        <button
-                          onClick={() => handleSeleccionPronostico(p.id, 'X')}
-                          className={`px-3 sm:px-4 py-2.5 rounded-lg transition-all border font-['Orbitron'] text-xs md:text-sm font-bold text-center ${getButtonStyle(isVsSelected)}`}
-                        >
-                          VS
-                        </button>
-
-                        <button
-                          onClick={() => handleSeleccionPronostico(p.id, '2')}
-                          className={`flex items-center justify-center sm:justify-end px-2 sm:px-3 py-2.5 rounded-lg transition-all border ${getButtonStyle(isVisitorSelected)}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0 justify-end">
-                            <span className="hidden sm:inline font-['Orbitron'] font-bold truncate text-xs md:text-sm text-right">{p.visitante}</span>
-                            <img src={p.visitanteLogo} alt={p.visitante} className="w-8 h-8 md:w-9 md:h-9 object-contain flex-shrink-0" />
-                          </div>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={handleConfirmarPronosticos}
-                  className={`w-full py-4 rounded-xl shadow-xl transition-all font-['Orbitron'] text-sm md:text-base font-black uppercase tracking-wider italic mt-2 border ${
-                    estadoBotonConfirmar === 'confirmado'
-                      ? 'bg-emerald-500 text-black border-emerald-400 shadow-emerald-500/40'
-                      : estadoBotonConfirmar === 'incompleto'
-                      ? 'bg-red-600 text-white border-red-500 shadow-red-600/40 animate-pulse'
-                      : 'bg-white text-[#9e0101] border-white hover:bg-zinc-100 shadow-white/20'
-                  }`}
-                >
-                  {estadoBotonConfirmar === 'confirmado'
-                    ? `✓ Pronósticos de ${usuarios.find(u => u.id === usuarioActivoId)?.nombre} Confirmados`
-                    : estadoBotonConfirmar === 'incompleto'
-                    ? '⚠ Pronósticos Incompletos - Faltan partidos por marcar'
-                    : `Confirmar Pronósticos de ${usuarios.find(u => u.id === usuarioActivoId)?.nombre}`}
-                </button>
-              </div>
-            </section>
-          )}
-
-          {pestanaActiva === 'jornada' && (
-            <section className="space-y-8 bg-[#9e0101] p-2 md:p-6 rounded-2xl shadow-2xl border border-red-800/80">
-              <div className="text-center py-2 border-y border-red-800/60 my-2 bg-red-950/40 rounded-lg">
-                <h1 className="text-2xl md:text-4xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase drop-shadow-md">
-                  RESULTADOS JORNADA {jornadaActual}
-                </h1>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {usuarios.map((usr) => {
-                  const pronosticosUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.pronosticos || [];
-                  const confirmadoUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.confirmado || false;
-                  const puntosJornadaActual = calcularPuntosJornada(usr.id, jornadaActual);
-
-                  return (
-                    <div key={usr.id} className="flex flex-col space-y-3 bg-black/40 p-3 rounded-2xl border border-red-900/60 shadow-xl">
-                      {/* FOTO DEL PARTICIPANTE */}
-                      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border-2 border-red-900/80 shadow-2xl relative group">
-                        <img src={usr.avatarJornada} alt={usr.nombre} className="w-full h-full object-cover filter brightness-95 group-hover:scale-105 transition-transform duration-300" />
-                      </div>
-
-                      {/* MARCADORES */}
-                      <div className="space-y-1">
-                        <div className={`${usr.colorBg} border border-white/20 rounded-t-lg py-3 text-center text-white font-['Orbitron'] font-black text-2xl leading-none shadow`}>
-                          {confirmadoUsr ? `${puntosJornadaActual} aciertos` : '0 aciertos'}
-                        </div>
-                        <div className={`${usr.colorBg} border border-white/20 rounded-b-lg py-3 text-center text-white font-['Orbitron'] font-bold text-xl leading-none tracking-wider`}>
-                          Total Acumulado: {usr.puntos} pts
-                        </div>
-                      </div>
-
-                      {/* CAJA DE PRONÓSTICOS DE ESTE JUGADOR (SEGUIDA DIRECTAMENTE EN MÓVIL Y ORDENADOR) */}
-                      <div className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-xl p-2 space-y-2">
-                        {pronosticosUsr.map((p) => {
-                          const eleccion = p.eleccion;
-                          const resultadoOficial = p.resultadoReal;
-
-                          let estiloCajaEleccion = 'bg-black text-amber-400 border-zinc-700';
-                          if (confirmadoUsr && eleccion) {
-                            if (eleccion === resultadoOficial) {
-                              estiloCajaEleccion = 'bg-emerald-500 text-black border-emerald-400 font-black shadow-lg shadow-emerald-500/30';
-                            } else {
-                              estiloCajaEleccion = 'bg-red-600 text-white border-red-500 font-black shadow-lg shadow-red-600/30';
-                            }
-                          } else if (eleccion) {
-                            estiloCajaEleccion = 'bg-white text-black border-white font-black';
-                          }
-
-                          return (
-                            <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1 bg-zinc-900/60 px-2 py-1.5 rounded transition-colors border border-zinc-800/40 text-xs">
-                              <div className="flex items-center justify-center gap-1 min-w-0">
-                                <img src={p.localLogo} alt={p.local} className="w-6 h-6 object-contain flex-shrink-0" />
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[10px] text-center">{p.local}</span>
-                              </div>
-
-                              <span className="font-['Orbitron'] font-bold text-zinc-400 text-[10px] px-0.5 text-center">vs</span>
-
-                              <div className="flex items-center justify-center gap-1 min-w-0">
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[10px] text-center">{p.visitante}</span>
-                                <img src={p.visitanteLogo} alt={p.visitante} className="w-6 h-6 object-contain flex-shrink-0" />
-                              </div>
-
-                              <div className={`w-6 h-6 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
-                                {eleccion === '1' ? '1' : eleccion === 'X' ? 'X' : eleccion === '2' ? '2' : '-'}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {pestanaActiva === 'equipos' && (
-            <section className="space-y-8">
-              {/* SUBPESTAÑAS SCORE Y GAMES */}
-              <div className="flex items-center justify-center gap-4 mb-4 font-['Orbitron']">
-                <button
-                  onClick={() => setSubPestanaEquipos('SCORE')}
-                  className={`py-2 px-6 rounded-lg font-black transition-all ${
-                    subPestanaEquipos === 'SCORE'
-                      ? 'bg-white text-black shadow-lg'
-                      : 'bg-red-950/60 text-red-100 hover:bg-red-900'
-                  }`}
-                >
-                  SCORE
-                </button>
-                <button
-                  onClick={() => setSubPestanaEquipos('GAMES')}
-                  className={`py-2 px-6 rounded-lg font-black transition-all ${
-                    subPestanaEquipos === 'GAMES'
-                      ? 'bg-white text-black shadow-lg'
-                      : 'bg-red-950/60 text-red-100 hover:bg-red-900'
-                  }`}
-                >
-                  GAMES
-                </button>
-              </div>
-
-              {subPestanaEquipos === 'SCORE' ? (
-                <>
-                  <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
-                    <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
-                      POSICIONES OFICIALES NFL
-                    </h2>
-                    {sincronizandoPosiciones && (
-                      <span className="text-[10px] text-red-300 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 border-b-2 border-red-700 pb-2">
-                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Americana (AFC)</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4">
-                    <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Nacional (NFC)</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="bg-black/80 border border-red-900/60 p-6 rounded-xl text-center font-['Orbitron']">
-                  <h3 className="text-lg font-bold text-white mb-2">SECCIÓN GAMES</h3>
-                  <p className="text-zinc-400 text-xs">Calendario e historial de partidos de los equipos disponible próximamente.</p>
-                </div>
-              )}
-            </section>
-          )}
-
-          {pestanaActiva === 'noticias' && (
-            <section className="space-y-4">
-              <h2 className="text-xs md:text-sm font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-1 font-['Orbitron'] italic">
-                Última Hora NFL (Español)
-              </h2>
-
-              {cargandoNoticias ? (
-                <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">Cargando noticias en castellano...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {noticias.map((item) => (
-                    <article key={item.id} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-600 transition-all shadow-lg">
-                      <div>
-                        {item.imagen && (
-                          <div className="h-44 w-full overflow-hidden bg-zinc-900">
-                            <img src={item.imagen} alt={item.titulo} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                          </div>
-                        )}
-                        <div className="p-4 space-y-2">
-                          <span className="text-[10px] font-mono text-red-400 font-semibold uppercase">{item.fecha}</span>
-                          <h3 className="font-['Orbitron'] text-sm font-bold leading-snug text-white">{item.titulo}</h3>
-                          <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">{item.descripcion}</p>
-                        </div>
-                      </div>
-                      <div className="p-4 pt-0">
-                        <a href={item.enlace} target="_blank" rel="noopener noreferrer" className="inline-block w-full text-center bg-red-950/80 hover:bg-red-900 text-red-100 text-xs font-['Orbitron'] py-2 rounded border border-red-800 transition-colors uppercase">
-                          Leer Noticia Completa 🇪🇸
-                        </a>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {pestanaActiva === 'perfil' && (
-            <section className="space-y-4 max-w-md mx-auto">
-              {!usuarioLogueado ? (
-                <div className="bg-black border border-red-800 rounded-xl p-6 space-y-4 shadow-xl">
-                  <h3 className="text-base font-['Orbitron'] text-white font-bold uppercase text-center border-b border-zinc-800 pb-2">Iniciar Sesión</h3>
-                  {errorLogin && (
-                    <p className="text-red-400 text-xs text-center font-mono">{errorLogin}</p>
-                  )}
-                  <div className="space-y-3">
-                    <input 
-                      type="email" 
-                      placeholder="Usuario o correo electrónico" 
-                      value={emailInput} 
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white text-xs font-mono focus:outline-none"
-                    />
-                    
-                    <div className="relative">
-                      <input 
-                        type={verPassword ? "text" : "password"} 
-                        placeholder="Contraseña" 
-                        value={passwordInput} 
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 pr-10 text-white text-xs font-mono focus:outline-none"
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => setVerPassword(!verPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-base focus:outline-none"
-                      >
-                        {verPassword ? '👁️' : '🙈'}
-                      </button>
-                    </div>
-
-                    <button 
-                      onClick={handleLogin}
-                      className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer mt-2"
-                    >
-                      Entrar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white border border-red-800 rounded-xl p-6 space-y-4 shadow-2xl text-black font-sans">
-                  {/* CABECERA ROJA CON DATOS DE SESIÓN */}
-                  <div className="text-center p-3 bg-[#9e0101] rounded-lg shadow-inner">
-                    <p className="text-[10px] text-red-200 font-['Orbitron'] uppercase">Estado de la sesión: ACTIVA</p>
-                    <strong className="text-white text-xs font-mono">{usuarioLogueado.email}</strong>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
-                    <div>
-                      <label className="block text-[#002244] font-bold mb-1">Nombre de Usuario</label>
-                      <input 
-                        type="text" 
-                        value={nombrePerfil} 
-                        onChange={(e) => setNombrePerfil(e.target.value)}
-                        placeholder="Nombre del participante"
-                        className="w-full bg-white text-[#9e0101] placeholder-red-300 border border-zinc-300 rounded-lg p-2.5 font-mono focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[#002244] font-bold mb-1">Nombre de tu Equipo</label>
-                      <input 
-                        type="text" 
-                        value={nombreEquipo} 
-                        onChange={(e) => setNombreEquipo(e.target.value)}
-                        placeholder="Nombre de equipo NFL deseado"
-                        className="w-full bg-white text-[#9e0101] placeholder-red-300 border border-zinc-300 rounded-lg p-2.5 font-mono focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[#002244] font-bold mb-1">URL de la imagen (Avatar Clasificación)</label>
-                      <input 
-                        type="text" 
-                        value={avatarUrlInput} 
-                        onChange={(e) => setAvatarUrlInput(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full bg-white text-[#9e0101] placeholder-red-300 border border-zinc-300 rounded-lg p-2.5 font-mono focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleGuardarPerfil}
-                    disabled={guardandoPerfil}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer"
-                  >
-                    {guardandoPerfil ? 'Guardando...' : 'Guardar Cambios'}
-                  </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full py-2 bg-[#9e0101] hover:bg-red-900 text-white font-['Orbitron'] text-xs font-bold rounded-lg border border-red-700 transition-colors uppercase cursor-pointer shadow"
-                  >
-                    Cerrar Sesión
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
         </div>
       </main>
     </div>
