@@ -16,6 +16,8 @@ interface PronosticoPartido {
 interface Usuario {
   id: string;
   nombre: string;
+  nombreEquipo: string;
+  logoEquipo: string;
   email: string;
   avatar: string;
   avatarJornada: string;
@@ -160,6 +162,8 @@ const DIVISIONES_BASE: Division[] = [
 
 export default function Home() {
   const [pestanaActiva, setPestanaActiva] = useState<string>('pronosticos');
+  const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
+  
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
   const [commandBuffer, setCommandBuffer] = useState('');
@@ -169,7 +173,7 @@ export default function Home() {
   const [avatarUrlInput, setAvatarUrlInput] = useState('');
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
-  
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const char = e.key;
@@ -193,6 +197,8 @@ export default function Home() {
     {
       id: 'cace',
       nombre: 'Cace',
+      nombreEquipo: 'Kansas City Chiefs',
+      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png',
       email: 'Cace230514@gmail.com',
       avatar: '/kc.png',
       avatarJornada: '/kc_jornada.png',
@@ -207,6 +213,8 @@ export default function Home() {
     {
       id: 'juanjo',
       nombre: 'Juanjo',
+      nombreEquipo: 'San Francisco 49ers',
+      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png',
       email: 'jjgodprimi1978@gmail.com',
       avatar: '/Primi.png',
       avatarJornada: '/primi_jornada.png',
@@ -221,6 +229,8 @@ export default function Home() {
     {
       id: 'ivan',
       nombre: 'Iván',
+      nombreEquipo: 'Green Bay Packers',
+      logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png',
       email: 'ivansc80@gmail.com',
       avatar: '/Ivi.png',
       avatarJornada: '/ivi_jornada.png',
@@ -233,6 +243,7 @@ export default function Home() {
       esLider: false,
     },
   ]);
+
   const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
   const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean }>>>({
     1: {
@@ -595,7 +606,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* NAVEGACIÓN PESTAÑAS (Móvil: 2 Filas | Escritorio: 1 Fila) */}
+        {/* NAVEGACIÓN PESTAÑAS (Ajustado tamaños y sombras de bordes) */}
         <nav className="w-full bg-[#5c0000] py-2 px-2 shadow-lg font-['Orbitron']">
           <div className="flex flex-col gap-2 md:hidden">
             <div className="flex justify-evenly items-center">
@@ -607,7 +618,7 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setPestanaActiva(tab.id)}
-                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${
+                  className={`px-3 py-1.5 text-[0.825rem] font-bold uppercase tracking-wider rounded transition-all border border-white/20 shadow-[0_0_5px_rgba(255,255,255,0.3)] ${
                     pestanaActiva === tab.id
                       ? 'bg-white text-[#d32f2f] shadow'
                       : 'text-white hover:bg-[#7a0000]'
@@ -626,7 +637,7 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setPestanaActiva(tab.id)}
-                  className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded transition-all ${
+                  className={`px-3 py-1.5 text-[0.825rem] font-bold uppercase tracking-wider rounded transition-all border border-white/20 shadow-[0_0_5px_rgba(255,255,255,0.3)] ${
                     pestanaActiva === tab.id
                       ? 'bg-white text-[#d32f2f] shadow'
                       : 'text-white hover:bg-[#7a0000]'
@@ -638,7 +649,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hidden md:flex justify-center items-center gap-2 max-w-5xl mx-auto">
+          <div className="hidden md:flex justify-center items-center gap-3 max-w-5xl mx-auto">
             {[
               { id: 'clasificacion', label: 'RANKING' },
               { id: 'pronosticos', label: 'PORRA' },
@@ -650,7 +661,7 @@ export default function Home() {
               <button
                 key={tab.id}
                 onClick={() => setPestanaActiva(tab.id)}
-                className={`px-8 py-2 text-xs font-bold uppercase tracking-wider rounded transition-all ${
+                className={`px-9 py-2.5 text-[0.9rem] font-bold uppercase tracking-wider rounded transition-all border border-white/30 shadow-[0_0_8px_rgba(255,255,255,0.4)] ${
                   pestanaActiva === tab.id
                     ? 'bg-white text-[#d32f2f] shadow'
                     : 'text-white hover:bg-[#7a0000]'
@@ -672,12 +683,25 @@ export default function Home() {
               <div className="space-y-4">
                 {usuarios.map((usr) => (
                   <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all hover:scale-[1.005]`}>
-                    <div className="flex items-center gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
-                      <div className="flex items-center gap-4 md:gap-6">
+                    <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start">
+                      <div className="flex items-center gap-3 md:gap-5">
                         <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
-                        <img src={usr.avatar} alt={usr.nombre} className="w-24 h-24 md:w-28 md:h-28 rounded-2xl border-2 border-white object-cover shadow-lg" />
-                        <div>
-                          <p className="text-2xl md:text-4xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</p>
+                        
+                        <img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg" />
+                        
+                        {/* SECCIÓN INFORMACIÓN PARTICIPANTE / HEADCOACH */}
+                        <div className="flex flex-col justify-center">
+                          <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span>
+                            
+                            {/* Logo + Nombre Equipo en PC */}
+                            <div className="hidden md:flex items-center gap-2 ml-3 bg-black/40 px-3 py-1 rounded-lg border border-white/10">
+                              <img src={usr.logoEquipo} alt={usr.nombreEquipo} className="w-6 h-6 object-contain" />
+                              <span className="text-xs font-bold text-amber-300 uppercase font-['Orbitron']">{usr.nombreEquipo}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -725,36 +749,43 @@ export default function Home() {
                     const isVisitorSelected = p.eleccion === '2';
 
                     return (
-                      <div key={p.id} className="bg-[#181818] hover:bg-[#222222] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between transition-colors">
+                      <div key={p.id} className="bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16">
+                        {/* Botón Local */}
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
-                          className={`flex-1 flex items-center justify-start gap-2 border px-3 py-2 rounded-lg transition-all ${
-                            isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#121212] hover:bg-[#252525] border-[#333] text-gray-200'
+                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
+                            isLocalSelected 
+                              ? 'bg-white text-black border-white' 
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
-                          <img src={p.localLogo} alt={p.local} className="w-5 h-5 object-contain" />
-                          <span className="font-bold text-xs">{p.local}</span>
+                          <img src={p.localLogo} alt={p.local} className="w-7 h-7 md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
                         </button>
 
-                        <div className="px-2">
-                          <button
-                            onClick={() => handleSeleccionPronostico(p.id, 'X')}
-                            className={`text-[10px] font-bold border px-2 py-1 rounded ${
-                              isVsSelected ? 'bg-white text-black border-white' : 'bg-[#121212] border-[#333] text-gray-400'
-                            }`}
-                          >
-                            VS
-                          </button>
-                        </div>
-
+                        {/* Botón VS Cuadrado */}
                         <button
-                          onClick={() => handleSeleccionPronostico(p.id, '2')}
-                          className={`flex-1 flex items-center justify-end gap-2 border px-3 py-2 rounded-lg transition-all ${
-                            isVisitorSelected ? 'bg-white text-black border-white' : 'bg-[#121212] hover:bg-[#252525] border-[#333] text-gray-200'
+                          onClick={() => handleSeleccionPronostico(p.id, 'X')}
+                          className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${
+                            isVsSelected 
+                              ? 'bg-white text-black border-white' 
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'
                           }`}
                         >
-                          <span className="font-bold text-xs">{p.visitante}</span>
-                          <img src={p.visitanteLogo} alt={p.visitante} className="w-5 h-5 object-contain" />
+                          VS
+                        </button>
+
+                        {/* Botón Visitante */}
+                        <button
+                          onClick={() => handleSeleccionPronostico(p.id, '2')}
+                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
+                            isVisitorSelected 
+                              ? 'bg-white text-black border-white' 
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
+                          }`}
+                        >
+                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
+                          <img src={p.visitanteLogo} alt={p.visitante} className="w-7 h-7 md:w-9 md:h-9 object-contain flex-shrink-0" />
                         </button>
                       </div>
                     );
@@ -829,20 +860,20 @@ export default function Home() {
                           }
 
                           return (
-                            <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1 bg-zinc-900/60 px-2 py-1.5 rounded transition-colors border border-zinc-800/40 text-xs">
-                              <div className="flex items-center justify-center gap-1 min-w-0">
-                                <img src={p.localLogo} alt={p.local} className="w-6 h-6 object-contain flex-shrink-0" />
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[10px] text-center">{p.local}</span>
+                            <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 bg-[#2a2a2a] px-2.5 py-2 rounded transition-colors border border-zinc-700/50">
+                              <div className="flex items-center justify-center gap-1.5 min-w-0">
+                                <img src={p.localLogo} alt={p.local} className="w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0" />
+                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.local}</span>
                               </div>
 
-                              <span className="font-['Orbitron'] font-bold text-zinc-400 text-[10px] px-0.5 text-center">vs</span>
+                              <span className="font-['Orbitron'] font-bold text-zinc-300 text-[0.65rem] md:text-[0.75rem] px-0.5 text-center">vs</span>
 
-                              <div className="flex items-center justify-center gap-1 min-w-0">
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[10px] text-center">{p.visitante}</span>
-                                <img src={p.visitanteLogo} alt={p.visitante} className="w-6 h-6 object-contain flex-shrink-0" />
+                              <div className="flex items-center justify-center gap-1.5 min-w-0">
+                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.visitante}</span>
+                                <img src={p.visitanteLogo} alt={p.visitante} className="w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0" />
                               </div>
 
-                              <div className={`w-6 h-6 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
+                              <div className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs md:text-sm ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
                                 {eleccion === '1' ? '1' : eleccion === 'X' ? 'X' : eleccion === '2' ? '2' : '-'}
                               </div>
                             </div>
@@ -857,35 +888,68 @@ export default function Home() {
           )}
 
           {pestanaActiva === 'equipos' && (
-            <section className="space-y-8">
-              <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
-                <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
-                  POSICIONES OFICIALES NFL
-                </h2>
-                {sincronizandoPosiciones && (
-                  <span className="text-[10px] text-red-300 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
-                )}
+            <section className="space-y-6">
+              {/* SUBPESTAÑAS SCORE Y GAMES */}
+              <div className="flex justify-center items-center gap-4 border-b border-red-900/50 pb-4">
+                <button
+                  onClick={() => setSubPestanaEquipos('score')}
+                  className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 ${
+                    subPestanaEquipos === 'score'
+                      ? 'bg-white text-black shadow-lg scale-105'
+                      : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'
+                  }`}
+                >
+                  SCORE
+                </button>
+                <button
+                  onClick={() => setSubPestanaEquipos('games')}
+                  className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 ${
+                    subPestanaEquipos === 'games'
+                      ? 'bg-white text-black shadow-lg scale-105'
+                      : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'
+                  }`}
+                >
+                  GAMES
+                </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 border-b-2 border-red-700 pb-2">
-                  <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                  <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Americana (AFC)</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}
-                </div>
-              </div>
+              {subPestanaEquipos === 'score' ? (
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
+                    <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
+                      POSICIONES OFICIALES NFL (STANDINGS)
+                    </h2>
+                    {sincronizandoPosiciones && (
+                      <span className="text-[10px] text-red-300 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
+                    )}
+                  </div>
 
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                  <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Nacional (NFC)</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 border-b-2 border-red-700 pb-2">
+                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Americana (AFC)</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4">
+                    <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Nacional (NFC)</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}
+              ) : (
+                <div className="bg-black/80 border border-red-900/60 rounded-2xl p-8 text-center space-y-3">
+                  <h3 className="text-lg md:text-xl font-['Orbitron'] font-bold text-amber-400 uppercase">Calendario de Partidos (GAMES)</h3>
+                  <p className="text-xs md:text-sm text-zinc-300 font-mono">Próximamente se mostrarán los enfrentamientos directos de la temporada regular.</p>
                 </div>
-              </div>
+              )}
             </section>
           )}
 
