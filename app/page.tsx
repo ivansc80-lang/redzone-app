@@ -199,7 +199,7 @@ export default function Home() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([
     {
       id: 'cace',
-      nombre: 'Cace',
+      nombre: 'Cace  ',
       nombreEquipo: 'PATRIOTS',
       logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png',
       email: 'Cace230514@gmail.com',
@@ -231,7 +231,7 @@ export default function Home() {
     },
     {
       id: 'ivan',
-      nombre: 'Iván',
+      nombre: 'Iván  ',
       nombreEquipo: 'CHIEFS',
       logoEquipo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png',
       email: 'ivansc80@gmail.com',
