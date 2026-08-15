@@ -166,7 +166,6 @@ export default function Home() {
   
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
-  const [commandBuffer, setCommandBuffer] = useState('');
   const [jornadaActual] = useState<number>(1);
   const [nombrePerfil, setNombrePerfil] = useState('');
   const [nombreEquipo, setNombreEquipo] = useState('');
@@ -174,24 +173,28 @@ export default function Home() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
 
+  // Escuchador global de teclado para procesar /BB y /mbb de manera continua
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const char = e.key;
-      const newBuffer = (commandBuffer + char).slice(-4);
-      setCommandBuffer(newBuffer);
+    let buffer = '';
 
-      if (newBuffer.endsWith('/BB')) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignorar teclas que no sean letras, números o símbolos de control
+      if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
+
+      buffer = (buffer + e.key).slice(-4);
+
+      if (buffer.endsWith('/BB')) {
         setShowSearch(prev => !prev);
-        setCommandBuffer('');
-      } else if (newBuffer.endsWith('/mbb')) {
-        setSearchPosition(prev => prev === 'top' ? 'bottom' : 'top');
-        setCommandBuffer('');
+        buffer = '';
+      } else if (buffer.endsWith('/mbb')) {
+        setSearchPosition(prev => (prev === 'top' ? 'bottom' : 'top'));
+        buffer = '';
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [commandBuffer]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([
     {
@@ -1045,7 +1048,7 @@ export default function Home() {
                         value={nombrePerfil} 
                         onChange={(e) => setNombrePerfil(e.target.value)}
                         placeholder="Ej: Cace"
-                        className="w-full bg-[#9e0101] text-white placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
+                        className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
                       />
                     </div>
 
@@ -1056,7 +1059,7 @@ export default function Home() {
                         value={nombreEquipo} 
                         onChange={(e) => setNombreEquipo(e.target.value)}
                         placeholder="Ej: PATRIOTS"
-                        className="w-full bg-[#9e0101] text-white placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
+                        className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
                       />
                     </div>
 
@@ -1067,7 +1070,7 @@ export default function Home() {
                         value={avatarUrlInput} 
                         onChange={(e) => setAvatarUrlInput(e.target.value)}
                         placeholder="https://..."
-                        className="w-full bg-[#9e0101] text-white placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
+                        className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
                       />
                     </div>
                   </div>
