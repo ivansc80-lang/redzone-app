@@ -576,7 +576,11 @@ export default function Home() {
             {div.equipos.map((eq) => (
               <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
                 <td className="py-3 px-3 flex items-center gap-2.5 font-['Orbitron'] font-bold text-white">
-                  <img src={eq.logo} alt={eq.nombre} className="w-7 h-7 md:w-8 md:h-8 object-contain" />
+                  <img 
+                  src={eq.logo} 
+                  alt={eq.nombre} 
+                  className={`w-7 h-7 md:w-8 md:h-8 object-contain ${eq.nombre === 'New York Jets' ? 'scale-110' : ''}`} 
+                />
                   <span className="truncate">{eq.nombre}</span>
                 </td>
                 <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
