@@ -588,7 +588,6 @@ export default function Home() {
     </div>
   );
 
-  // Pestañas del menú con icono 10% más grande y texto 10% más pequeño
   const navItems = [
     {
       id: 'clasificacion',
@@ -640,23 +639,25 @@ export default function Home() {
           </div>
         )}
 
-        {/* MENÚ DE NAVEGACIÓN HORIZONTAL */}
-        <nav className="flex justify-around items-center bg-white py-2 border-b">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setPestanaActiva(item.id)}
-              className="flex flex-col items-center gap-0.5 px-2 py-1 transition-all"
-            >
-              <div className="w-[35px] h-[35px] flex items-center justify-center">
-                {item.icon}
-              </div>
-              
-              <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
-                {item.label}
-              </span>
-            </button>
-          ))}
+        {/* MENÚ DE NAVEGACIÓN HORIZONTAL AGRUPADO */}
+        <nav className="w-full bg-white border-b py-2 flex justify-center">
+          <div className="w-full md:max-w-xl flex justify-around items-center px-2">
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setPestanaActiva(item.id)}
+                className="flex flex-col items-center gap-0.5 px-1 py-1 transition-all"
+              >
+                <div className="w-[35px] h-[35px] flex items-center justify-center">
+                  {item.icon}
+                </div>
+                
+                <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </nav>
 
         {/* CONTENIDO PRINCIPAL */}
@@ -672,7 +673,7 @@ export default function Home() {
                     <img 
                       src={usr.logoEquipo} 
                       alt={usr.nombreEquipo} 
-                      className="md:hidden absolute top-3 right-3 w-12 h-12 object-contain opacity-90 drop-shadow-md" 
+                      className="md:hidden absolute top-2 right-2 w-24 h-24 object-contain opacity-90 drop-shadow-md" 
                     />
 
                     <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start">
@@ -683,17 +684,17 @@ export default function Home() {
                         <div className="flex flex-col justify-center">
                           <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span>
                           
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4 md:gap-5">
                             <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span>
-                            <div className="hidden md:flex items-center gap-3">
-                              <span className="text-sm font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">
-                                {usr.nombreEquipo}
-                              </span>
+                            <div className="hidden md:flex items-center gap-4">
                               <img 
                                 src={usr.logoEquipo} 
                                 alt={usr.nombreEquipo} 
-                                className="h-16 w-16 object-contain drop-shadow-lg" 
+                                className="h-32 w-32 object-contain drop-shadow-xl flex-shrink-0" 
                               />
+                              <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md ml-3">
+                                {usr.nombreEquipo}
+                              </span>
                             </div>
                           </div>
                         </div>
