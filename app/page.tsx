@@ -663,15 +663,16 @@ export default function Home() {
                   {item.icon}
                 </div>
                 
-                <div className={`h-1 w-6 rounded-full transition-all duration-300 ${
+                <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
+                  {item.label}
+                </span>
+
+                {/* --- LÍNEA INDICADORA DEBAJO DEL TEXTO (+15% MÁS GRANDE) --- */}
+                <div className={`h-1 w-7 rounded-full transition-all duration-300 mt-0.5 ${
                   pestanaActiva === item.id 
                     ? 'bg-red-700 opacity-100 scale-100' 
                     : 'bg-transparent opacity-0 scale-0'
                 }`} />
-
-                <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
-                  {item.label}
-                </span>
               </button>
             ))}
           </div>
