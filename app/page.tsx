@@ -657,12 +657,18 @@ export default function Home() {
               <button
                 key={item.id}
                 onClick={() => setPestanaActiva(item.id)}
-                className="flex flex-col items-center gap-0.5 px-1 py-1 transition-all"
+                className="flex flex-col items-center gap-1 px-1 py-1 transition-all relative"
               >
                 <div className="w-[35px] h-[35px] flex items-center justify-center">
                   {item.icon}
                 </div>
                 
+                <div className={`h-1 w-6 rounded-full transition-all duration-300 ${
+                  pestanaActiva === item.id 
+                    ? 'bg-red-700 opacity-100 scale-100' 
+                    : 'bg-transparent opacity-0 scale-0'
+                }`} />
+
                 <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
                   {item.label}
                 </span>
