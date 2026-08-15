@@ -588,39 +588,39 @@ export default function Home() {
     </div>
   );
 
-// Pestañas del menú usando las imágenes de tu carpeta public con mayor tamaño
-const navItems = [
-  {
-    id: 'clasificacion',
-    label: 'RANKING',
-    icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-8 h-8 object-contain" />,
-  },
-  {
-    id: 'pronosticos',
-    label: 'PORRA',
-    icon: <img src="/logo_porra.png" alt="Porra" className="w-8 h-8 object-contain" />,
-  },
-  {
-    id: 'jornada',
-    label: 'JORNADA',
-    icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-8 h-8 object-contain" />,
-  },
-  {
-    id: 'equipos',
-    label: 'EQUIPOS',
-    icon: <img src="/logo_equipo.png" alt="Equipos" className="w-8 h-8 object-contain" />,
-  },
-  {
-    id: 'noticias',
-    label: 'NOTICIAS',
-    icon: <img src="/logo_noticias.png" alt="Noticias" className="w-8 h-8 object-contain" />,
-  },
-  {
-    id: 'perfil',
-    label: 'PERFIL',
-    icon: <img src="/logo_perfil.png" alt="Perfil" className="w-8 h-8 object-contain" />,
-  },
-];
+  // Pestañas del menú con icono 10% más grande y texto 10% más pequeño
+  const navItems = [
+    {
+      id: 'clasificacion',
+      label: 'RANKING',
+      icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-[35px] h-[35px] object-contain" />,
+    },
+    {
+      id: 'pronosticos',
+      label: 'PORRA',
+      icon: <img src="/logo_porra.png" alt="Porra" className="w-[35px] h-[35px] object-contain" />,
+    },
+    {
+      id: 'jornada',
+      label: 'JORNADA',
+      icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-[35px] h-[35px] object-contain" />,
+    },
+    {
+      id: 'equipos',
+      label: 'EQUIPOS',
+      icon: <img src="/logo_equipo.png" alt="Equipos" className="w-[35px] h-[35px] object-contain" />,
+    },
+    {
+      id: 'noticias',
+      label: 'NOTICIAS',
+      icon: <img src="/logo_noticias.png" alt="Noticias" className="w-[35px] h-[35px] object-contain" />,
+    },
+    {
+      id: 'perfil',
+      label: 'PERFIL',
+      icon: <img src="/logo_perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" />,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-[#8b0000] text-white w-full font-sans">
@@ -648,11 +648,11 @@ const navItems = [
               onClick={() => setPestanaActiva(item.id)}
               className="flex flex-col items-center gap-0.5 px-2 py-1 transition-all"
             >
-              <div className="w-8 h-8 flex items-center justify-center">
+              <div className="w-[35px] h-[35px] flex items-center justify-center">
                 {item.icon}
               </div>
               
-              <span className="text-[10px] font-bold text-red-700 tracking-tight leading-none">
+              <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
                 {item.label}
               </span>
             </button>
