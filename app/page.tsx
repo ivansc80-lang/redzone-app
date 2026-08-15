@@ -577,10 +577,14 @@ export default function Home() {
               <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
                 <td className="py-3 px-3 flex items-center gap-2.5 font-['Orbitron'] font-bold text-white">
                   <img 
-                    src={eq.logo} 
-                    alt={eq.nombre} 
-                    className={`object-contain ${eq.nombre === 'New York Jets' ? 'w-10 h-10 md:w-11 md:h-11 -m-1.5' : 'w-7 h-7 md:w-8 md:h-8'}`} 
-                  />
+                      src={eq.logo} 
+                      alt={eq.nombre} 
+                      className="object-contain"
+                      style={{ 
+                        width: eq.abrev === 'NYJ' ? '40px' : '28px', 
+                        height: eq.abrev === 'NYJ' ? '40px' : '28px' 
+                      }} 
+                    />
                   <span className="truncate">{eq.nombre}</span>
                 </td>
                 <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
