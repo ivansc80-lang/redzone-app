@@ -676,7 +676,7 @@ export default function Home() {
                     <img 
                       src={usr.logoEquipo} 
                       alt={usr.nombreEquipo} 
-                      className="md:hidden absolute top-2 right-2 w-24 h-24 object-contain opacity-90 drop-shadow-md" 
+                      className="md:hidden absolute top-2 right-2 w-20 h-20 object-contain opacity-90 drop-shadow-md" 
                     />
 
                     <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start">
@@ -694,7 +694,7 @@ export default function Home() {
                             <img 
                               src={usr.logoEquipo} 
                               alt={usr.nombreEquipo} 
-                              className="h28 w-28 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" 
+                              className="h-20 w-20 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" 
                             />
                             <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">
                               {usr.nombreEquipo}
