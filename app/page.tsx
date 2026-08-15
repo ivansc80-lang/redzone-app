@@ -577,14 +577,14 @@ export default function Home() {
               <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
                 <td className="py-3 px-3 flex items-center gap-2.5 font-['Orbitron'] font-bold text-white">
                   <img 
-                      src={eq.logo} 
-                      alt={eq.nombre} 
-                      className="object-contain"
-                      style={{ 
-                        width: eq.abrev === 'NYJ' ? '40px' : '28px', 
-                        height: eq.abrev === 'NYJ' ? '40px' : '28px' 
-                      }} 
-                    />
+                    src={eq.logo} 
+                    alt={eq.nombre} 
+                    className={`object-contain ${eq.abrev === 'NYJ' ? 'scale-125 filter brightness-200' : ''}`}
+                    style={{ 
+                      width: eq.abrev === 'NYJ' ? '40px' : '28px', 
+                      height: eq.abrev === 'NYJ' ? '40px' : '28px' 
+                    }} 
+                  />
                   <span className="truncate">{eq.nombre}</span>
                 </td>
                 <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
@@ -770,7 +770,7 @@ export default function Home() {
                               : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
-                          <img src={p.localLogo} alt={p.local} className="w-[2.25rem] h-[2.25rem] md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
                         </button>
 
@@ -794,7 +794,7 @@ export default function Home() {
                           }`}
                         >
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
-                          <img src={p.visitanteLogo} alt={p.visitante} className="w-[2.25rem] h-[2.25rem] md:w-9 md:h-9 object-contain flex-shrink-0" />
+                          <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
                         </button>
                       </div>
                     );
@@ -871,7 +871,7 @@ export default function Home() {
                           return (
                             <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 bg-[#2a2a2a] px-2.5 py-2 rounded transition-colors border border-zinc-700/50">
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
-                                <img src={p.localLogo} alt={p.local} className="w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0" />
+                                <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
                                 <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.local}</span>
                               </div>
 
@@ -879,7 +879,7 @@ export default function Home() {
 
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
                                 <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.visitante}</span>
-                                <img src={p.visitanteLogo} alt={p.visitante} className="w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0" />
+                                <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
                               </div>
 
                               <div className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs md:text-sm ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
