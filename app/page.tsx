@@ -588,37 +588,37 @@ export default function Home() {
     </div>
   );
 
-  // Pestañas del menú usando las imágenes de tu carpeta public
+// Pestañas del menú usando las imágenes de tu carpeta public con mayor tamaño
 const navItems = [
   {
     id: 'clasificacion',
     label: 'RANKING',
-    icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-6 h-6 object-contain" />,
+    icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-8 h-8 object-contain" />,
   },
   {
     id: 'pronosticos',
     label: 'PORRA',
-    icon: <img src="/logo_porra.png" alt="Porra" className="w-6 h-6 object-contain" />,
+    icon: <img src="/logo_porra.png" alt="Porra" className="w-8 h-8 object-contain" />,
   },
   {
     id: 'jornada',
     label: 'JORNADA',
-    icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-6 h-6 object-contain" />,
+    icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-8 h-8 object-contain" />,
   },
   {
     id: 'equipos',
     label: 'EQUIPOS',
-    icon: <img src="/logo_equipo.png" alt="Equipos" className="w-6 h-6 object-contain" />,
+    icon: <img src="/logo_equipo.png" alt="Equipos" className="w-8 h-8 object-contain" />,
   },
   {
     id: 'noticias',
     label: 'NOTICIAS',
-    icon: <img src="/logo_noticias.png" alt="Noticias" className="w-6 h-6 object-contain" />,
+    icon: <img src="/logo_noticias.png" alt="Noticias" className="w-8 h-8 object-contain" />,
   },
   {
     id: 'perfil',
     label: 'PERFIL',
-    icon: <img src="/logo_perfil.png" alt="Perfil" className="w-6 h-6 object-contain" />,
+    icon: <img src="/logo_perfil.png" alt="Perfil" className="w-8 h-8 object-contain" />,
   },
 ];
 
@@ -641,29 +641,24 @@ const navItems = [
         )}
 
         {/* MENÚ DE NAVEGACIÓN HORIZONTAL */}
-        <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-md">
-          <div className="flex overflow-x-auto no-scrollbar md:justify-center px-2 py-1 max-w-5xl mx-auto">
-            {navItems.map((item) => {
-              const isActive = pestanaActiva === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setPestanaActiva(item.id)}
-                  className={`relative flex flex-col items-center justify-center flex-1 min-w-[72px] px-3 py-2 text-red-600 transition-all focus:outline-none ${
-                    isActive ? 'font-bold' : 'font-normal opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <div className="text-red-600 mb-1">{item.icon}</div>
-                  <span className="text-[10px] tracking-wider uppercase whitespace-nowrap font-['Orbitron']">
-                    {item.label}
-                  </span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-0 w-full h-[3px] bg-red-600 rounded-t-md" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        <nav className="flex justify-around items-center bg-white py-2 border-b">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className="flex flex-col items-center gap-0.5 px-2 py-1 transition-all"
+            >
+              {/* Icono más grande */}
+              <div className="w-8 h-8 flex items-center justify-center">
+                {item.icon}
+              </div>
+              
+              {/* Texto más pequeño */}
+              <span className="text-[10px] font-bold text-red-700 tracking-tight leading-none">
+                {item.label}
+              </span>
+            </button>
+          ))}
         </nav>
 
         {/* CONTENIDO PRINCIPAL */}
