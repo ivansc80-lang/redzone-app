@@ -690,7 +690,7 @@ export default function Home() {
                             <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span>
                           </div>
 
-                          <div className="hidden md:flex items-center gap-6 ml-8 md:ml-16">
+                          <div className="hidden md:flex items-center gap-6 ml-4 md:ml-20">
                             <img 
                               src={usr.logoEquipo} 
                               alt={usr.nombreEquipo} 
