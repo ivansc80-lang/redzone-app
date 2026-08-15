@@ -694,7 +694,7 @@ export default function Home() {
                             <img 
                               src={usr.logoEquipo} 
                               alt={usr.nombreEquipo} 
-                              className="h-16 w-16 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" 
+                              className="h28 w-28 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" 
                             />
                             <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">
                               {usr.nombreEquipo}
