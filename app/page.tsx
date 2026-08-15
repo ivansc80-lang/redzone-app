@@ -645,15 +645,18 @@ const navItems = [
           {navItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                // Asegúrate de colocar aquí la función que cambia de pestaña en tu app
+                if (typeof setActiveTab === 'function') {
+                  setActiveTab(item.id);
+                }
+              }}
               className="flex flex-col items-center gap-0.5 px-2 py-1 transition-all"
             >
-              {/* Icono más grande */}
               <div className="w-8 h-8 flex items-center justify-center">
                 {item.icon}
               </div>
               
-              {/* Texto más pequeño */}
               <span className="text-[10px] font-bold text-red-700 tracking-tight leading-none">
                 {item.label}
               </span>
