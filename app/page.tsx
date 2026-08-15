@@ -681,21 +681,21 @@ export default function Home() {
                         <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
                         <img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0" />
                         
-                        <div className="flex flex-col justify-center">
-                          <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span>
-                          
-                          <div className="flex items-center gap-4 md:gap-5">
+                        <div className="flex items-center gap-8 md:gap-12">
+                          <div className="flex flex-col justify-center">
+                            <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span>
                             <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span>
-                            <div className="hidden md:flex items-center gap-4">
-                              <img 
-                                src={usr.logoEquipo} 
-                                alt={usr.nombreEquipo} 
-                                className="h-32 w-32 object-contain drop-shadow-xl flex-shrink-0" 
-                              />
-                              <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md ml-3">
-                                {usr.nombreEquipo}
-                              </span>
-                            </div>
+                          </div>
+
+                          <div className="hidden md:flex items-center gap-6 ml-8 md:ml-16">
+                            <img 
+                              src={usr.logoEquipo} 
+                              alt={usr.nombreEquipo} 
+                              className="h-28 w-28 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" 
+                            />
+                            <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">
+                              {usr.nombreEquipo}
+                            </span>
                           </div>
                         </div>
                       </div>
