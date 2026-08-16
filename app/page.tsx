@@ -2,16 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-
-interface PronosticoPartido {
-  id: number;
-  local: string;
-  localLogo: string;
-  visitante: string;
-  visitanteLogo: string;
-  eleccion: '1' | 'X' | '2' | null;
-  resultadoReal?: '1' | 'X' | '2';
-}
+import { getPartidosPorJornada, PartidoTemporada } from '@/lib/queries';
 
 interface Usuario {
   id: string;
@@ -54,36 +45,6 @@ interface Division {
   nombre: string;
   conferencia: 'AFC' | 'NFC';
   equipos: EquipoPosicion[];
-}
-
-const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
-  1: [
-    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null },
-    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null },
-    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null },
-    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null },
-    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null },
-    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null },
-    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null },
-    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null },
-    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null },
-    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null },
-    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null },
-    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null },
-    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null },
-    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null },
-    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null },
-    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null },
-  ]
-};
-
-// Generar estructura vacía para las 18 jornadas
-for (let j = 2; j <= 18; j++) {
-  JORNADAS_OFICIALES[j] = JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])).map((p: any, idx: number) => ({
-    ...p,
-    id: idx + 1,
-    eleccion: null
-  }));
 }
 
 const DIVISIONES_BASE: Division[] = [
@@ -175,8 +136,21 @@ export default function Home() {
   
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
-  const [jornadaActual, setJornadaActual] = useState<number>(1);
+  
+  // Jornadas independientes para Porra y Resultados
+  const [jornadaPorra, setJornadaPorra] = useState<number>(1);
+  const [jornadaResultados, setJornadaResultados] = useState<number>(1);
   const [modoTest, setModoTest] = useState<boolean>(true);
+
+  // Partidos cargados desde Supabase para la jornada de Porra y de Resultados
+  const [partidosPorra, setPartidosPorra] = useState<PartidoTemporada[]>([]);
+  const [partidosResultados, setPartidosResultados] = useState<PartidoTemporada[]>([]);
+  const [todosLosPartidosTemporada, setTodosLosPartidosTemporada] = useState<Record<number, PartidoTemporada[]>>({});
+
+  const [eleccionesUsuario, setEleccionesUsuario] = useState<Record<number, Record<string, '1' | 'X' | '2'>>>({});
+  const [confirmadosPorra, setConfirmadosPorra] = useState<Record<number, boolean>>({});
+  const [validadosJornada, setValidadosJornada] = useState<Record<number, boolean>>({});
+  const [pronosticosGlobales, setPronosticosGlobales] = useState<Record<number, Record<string, Record<string, string>>>>({});
 
   const [nombrePerfil, setNombrePerfil] = useState('');
   const [nombreEquipo, setNombreEquipo] = useState('');
@@ -253,21 +227,6 @@ export default function Home() {
   ]);
 
   const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
-  
-  const inicializarPronosticos = () => {
-    const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
-    for (let j = 1; j <= 18; j++) {
-      obj[j] = {
-        cace: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
-        juanjo: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
-        ivan: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
-      };
-    }
-    return obj;
-  };
-
-  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState(inicializarPronosticos);
-  const [estadoBotonConfirmar, setEstadoBotonConfirmar] = useState<'normal' | 'incompleto' | 'confirmado'>('normal');
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
   const [divisiones, setDivisiones] = useState<Division[]>(DIVISIONES_BASE);
@@ -277,6 +236,28 @@ export default function Home() {
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [errorLogin, setErrorLogin] = useState('');
+
+  // Cargar partidos de Supabase al cambiar de jornada de porra o resultados
+  useEffect(() => {
+    getPartidosPorJornada(jornadaPorra).then(data => setPartidosPorra(data));
+  }, [jornadaPorra]);
+
+  useEffect(() => {
+    getPartidosPorJornada(jornadaResultados).then(data => setPartidosResultados(data));
+  }, [jornadaResultados]);
+
+  // Cargar todos los partidos de la temporada para calcular rachas en Equipos -> Games
+  useEffect(() => {
+    const cargarTemporadaCompleta = async () => {
+      const tempMap: Record<number, PartidoTemporada[]> = {};
+      for (let j = 1; j <= 18; j++) {
+        const partidosJ = await getPartidosPorJornada(j);
+        tempMap[j] = partidosJ;
+      }
+      setTodosLosPartidosTemporada(tempMap);
+    };
+    cargarTemporadaCompleta();
+  }, [validadosJornada]);
 
   const cargarPerfil = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
@@ -342,76 +323,31 @@ export default function Home() {
     setUsuarioLogueado(null);
   };
 
-  const calcularPuntosJornada = (userId: string, numJornada: number) => {
-    const dataJornada = pronosticosPorUsuario[numJornada]?.[userId];
-    if (!dataJornada || !dataJornada.confirmado) return 0;
-    let aciertos = 0;
-    dataJornada.pronosticos.forEach(p => {
-      if (p.eleccion && p.resultadoReal && p.eleccion === p.resultadoReal) {
-        aciertos++;
-      }
-    });
-    return aciertos;
-  };
-
-  // Función para obtener las estadísticas actuales de un equipo basadas en las jornadas ya validadas
-  const obtenerRachaEquipo = (nombreEquipo: string, hastaJornada: number) => {
+  // Cálculo de racha global de un equipo (sin distinción local/visitante) hasta la jornada indicada
+  const obtenerRachaEquipoGlobal = (nombreEquipo: string, hastaJornada: number) => {
     let v = 0;
     let d = 0;
 
     for (let j = 1; j < hastaJornada; j++) {
-      const jornadaValidada = pronosticosPorUsuario[j]?.['cace']?.validado;
-      if (jornadaValidada) {
-        const partidos = pronosticosPorUsuario[j]?.['cace']?.pronosticos || [];
+      if (validadosJornada[j]) {
+        const partidos = todosLosPartidosTemporada[j] || [];
         partidos.forEach(p => {
-          if (p.local.toLowerCase() === nombreEquipo.toLowerCase()) {
-            if (p.resultadoReal === '1') v++;
-            else if (p.resultadoReal === '2') d++;
-          } else if (p.visitante.toLowerCase() === nombreEquipo.toLowerCase()) {
-            if (p.resultadoReal === '2') v++;
-            else if (p.resultadoReal === '1') d++;
+          if (p.resultado_oficial) {
+            const esLocal = p.equipo_local.toLowerCase() === nombreEquipo.toLowerCase();
+            const esVisitante = p.equipo_visitante.toLowerCase() === nombreEquipo.toLowerCase();
+            if (esLocal) {
+              if (p.resultado_oficial === '1') v++;
+              else if (p.resultado_oficial === '2') d++;
+            } else if (esVisitante) {
+              if (p.resultado_oficial === '2') v++;
+              else if (p.resultado_oficial === '1') d++;
+            }
           }
         });
       }
     }
     return `${v} V - ${d} D`;
   };
-
-  useEffect(() => {
-    setUsuarios(prevUsuarios => {
-      const nuevosUsuarios = prevUsuarios.map(usr => {
-        let totalPuntos = 0;
-        let totalAciertosPartidos = 0;
-        let totalPronosticados = 0;
-
-        for (let jNum = 1; jNum <= 18; jNum++) {
-          const jData = pronosticosPorUsuario[jNum]?.[usr.id];
-          if (jData && jData.confirmado) {
-            jData.pronosticos.forEach(p => {
-              totalPronosticados++;
-              if (p.eleccion && p.resultadoReal && p.eleccion === p.resultadoReal) {
-                totalPuntos++;
-                totalAciertosPartidos++;
-              }
-            });
-          }
-        }
-
-        const efectividadCalc = totalPronosticados > 0 
-          ? Math.round((totalAciertosPartidos / totalPronosticados) * 100) + '%' 
-          : '0%';
-
-        return { ...usr, puntos: totalPuntos, efectividad: efectividadCalc };
-      });
-
-      nuevosUsuarios.sort((a, b) => b.puntos - a.puntos);
-      return nuevosUsuarios.map((usr, index) => ({
-        ...usr,
-        posicion: `${index + 1}º`,
-        esLider: index === 0,
-      }));
-    });
-  }, [pronosticosPorUsuario]);
 
   useEffect(() => {
     if (pestanaActiva === 'noticias' && noticias.length === 0) {
@@ -489,107 +425,96 @@ export default function Home() {
     }
   }, [pestanaActiva]);
 
-  useEffect(() => {
-    const actual = pronosticosPorUsuario[jornadaActual]?.[usuarioActivoId];
-    if (actual?.confirmado) {
-      setEstadoBotonConfirmar('confirmado');
-    } else {
-      setEstadoBotonConfirmar('normal');
-    }
-  }, [usuarioActivoId, jornadaActual, pronosticosPorUsuario]);
-
-  const datosUsuarioActual = pronosticosPorUsuario[jornadaActual]?.[usuarioActivoId] || {
-    pronosticos: [],
-    confirmado: false,
-  };
-
-  const handleSeleccionPronostico = (idPartido: number, eleccion: '1' | 'X' | '2') => {
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
-      const nuevosPronosticos = usuarioActualData.pronosticos.map(p => {
-        if (p.id === idPartido) {
-          const nuevaEleccion = p.eleccion === eleccion ? null : eleccion;
-          return { ...p, eleccion: nuevaEleccion };
-        }
-        return p;
-      });
+  const handleSeleccionPronostico = (idPartido: string, eleccion: '1' | 'X' | '2') => {
+    if (confirmadosPorra[jornadaPorra]) return; // Bloqueado si ya está confirmado / iniciado
+    setEleccionesUsuario(prev => {
+      const jornadaActualMap = prev[jornadaPorra] || {};
+      const actualEleccion = jornadaActualMap[idPartido];
       return {
         ...prev,
-        [jornadaActual]: {
-          ...jornadaData,
-          [usuarioActivoId]: { ...usuarioActualData, pronosticos: nuevosPronosticos, confirmado: false },
-        },
+        [jornadaPorra]: {
+          ...jornadaActualMap,
+          [idPartido]: actualEleccion === eleccion ? (null as any) : eleccion
+        }
       };
     });
-    setEstadoBotonConfirmar('normal');
   };
 
   const handleConfirmarPronosticos = () => {
-    const hayIncompletos = datosUsuarioActual.pronosticos.some(p => p.eleccion === null);
-    if (hayIncompletos) {
-      setEstadoBotonConfirmar('incompleto');
+    const eleccionesJornada = eleccionesUsuario[jornadaPorra] || {};
+    const incompletos = partidosPorra.some(p => !eleccionesJornada[p.id]);
+    if (incompletos) {
+      alert('⚠ Faltan partidos por marcar en tus pronósticos.');
       return;
     }
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
-      return {
-        ...prev,
-        [jornadaActual]: {
-          ...jornadaData,
-          [usuarioActivoId]: { ...usuarioActualData, confirmado: true },
-        },
-      };
-    });
-    setEstadoBotonConfirmar('confirmado');
+    setConfirmadosPorra(prev => ({ ...prev, [jornadaPorra]: true }));
+    alert('¡Pronósticos confirmados con éxito!');
   };
 
+  // Botón de Votación Aleatoria y Simular (Disparador para Jornada Resultados)
   const handleVotacionAleatoriaYSimular = () => {
-    const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const usuariosTest = ['juanjo', 'cace'];
-      const copiaJornada = { ...jornadaData };
-
-      usuariosTest.forEach(uid => {
-        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || JORNADAS_OFICIALES[jornadaActual]).map(p => ({
-          ...p,
-          eleccion: opciones[Math.floor(Math.random() * opciones.length)]
-        }));
-        copiaJornada[uid] = { pronosticos: pronosAleatorios, confirmado: true };
+    const opciones: ('1' | '2')[] = ['1', '2']; // Excluimos 'X' por ser poco probable
+    
+    // Simular elecciones para todos los usuarios en la jornada de resultados actual
+    const nuevosPronosticosJornada: Record<string, Record<string, string>> = {};
+    usuarios.forEach(usr => {
+      nuevosPronosticosJornada[usr.id] = {};
+      partidosResultados.forEach(p => {
+        nuevosPronosticosJornada[usr.id][p.id] = opciones[Math.floor(Math.random() * opciones.length)];
       });
-
-      return { ...prev, [jornadaActual]: copiaJornada };
     });
-    alert(`¡Votación aleatoria aplicada para Juanjo y Cace en la Jornada ${jornadaActual}!`);
+
+    setPronosticosGlobales(prev => ({ ...prev, [jornadaResultados]: nuevosPronosticosJornada }));
+    setConfirmadosPorra(prev => ({ ...prev, [jornadaResultados]: true })); // Cierra edición al iniciar partidos
+    alert(`¡Primer partido iniciado! Pronósticos bloqueados y simulados para la Jornada ${jornadaResultados}.`);
   };
 
-  const handleSiguienteJornada = () => {
-    if (jornadaActual < 18) {
-      setJornadaActual(prev => prev + 1);
+  // Avanzar Porra (en modo test)
+  const handleSiguientePorra = () => {
+    if (jornadaPorra < 18) {
+      setJornadaPorra(prev => prev + 1);
     } else {
-      alert('Has llegado a la última jornada (18).');
+      alert('Has llegado a la última jornada (18) en Porra.');
     }
   };
 
-  const handleValidarJornada = () => {
-    const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const copiaJornada = { ...jornadaData };
+  // Validar Jornada de Resultados y actualizar puntos
+  const handleValidarJornada = async () => {
+    const opciones: ('1' | 'X' | '2')[] = ['1', '2', 'X'];
+    // Asignar resultados oficiales simulados a los partidos de la jornada si no los tienen
+    const partidosActualizados = partidosResultados.map(p => ({
+      ...p,
+      resultado_oficial: p.resultado_oficial || opciones[Math.floor(Math.random() * 2)] // 1 o 2 mayormente
+    }));
 
-      Object.keys(copiaJornada).forEach(uid => {
-        const pronosValidados = copiaJornada[uid].pronosticos.map(p => ({
-          ...p,
-          resultadoReal: p.resultadoReal || opciones[Math.floor(Math.random() * opciones.length)]
-        }));
-        copiaJornada[uid] = { ...copiaJornada[uid], pronosticos: pronosValidados, validado: true };
-      });
+    setPartidosResultados(partidosActualizados);
+    setValidadosJornada(prev => ({ ...prev, [jornadaResultados]: true }));
 
-      return { ...prev, [jornadaActual]: copiaJornada };
+    // Calcular puntos de cada usuario y actualizar puntuaciones
+    setUsuarios(prevUsuarios => {
+      return prevUsuarios.map(usr => {
+        let aciertosJornada = 0;
+        const pronosUsr = pronosticosGlobales[jornadaResultados]?.[usr.id] || {};
+        partidosActualizados.forEach(p => {
+          if (pronosUsr[p.id] && pronosUsr[p.id] === p.resultado_oficial) {
+            aciertosJornada++;
+          }
+        });
+        const nuevosPuntosTotal = usr.puntos + aciertosJornada;
+        return { ...usr, puntos: nuevosPuntosTotal };
+      }).sort((a, b) => b.puntos - a.puntos).map((usr, idx) => ({
+        ...usr,
+        posicion: `${idx + 1}º`,
+        esLider: idx === 0
+      }));
     });
-    alert(`¡Jornada ${jornadaActual} validada correctamente! Puntos y rachas actualizados.`);
+
+    // Avanzar la pestaña de resultados a la siguiente jornada para continuar la liga
+    if (jornadaResultados < 18) {
+      setJornadaResultados(prev => prev + 1);
+    }
+
+    alert(`¡Jornada ${jornadaResultados} validada con éxito! Puntos y clasificación actualizados.`);
   };
 
   const renderTablaDivision = (div: Division, idx: number) => {
@@ -673,7 +598,7 @@ export default function Home() {
               {modoTest ? 'MODO TEST' : 'MODO NORMAL'}
             </button>
             <span className="text-xs font-['Orbitron'] font-bold text-red-200">
-              Jornada Activa: <strong className="text-white">{jornadaActual} / 18</strong>
+              Porra J.{jornadaPorra} | Resultados J.{jornadaResultados} / 18
             </span>
           </div>
 
@@ -683,13 +608,13 @@ export default function Home() {
                 onClick={handleVotacionAleatoriaYSimular}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg font-['Orbitron'] uppercase shadow transition-all cursor-pointer"
               >
-                VOTACIÓN ALEATORIA (JUANJO & CACE) + SIMULAR
+                ▶ INICIAR PARTIDOS (CIERRA PORRA & SIMULA J. {jornadaResultados})
               </button>
               <button
-                onClick={handleSiguienteJornada}
+                onClick={handleSiguientePorra}
                 className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg font-['Orbitron'] uppercase shadow transition-all cursor-pointer flex items-center gap-1"
               >
-                SIGUIENTE JORNADA →
+                SIGUIENTE PORRA (J. {jornadaPorra + 1}) →
               </button>
             </div>
           )}
@@ -765,38 +690,40 @@ export default function Home() {
               <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 md:p-6 shadow-2xl">
                 <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4 flex justify-between items-center">
                   <span className="text-xs font-bold text-black font-['Orbitron']">Usuario: {usuarioActivoId.toUpperCase()}</span>
-                  <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">PORRA - JORNADA {jornadaActual}</h1>
-                  <span className="text-xs font-bold text-black font-['Orbitron']">{datosUsuarioActual.confirmado ? '🔒 Confirmado' : '✏️ Editando'}</span>
+                  <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">PORRA - JORNADA {jornadaPorra}</h1>
+                  <span className="text-xs font-bold text-black font-['Orbitron']">{confirmadosPorra[jornadaPorra] ? '🔒 Bloqueado / Confirmado' : '✏️ Editando'}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {datosUsuarioActual.pronosticos.map((p, index, array) => {
-                    const isLocalSelected = p.eleccion === '1';
-                    const isVsSelected = p.eleccion === 'X';
-                    const isVisitorSelected = p.eleccion === '2';
+                  {partidosPorra.map((p, index, array) => {
+                    const eleccionActual = eleccionesUsuario[jornadaPorra]?.[p.id];
+                    const isLocalSelected = eleccionActual === '1';
+                    const isVsSelected = eleccionActual === 'X';
+                    const isVisitorSelected = eleccionActual === '2';
                     const esUltimoEImpar = (array.length % 2 !== 0) && (index === array.length - 1);
 
                     return (
                       <div key={p.id} className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''}`}>
                         <button
+                          disabled={confirmadosPorra[jornadaPorra]}
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
-                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}
+                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-250'}`}
                         >
-                          <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
-                          <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
+                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.equipo_local}</span>
                         </button>
                         <button
+                          disabled={confirmadosPorra[jornadaPorra]}
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
-                          className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${isVsSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'}`}
+                          className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${isVsSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-350'}`}
                         >
                           VS
                         </button>
                         <button
+                          disabled={confirmadosPorra[jornadaPorra]}
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
-                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isVisitorSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}
+                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isVisitorSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-250'}`}
                         >
-                          <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
-                          <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
+                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.equipo_visitante}</span>
                         </button>
                       </div>
                     );
@@ -805,10 +732,11 @@ export default function Home() {
 
                 <div className="mt-6 pt-2 text-center">
                   <button
+                    disabled={confirmadosPorra[jornadaPorra]}
                     onClick={handleConfirmarPronosticos}
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider cursor-pointer ${estadoBotonConfirmar === 'confirmado' ? 'bg-emerald-500 text-black' : estadoBotonConfirmar === 'incompleto' ? 'bg-red-600 text-white animate-pulse' : 'bg-white text-[#d32f2f] hover:bg-gray-100'}`}
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider cursor-pointer ${confirmadosPorra[jornadaPorra] ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed' : 'bg-white text-[#d32f2f] hover:bg-gray-100'}`}
                   >
-                    {estadoBotonConfirmar === 'confirmado' ? '✓ Pronósticos Confirmados (Clic para re-editar si deseas)' : estadoBotonConfirmar === 'incompleto' ? '⚠ Faltan partidos por marcar' : 'Confirmar Pronósticos'}
+                    {confirmadosPorra[jornadaPorra] ? '✓ Pronósticos Bloqueados / Confirmados' : 'Confirmar Pronósticos'}
                   </button>
                 </div>
               </div>
@@ -819,45 +747,43 @@ export default function Home() {
             <section className="space-y-8 bg-[#8b0000] p-2 md:p-6 rounded-2xl">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4 py-2 border-y border-red-800 my-2 bg-red-950/40 rounded-lg px-4">
                 <h1 className="text-xl md:text-3xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase">
-                  RESULTADOS JORNADA {jornadaActual}
+                  RESULTADOS JORNADA {jornadaResultados}
                 </h1>
                 <button
                   onClick={handleValidarJornada}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg uppercase transition-all cursor-pointer"
                 >
-                  ✓ VALIDAR JORNADA (SIMULAR RESULTADOS)
+                  ✓ VALIDAR JORNADA Y ACTUALIZAR PUNTOS
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {usuarios.map((usr) => {
-                  const pronosticosUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.pronosticos || [];
-                  const confirmadoUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.confirmado || false;
-                  const validadoJornada = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.validado || false;
-                  const puntosJornadaActual = calcularPuntosJornada(usr.id, jornadaActual);
+                  const pronosUsr = pronosticosGlobales[jornadaResultados]?.[usr.id] || {};
+                  const jornadaValidada = validadosJornada[jornadaResultados];
 
                   return (
                     <div key={usr.id} className="flex flex-col space-y-3 bg-black/40 p-3 rounded-2xl border border-red-900/60 shadow-xl">
-                      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border-2 border-red-900/80 shadow-2xl relative group">
+                      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden border-2 border-red-900/80 shadow-2xl relative">
                         <img src={usr.avatarJornada} alt={usr.nombre} className="w-full h-full object-cover" />
                       </div>
 
                       <div className="space-y-1">
-                        <div className={`${usr.colorBg} border border-white/20 rounded-t-lg py-3 text-center text-white font-['Orbitron'] font-black text-2xl leading-none shadow`}>
-                          {confirmadoUsr ? `${puntosJornadaActual} aciertos` : '0 aciertos'}
+                        <div className={`${usr.colorBg} border border-white/20 rounded-t-lg py-3 text-center text-white font-['Orbitron'] font-bold text-xl leading-none`}>
+                          {usr.nombre} ({usr.nombreEquipo})
                         </div>
-                        <div className={`${usr.colorBg} border border-white/20 rounded-b-lg py-3 text-center text-white font-['Orbitron'] font-bold text-xl leading-none tracking-wider`}>
-                          Total Acumulado: {usr.puntos} pts
+                        <div className={`${usr.colorBg} border border-white/20 rounded-b-lg py-3 text-center text-white font-['Orbitron'] font-bold text-lg leading-none tracking-wider`}>
+                          Total: {usr.puntos} pts
                         </div>
                       </div>
 
                       <div className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-xl p-2 space-y-2">
-                        {pronosticosUsr.map((p) => {
-                          const eleccion = p.eleccion;
-                          const resultadoOficial = p.resultadoReal;
+                        {partidosResultados.map((p) => {
+                          const eleccion = pronosUsr[p.id];
+                          const resultadoOficial = p.resultado_oficial;
 
                           let estiloCajaEleccion = 'bg-black text-amber-400 border-zinc-700';
-                          if (validadoJornada && eleccion) {
+                          if (jornadaValidada && eleccion) {
                             if (eleccion === resultadoOficial) {
                               estiloCajaEleccion = 'bg-emerald-500 text-black border-emerald-400 font-black';
                             } else {
@@ -870,16 +796,14 @@ export default function Home() {
                           return (
                             <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 bg-[#2a2a2a] px-2.5 py-2 rounded transition-colors border border-zinc-700/50">
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
-                                <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.local}</span>
+                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.equipo_local}</span>
                               </div>
                               <span className="font-['Orbitron'] font-bold text-zinc-300 text-[0.65rem] md:text-[0.75rem] px-0.5 text-center">vs</span>
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.visitante}</span>
-                                <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
+                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.equipo_visitante}</span>
                               </div>
                               <div className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs md:text-sm ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
-                                {eleccion === '1' ? '1' : eleccion === 'X' ? 'X' : eleccion === '2' ? '2' : '-'}
+                                {eleccion || '-'}
                               </div>
                             </div>
                           );
@@ -946,8 +870,8 @@ export default function Home() {
               ) : (
                 <div className="space-y-8">
                   {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
-                    const jornadaValidada = pronosticosPorUsuario[jNum]?.['cace']?.validado;
-                    const partidosJornada = JORNADAS_OFICIALES[jNum];
+                    const jornadaValidada = validadosJornada[jNum];
+                    const partidosJornada = todosLosPartidosTemporada[jNum] || [];
 
                     return (
                       <div key={jNum} className="bg-black/80 border border-red-900/80 rounded-2xl p-4 md:p-6 space-y-4 shadow-2xl">
@@ -956,44 +880,49 @@ export default function Home() {
                             JORNADA {jNum} DE 18 {jornadaValidada ? '(FINALIZADA / VALIDADA)' : '(PENDIENTE DE JUGAR)'}
                           </h3>
                           <span className="text-xs font-mono text-zinc-400">
-                            {jornadaValidada ? 'Datos subidos y registrados' : 'Solo información básica de emparejamientos'}
+                            {jornadaValidada ? 'Datos validados y registrados' : 'Pendiente de validación'}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {partidosJornada.map((partido) => {
-                            const rachaLocalAcumulada = obtenerRachaEquipo(partido.local, jNum);
-                            const rachaVisitanteAcumulada = obtenerRachaEquipo(partido.visitante, jNum);
+                            const rachaLocal = obtenerRachaEquipoGlobal(partido.equipo_local, jNum);
+                            const rachaVisitante = obtenerRachaEquipoGlobal(partido.equipo_visitante, jNum);
+                            const resultadoOficial = partido.resultado_oficial;
 
                             return (
                               <div key={partido.id} className="bg-[#1a1a1a] border border-zinc-800 rounded-xl p-3 flex flex-col gap-3 shadow-md">
                                 <div className="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-zinc-800">
                                   <div className="flex items-center gap-2">
-                                    <img src={partido.localLogo} alt={partido.local} className="w-7 h-7 object-contain" />
-                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.local}</span>
+                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.equipo_local}</span>
                                   </div>
-                                  <span className="font-['Orbitron'] font-bold text-xs text-zinc-500">vs</span>
+                                  <span className="font-['Orbitron'] font-bold text-xs text-amber-400">
+                                    {resultadoOficial ? `Resultado: ${resultadoOficial}` : 'vs'}
+                                  </span>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.visitante}</span>
-                                    <img src={partido.visitanteLogo} alt={partido.visitante} className="w-7 h-7 object-contain" />
+                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.equipo_visitante}</span>
                                   </div>
                                 </div>
 
-                                {/* Racha acumulada real calculada según las jornadas previas validadas */}
+                                {/* Racha global acumulada */}
                                 <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 px-1 border-b border-zinc-800 pb-2">
-                                  <span>RACHA LOCAL: <strong className="text-emerald-400">{rachaLocalAcumulada}</strong></span>
-                                  <span>RACHA VIS.: <strong className="text-red-400">{rachaVisitanteAcumulada}</strong></span>
+                                  <span>RACHA {partido.equipo_local}: <strong className="text-emerald-400">{rachaLocal}</strong></span>
+                                  <span>RACHA {partido.equipo_visitante}: <strong className="text-red-400">{rachaVisitante}</strong></span>
                                 </div>
 
                                 <div className="space-y-1">
                                   <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
                                   <div className="grid grid-cols-3 gap-1.5 text-center">
                                     {usuarios.map(usr => {
-                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.id === partido.id)?.eleccion || '-';
+                                      const eleccionUsr = pronosticosGlobales[jNum]?.[usr.id]?.[partido.id] || '-';
+                                      let colorEleccion = 'text-amber-400';
+                                      if (jornadaValidada && resultadoOficial && eleccionUsr !== '-') {
+                                        colorEleccion = eleccionUsr === resultadoOficial ? 'text-emerald-400 font-black bg-emerald-950/40 rounded' : 'text-red-400 font-black bg-red-950/40 rounded';
+                                      }
                                       return (
                                         <div key={usr.id} className="bg-black/60 border border-zinc-800 rounded p-1 flex flex-col">
                                           <span className="text-[9px] font-['Orbitron'] font-bold text-zinc-400 uppercase">{usr.nombre}</span>
-                                          <span className="text-xs font-mono font-black text-amber-400 mt-0.5">{eleccionUsr}</span>
+                                          <span className={`text-xs font-mono mt-0.5 ${colorEleccion}`}>{eleccionUsr}</span>
                                         </div>
                                       );
                                     })}
