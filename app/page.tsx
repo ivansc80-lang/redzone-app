@@ -56,35 +56,6 @@ interface Division {
   equipos: EquipoPosicion[];
 }
 
-const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
-  1: [
-    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null },
-    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null },
-    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null },
-    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null },
-    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null },
-    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null },
-    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null },
-    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null },
-    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null },
-    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null },
-    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null },
-    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null },
-    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null },
-    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null },
-    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null },
-    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null },
-  ]
-};
-
-for (let j = 2; j <= 18; j++) {
-  JORNADAS_OFICIALES[j] = JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])).map((p: any, idx: number) => ({
-    ...p,
-    id: idx + 1,
-    eleccion: null
-  }));
-}
-
 const DIVISIONES_BASE: Division[] = [
   {
     nombre: 'AFC Este',
@@ -183,6 +154,9 @@ export default function Home() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
 
+  // Estado para las jornadas oficiales cargadas desde Supabase
+  const [jornadasOficiales, setJornadasOficiales] = useState<Record<number, PronosticoPartido[]>>({});
+
   useEffect(() => {
     let buffer = '';
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -252,20 +226,7 @@ export default function Home() {
   ]);
 
   const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
-  
-  const inicializarPronosticos = () => {
-    const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
-    for (let j = 1; j <= 18; j++) {
-      obj[j] = {
-        cace: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
-        juanjo: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
-        ivan: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
-      };
-    }
-    return obj;
-  };
-
-  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState(inicializarPronosticos);
+  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>>>({});
   const [estadoBotonConfirmar, setEstadoBotonConfirmar] = useState<'normal' | 'incompleto' | 'confirmado'>('normal');
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
@@ -276,6 +237,52 @@ export default function Home() {
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [errorLogin, setErrorLogin] = useState('');
+
+  // Cargar la temporada regular desde Supabase al iniciar
+  useEffect(() => {
+    const cargarTemporadaRegular = async () => {
+      const { data, error } = await supabase.from('temporada_regular').select('*');
+      if (error) {
+        console.error('Error al cargar temporada_regular:', error);
+        return;
+      }
+      if (data) {
+        const agrupadas: Record<number, PronosticoPartido[]> = {};
+        for (let j = 1; j <= 18; j++) {
+          agrupadas[j] = [];
+        }
+
+        data.forEach((row: any) => {
+          const numJornada = row.jornada || 1;
+          if (!agrupadas[numJornada]) agrupadas[numJornada] = [];
+          agrupadas[numJornada].push({
+            id: row.id,
+            local: row.local,
+            localLogo: row.local_logo,
+            visitante: row.visitante,
+            visitanteLogo: row.visitante_logo,
+            eleccion: null,
+            resultadoReal: row.resultado_real || undefined
+          });
+        });
+
+        setJornadasOficiales(agrupadas);
+
+        // Inicializar pronosticosPorUsuario con los datos obtenidos de Supabase
+        const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
+        for (let j = 1; j <= 18; j++) {
+          obj[j] = {
+            cace: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
+            juanjo: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
+            ivan: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
+          };
+        }
+        setPronosticosPorUsuario(obj);
+      }
+    };
+
+    cargarTemporadaRegular();
+  }, []);
 
   const cargarPerfil = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
@@ -551,7 +558,7 @@ export default function Home() {
       const copiaJornada = { ...jornadaData };
 
       usuariosTest.forEach(uid => {
-        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || JORNADAS_OFICIALES[jornadaActual]).map(p => ({
+        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || jornadasOficiales[jornadaActual] || []).map(p => ({
           ...p,
           eleccion: opciones[Math.floor(Math.random() * opciones.length)]
         }));
@@ -944,7 +951,7 @@ export default function Home() {
                 <div className="space-y-8">
                   {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
                     const jornadaValidada = pronosticosPorUsuario[jNum]?.['cace']?.validado;
-                    const partidosJornada = JORNADAS_OFICIALES[jNum];
+                    const partidosJornada = jornadasOficiales[jNum] || [];
 
                     return (
                       <div key={jNum} className="bg-black/80 border border-red-900/80 rounded-2xl p-4 md:p-6 space-y-4 shadow-2xl">
