@@ -767,7 +767,7 @@ export default function Home() {
                     return (
                       <div 
                         key={p.id} 
-                        className={`bg-[#181818] border border-white rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${
+                        className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${
                           esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''
                         }`}
                       >
@@ -776,7 +776,7 @@ export default function Home() {
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
                             isLocalSelected 
                               ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-white/40 text-gray-200'
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
                           <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
@@ -788,7 +788,7 @@ export default function Home() {
                           className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${
                             isVsSelected 
                               ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-white/40 text-gray-300'
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'
                           }`}
                         >
                           VS
@@ -799,7 +799,7 @@ export default function Home() {
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
                             isVisitorSelected 
                               ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-white/40 text-gray-200'
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
