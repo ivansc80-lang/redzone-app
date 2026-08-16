@@ -77,7 +77,7 @@ const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
   ]
 };
 
-// Generar estructura vacía para las 18 jornadas
+// Generar estructura vacía para las 18 jornadas[cite: 6]
 for (let j = 2; j <= 18; j++) {
   JORNADAS_OFICIALES[j] = JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])).map((p: any, idx: number) => ({
     ...p,
@@ -169,7 +169,7 @@ const DIVISIONES_BASE: Division[] = [
   },
 ];
 
-export default function Home() {
+export default function Home() {[cite: 6]
   const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
   const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
   
@@ -782,7 +782,7 @@ export default function Home() {
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}
                         >
                           <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
-                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
+                          <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
                         </button>
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
@@ -794,7 +794,7 @@ export default function Home() {
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isVisitorSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}
                         >
-                          <span className="font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
+                          <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
                           <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
                         </button>
                       </div>
