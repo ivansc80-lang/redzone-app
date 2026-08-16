@@ -928,21 +928,18 @@ export default function Home() {
 
               {subPestanaEquipos === 'score' ? (
                 <div className="space-y-8">
-                  <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
-                    <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
-                      POSICIONES OFICIALES NFL (STANDINGS)
-                    </h2>
-                    {sincronizandoPosiciones && (
-                      <span className="text-[10px] text-red-300 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
-                    )}
-                  </div>
+                  {sincronizandoPosiciones && (
+                    <div className="flex justify-end">
+                      <span className="text-[10px] text-red-200 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
+                    </div>
+                  )}
 
-                  {/* SECCIÓN AFC: Marco Blanco y Subrayado con el mismo color del texto */}
+                  {/* SECCIÓN AFC: Marco Blanco con Fondo Blanco Relleno */}
                   <div className="space-y-4">
-                    <div className="border border-white p-4 rounded-xl space-y-4">
+                    <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
                       <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2">
                         <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-500 font-['Orbitron'] italic underline decoration-red-500 underline-offset-4">
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
                           Conferencia Americana (AFC)
                         </h3>
                       </div>
@@ -952,12 +949,12 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* SECCIÓN NFC: Marco Blanco y Subrayado con el mismo color del texto */}
+                  {/* SECCIÓN NFC: Marco Blanco con Fondo Blanco Relleno */}
                   <div className="space-y-4 pt-4">
-                    <div className="border border-white p-4 rounded-xl space-y-4">
+                    <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
                       <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2">
                         <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-400 font-['Orbitron'] italic underline decoration-blue-400 underline-offset-4">
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
                           Conferencia Nacional (NFC)
                         </h3>
                       </div>
