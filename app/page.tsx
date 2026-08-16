@@ -161,7 +161,7 @@ const DIVISIONES_BASE: Division[] = [
 ];
 
 export default function Home() {
-  const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
+  const [pestanaActiva, setPestanaActiva] = useState<string>('pronosticos');
   const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
   
   const [showSearch, setShowSearch] = useState(false);
@@ -750,8 +750,8 @@ export default function Home() {
 
           {pestanaActiva === 'pronosticos' && (
             <section className="space-y-6 max-w-5xl mx-auto">
-              <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 md:p-6 shadow-2xl">
-                <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4">
+              <div className="bg-white border border-gray-200 rounded-2xl p-3 md:p-6 shadow-2xl">
+                <div className="bg-white border border-red-600 py-3 px-4 rounded-t-xl text-center mb-4 shadow-sm">
                   <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">
                     PORRA - JORNADA {jornadaActual}
                   </h1>
@@ -767,7 +767,7 @@ export default function Home() {
                     return (
                       <div 
                         key={p.id} 
-                        className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${
+                        className={`bg-white border border-gray-200 rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 shadow-sm ${
                           esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''
                         }`}
                       >
@@ -775,8 +775,8 @@ export default function Home() {
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
                             isLocalSelected 
-                              ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
+                              ? 'bg-red-600 text-white border-red-600' 
+                              : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-800'
                           }`}
                         >
                           <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
@@ -787,8 +787,8 @@ export default function Home() {
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
                           className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${
                             isVsSelected 
-                              ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'
+                              ? 'bg-red-600 text-white border-red-600' 
+                              : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-600'
                           }`}
                         >
                           VS
@@ -798,8 +798,8 @@ export default function Home() {
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
                             isVisitorSelected 
-                              ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
+                              ? 'bg-red-600 text-white border-red-600' 
+                              : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-800'
                           }`}
                         >
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
@@ -813,12 +813,12 @@ export default function Home() {
                 <div className="mt-6 pt-2 text-center">
                   <button
                     onClick={handleConfirmarPronosticos}
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider border border-red-600 ${
                       estadoBotonConfirmar === 'confirmado'
-                        ? 'bg-emerald-500 text-black'
+                        ? 'bg-emerald-500 text-black border-emerald-500'
                         : estadoBotonConfirmar === 'incompleto'
-                        ? 'bg-red-600 text-white animate-pulse'
-                        : 'bg-white text-[#d32f2f] hover:bg-gray-100'
+                        ? 'bg-red-600 text-white animate-pulse border-red-600'
+                        : 'bg-white text-[#d32f2f] hover:bg-gray-50'
                     }`}
                   >
                     {estadoBotonConfirmar === 'confirmado'
