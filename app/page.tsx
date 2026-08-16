@@ -2,17 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { getPartidosPorJornada, getResumenTemporada } from '@/lib/queries';
-
-interface PronosticoPartido {
-  id: number;
-  local: string;
-  localLogo: string;
-  visitante: string;
-  visitanteLogo: string;
-  eleccion: '1' | 'X' | '2' | null;
-  resultadoReal?: '1' | 'X' | '2';
-}
+import { getPartidosPorJornada, getResumenTemporada, PartidoTemporada } from '@/lib/queries';
 
 interface Usuario {
   id: string;
@@ -31,113 +21,31 @@ interface Usuario {
   esLider: boolean;
 }
 
-interface Noticia {
-  id: string;
-  titulo: string;
-  descripcion: string;
-  enlace: string;
-  imagen: string;
-  fecha: string;
-}
-
-interface EquipoPosicion {
-  id: string;
-  nombre: string;
-  abrev: string;
-  logo: string;
-  victorias: string | number;
-  derrotas: string | number;
-  empates: string | number;
-  pct: string;
-}
-
-interface Division {
-  nombre: string;
-  conferencia: 'AFC' | 'NFC';
-  equipos: EquipoPosicion[];
-}
-
-const DIVISIONES_BASE: Division[] = [
-  {
-    nombre: 'AFC Este',
-    conferencia: 'AFC',
-    equipos: [
-      { id: '1', nombre: 'Buffalo Bills', abrev: 'BUF', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '2', nombre: 'Miami Dolphins', abrev: 'MIA', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '3', nombre: 'New England Patriots', abrev: 'NE', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-      { id: '4', nombre: 'New York Jets', abrev: 'NYJ', logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', victorias: 0, derrotas: 0, empates: 0, pct: '.000' },
-    ],
-  },
-];
-
 export default function Home() {
-  const [pestanaActiva, setPestanaActiva] = useState<string>('pronosticos');
+  const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
   
-  // MODO TEST: Activador rápido para alternar datos locales de prueba o Supabase
-  const [modoTest, setModoTest] = useState<boolean>(false);
-  
+  // MODO TEST
+  const [modoTest, setModoTest] = useState<boolean>(true);
   const [jornadaActual, setJornadaActual] = useState<number>(1);
-  const [partidosJornada, setPartidosJornada] = useState<any[]>([]);
+  const [partidosJornada, setPartidosJornada] = useState<PartidoTemporada[]>([]);
   const [cargandoPartidos, setCargandoPartidos] = useState<boolean>(false);
   const [resumenTemporada, setResumenTemporada] = useState<any[]>([]);
 
+  // Pronósticos locales en memoria para Modo Test / Producción
+  const [pronosticos, setPronosticos] = useState<Record<string, '1' | 'X' | '2'>>({});
+  const [jornadaConfirmada, setJornadaConfirmada] = useState<boolean>(false);
+
+  // Perfil de usuario logueado
+  const [usuarioLogueado, setUsuarioLogueado] = useState<any>(null);
   const [nombrePerfil, setNombrePerfil] = useState('');
   const [nombreEquipo, setNombreEquipo] = useState('');
   const [avatarUrlInput, setAvatarUrlInput] = useState('');
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
 
-  // Atajos de teclado (/BB y /mbb)
-  useEffect(() => {
-    let buffer = '';
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
-      buffer = (buffer + e.key).slice(-4);
-
-      if (buffer.endsWith('/BB')) {
-        setShowSearch(prev => !prev);
-        buffer = '';
-      } else if (buffer.endsWith('/mbb')) {
-        setSearchPosition(prev => (prev === 'top' ? 'bottom' : 'top'));
-        buffer = '';
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Cargar resumen de temporada al iniciar
-  useEffect(() => {
-    const cargarResumen = async () => {
-      const resumen = await getResumenTemporada();
-      setResumenTemporada(resumen);
-    };
-    cargarResumen();
-  }, []);
-
-  // Cargar partidos de la jornada desde Supabase o Modo Test
-  useEffect(() => {
-    const cargarPartidos = async () => {
-      setCargandoPartidos(true);
-      if (modoTest) {
-        // Datos de prueba locales si el Modo Test está activo
-        setPartidosJornada([
-          { id: 1, local: 'Seahawks', local_logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitante_logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png' },
-          { id: 2, local: 'Rams', local_logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitante_logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png' }
-        ]);
-      } else {
-        // Llamada a tu función de lib/queries.ts
-        const datosPartidos = await getPartidosPorJornada(jornadaActual);
-        setPartidosJornada(datosPartidos);
-      }
-      setCargandoPartidos(false);
-    };
-
-    cargarPartidos();
-  }, [jornadaActual, modoTest]);
-
-  const [usuarios, setUsuarios] = useState<Usuario[]>([
+  // Usuarios base de la liga
+  const [usuarios] = useState<Usuario[]>([
     {
       id: 'cace',
       nombre: 'Cace',
@@ -149,8 +57,8 @@ export default function Home() {
       colorBg: 'bg-[#002244]',
       colorBorder: 'border-[#C60C30]',
       colorBadge: 'bg-[#C60C30] text-white',
-      puntos: 0,
-      efectividad: '0%',
+      puntos: 40,
+      efectividad: '74%',
       posicion: '1º',
       esLider: true,
     },
@@ -165,8 +73,8 @@ export default function Home() {
       colorBg: 'bg-[#B3995D]',
       colorBorder: 'border-[#AA0000]',
       colorBadge: 'bg-[#AA0000] text-white',
-      puntos: 0,
-      efectividad: '0%',
+      puntos: 36,
+      efectividad: '68%',
       posicion: '2º',
       esLider: false,
     },
@@ -181,25 +89,49 @@ export default function Home() {
       colorBg: 'bg-[#E31837]',
       colorBorder: 'border-[#FFB81C]',
       colorBadge: 'bg-[#FFB81C] text-black',
-      puntos: 0,
-      efectividad: '0%',
+      puntos: 29,
+      efectividad: '55%',
       posicion: '3º',
       esLider: false,
     },
   ]);
 
-  const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
-  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: any[]; confirmado: boolean }>>>({});
-  
-  const [usuarioLogueado, setUsuarioLogueado] = useState<any>(null);
+  // Atajos de teclado (/BB y /mbb)
+  useEffect(() => {
+    let buffer = '';
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
+      buffer = (buffer + e.key).slice(-4);
+
+      if (buffer.endsWith('/BB') || buffer.endsWith('/bb')) {
+        setShowSearch(prev => !prev);
+        buffer = '';
+      } else if (buffer.endsWith('/mbb') || buffer.endsWith('/MBB')) {
+        setSearchPosition(prev => (prev === 'top' ? 'bottom' : 'top'));
+        buffer = '';
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Cargar sesión y resumen de temporada
+  useEffect(() => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUsuarioLogueado(session.user);
+        cargarPerfil(session.user.id);
+      }
+      const resumen = await getResumenTemporada();
+      setResumenTemporada(resumen);
+    };
+    init();
+  }, []);
 
   const cargarPerfil = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (data) {
       setNombrePerfil(data.nombre || '');
       setNombreEquipo(data.nombre_equipo || '');
@@ -207,140 +139,284 @@ export default function Home() {
     }
   };
 
+  const guardarCambiosPerfil = async () => {
+    if (!usuarioLogueado) return;
+    setGuardandoPerfil(true);
+    await supabase.from('profiles').upsert({
+      id: usuarioLogueado.id,
+      nombre: nombrePerfil,
+      nombre_equipo: nombreEquipo,
+      avatar_url: avatarUrlInput,
+      updated_at: new Date().toISOString(),
+    });
+    setGuardandoPerfil(false);
+    alert('Perfil guardado con éxito');
+  };
+
+  // Cargar partidos al cambiar jornada o modo test
   useEffect(() => {
-    const comprobarSesion = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUsuarioLogueado(session.user);
-        cargarPerfil(session.user.id);
+    const cargarPartidos = async () => {
+      setCargandoPartidos(true);
+      if (modoTest && jornadaActual === 1) {
+        // Datos mock de prueba si estamos en test jornada 1
+        setPartidosJornada([
+          { id: 't1', jornada: 1, equipo_local: 'SEA', equipo_visitante: 'NE', fecha_partido: new Date().toISOString(), inicio_porra: '', inicio_jornada: '', puntos_local: null, puntos_visitante: null, resultado_oficial: null, espn_event_id: 'e1' },
+          { id: 't2', jornada: 1, equipo_local: 'LAR', equipo_visitante: 'SF', fecha_partido: new Date().toISOString(), inicio_porra: '', inicio_jornada: '', puntos_local: null, puntos_visitante: null, resultado_oficial: null, espn_event_id: 'e2' },
+        ]);
+      } else {
+        const datos = await getPartidosPorJornada(jornadaActual);
+        setPartidosJornada(datos);
       }
+      setCargandoPartidos(false);
     };
-    comprobarSesion();
-  }, []);
+    cargarPartidos();
+  }, [jornadaActual, modoTest]);
+
+  // Funciones de control de Modo Test
+  const avanzarSiguienteJornada = () => {
+    if (jornadaActual < 18) {
+      setJornadaActual(prev => prev + 1);
+      setJornadaConfirmada(false);
+      setPronosticos({});
+    }
+  };
+
+  const votacionAleatoriaTest = () => {
+    const eleccionesPosibles: ('1' | 'X' | '2')[] = ['1', '2']; // Sin empates en test
+    const nuevasElecciones: Record<string, '1' | 'X' | '2'> = {};
+    partidosJornada.forEach(p => {
+      const aleatorio = eleccionesPosibles[Math.floor(Math.random() * eleccionesPosibles.length)];
+      nuevasElecciones[p.id] = aleatorio;
+    });
+    setPronosticos(nuevasElecciones);
+    setJornadaConfirmada(true);
+  };
 
   const navItems = [
     { id: 'clasificacion', label: 'RANKING', icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-[35px] h-[35px] object-contain" /> },
-    { id: 'pronosticos', label: 'PORRA', icon: <img src="/logo_porra.png" alt="Porra" className="w-[35px] h-[35px] object-contain" /> },
-    { id: 'jornada', label: 'JORNADA', icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-[35px] h-[35px] object-contain" /> },
-    { id: 'equipos', label: 'EQUIPOS', icon: <img src="/logo_equipo.png" alt="Equipos" className="w-[35px] h-[35px] object-contain" /> },
-    { id: 'noticias', label: 'NOTICIAS', icon: <img src="/logo_noticias.png" alt="Noticias" className="w-[35px] h-[35px] object-contain" /> },
-    { id: 'perfil', label: 'PERFIL', icon: <img src="/logo_perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'pronosticos', label: 'PORRA', icon: <img src="/logo.porra.png" alt="Porra" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'jornada', label: 'JORNADA', icon: <img src="/logo.jornada.png" alt="Jornada" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'equipos', label: 'EQUIPOS', icon: <img src="/logo.equipos.png" alt="Equipos" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'noticias', label: 'NOTICIAS', icon: <img src="/logo.noticias.png" alt="Noticias" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'perfil', label: 'PERFIL', icon: <img src="/logo.perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" /> },
   ];
 
   return (
-    <div className="min-h-screen bg-[#8b0000] text-white w-full font-sans">
-      <link href="https://fonts.googleapis.com/css2?family=Orbitron:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
-      <main className="w-full pb-12">
-        {/* ENCABEZADO Y MODO TEST */}
-        <header className="w-full bg-[#8b0000] py-3 px-4 flex justify-between items-center border-b border-red-900/60">
-          <div className="w-1/3"></div>
-          <picture className="flex justify-center w-1/3">
-            <source media="(max-width: 768px)" srcSet="/redzone2_logo.png" />
-            <img src="/redzone1_logo.png" alt="NFL REDZONE" className="h-10 md:h-12 object-contain" />
-          </picture>
-          <div className="w-1/3 flex justify-end">
-            <button 
-              onClick={() => setModoTest(!modoTest)}
-              className={`text-[10px] md:text-xs font-['Orbitron'] font-bold px-3 py-1.5 rounded-full border transition-all ${
-                modoTest ? 'bg-amber-400 text-black border-amber-500 shadow-lg animate-pulse' : 'bg-black/40 text-zinc-300 border-zinc-700'
-              }`}
-            >
-              {modoTest ? '⚡ MODO TEST: ACTIVO' : '🛠️ Modo Test: OFF'}
-            </button>
-          </div>
-        </header>
+    <main className="min-h-screen bg-[#8B0000] text-white flex flex-col font-sans select-none">
+      {/* Barra superior de Modo Test / Controles rápidos */}
+      <div className="bg-black/40 px-4 py-2 flex justify-between items-center text-xs border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-yellow-400">NFL REDZONE</span>
+          {showSearch && <span className="bg-red-600 px-2 py-0.5 rounded text-[10px]">Menú BB Activo ({searchPosition})</span>}
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setModoTest(!modoTest)}
+            className={`px-3 py-1 rounded font-bold transition ${modoTest ? 'bg-yellow-500 text-black' : 'bg-white/20 text-white'}`}
+          >
+            Modo Test: {modoTest ? 'ON' : 'OFF'}
+          </button>
+          {modoTest && (
+            <>
+              <button onClick={avanzarSiguienteJornada} className="bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded">
+                Siguiente Jornada (J.{jornadaActual})
+              </button>
+              <button onClick={votacionAleatoriaTest} className="bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded">
+                Votación Aleatoria
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
-        {showSearch && (
-          <div className={`fixed z-50 p-4 transition-all duration-500 ${searchPosition === 'top' ? 'top-20' : 'bottom-4'} right-4 bg-white text-black rounded-full shadow-xl font-bold font-['Orbitron']`}>
-              🔍
-          </div>
-        )}
-
-        {/* MENÚ DE NAVEGACIÓN */}
-        <nav className="w-full bg-white border-b py-2 flex justify-center">
-          <div className="w-full md:max-w-xl flex justify-around items-center px-2">
-            {navItems.map((item) => (
+      {/* Cabecera / Navegación */}
+      <header className="bg-white shadow-md py-3 px-6 flex flex-col items-center">
+        <div className="mb-3">
+          <h1 className="text-xl font-black tracking-widest text-[#8B0000]">REDZONE</h1>
+        </div>
+        <nav className="flex gap-8 md:gap-12">
+          {navItems.map((item) => {
+            const isActive = pestanaActiva === item.id;
+            return (
               <button
                 key={item.id}
                 onClick={() => setPestanaActiva(item.id)}
-                className="flex flex-col items-center gap-1 px-1 py-1 transition-all relative"
+                className={`flex flex-col items-center group transition pb-1 relative ${isActive ? 'text-[#8B0000]' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                <div className="w-[35px] h-[35px] flex items-center justify-center">
-                  {item.icon}
-                </div>
-                <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
-                  {item.label}
-                </span>
-                <div className={`h-1 w-7 rounded-full transition-all duration-300 mt-0.5 ${
-                  pestanaActiva === item.id ? 'bg-red-700 opacity-100 scale-100' : 'bg-transparent opacity-0 scale-0'
-                }`} />
+                {item.icon}
+                <span className="text-[10px] font-bold mt-1 tracking-wider">{item.label}</span>
+                {isActive && <div className="absolute bottom-0 w-full h-[3px] bg-[#8B0000] rounded-full"></div>}
               </button>
+            );
+          })}
+        </nav>
+      </header>
+
+      {/* Contenido Principal según Pestaña */}
+      <div className="flex-1 p-6 max-w-5xl mx-auto w-full">
+        
+        {/* PESTAÑA: RANKING */}
+        {pestanaActiva === 'clasificacion' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold tracking-wider mb-4 uppercase">TABLA GENERAL DE POSICIONES</h2>
+            {usuarios.map((usr) => (
+              <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-xl p-4 flex items-center justify-between shadow-lg`}>
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl font-black w-8">{usr.posicion}</span>
+                  <img src={usr.avatar} alt={usr.nombre} className="w-14 h-14 rounded-full object-cover border-2 border-white/20" />
+                  <div>
+                    <h3 className="text-xl font-bold">{usr.nombre}</h3>
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-black uppercase ${usr.colorBadge}`}>
+                      {usr.nombreEquipo}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-3xl font-black">{usr.puntos}</span>
+                  <span className="text-xs block opacity-80">Puntos ({usr.efectividad})</span>
+                </div>
+              </div>
             ))}
           </div>
-        </nav>
+        )}
 
-        {/* CONTENIDO PRINCIPAL */}
-        <div className="p-4 md:p-8 w-full max-w-[1600px] mx-auto">
-          {pestanaActiva === 'clasificacion' && (
-            <section className="space-y-4">
-              <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron'] italic">
-                Tabla General de Posiciones {modoTest && '(Modo Test Habilitado)'}
-              </h2>
-              <div className="space-y-4">
-                {usuarios.map((usr) => (
-                  <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all relative overflow-hidden`}>
-                    <img src={usr.logoEquipo} alt={usr.nombreEquipo} className="md:hidden absolute top-2 right-2 w-20 h-20 object-contain opacity-90 drop-shadow-md" />
-                    <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start">
-                      <div className="flex items-center gap-3 md:gap-5">
-                        <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
-                        <img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0" />
-                      </div>
-                      <div>
-                        <h3 className="font-black text-xl md:text-3xl text-white font-['Orbitron'] tracking-wide">{usr.nombre}</h3>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs md:text-sm font-bold font-['Orbitron'] mt-1 ${usr.colorBadge}`}>
-                          {usr.nombreEquipo}
-                        </span>
-                      </div>
+        {/* PESTAÑA: PORRA */}
+        {pestanaActiva === 'pronosticos' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold tracking-wider uppercase">PARTIDOS DE LA JORNADA {jornadaActual}</h2>
+              {jornadaConfirmada && <span className="bg-emerald-600 text-xs px-3 py-1 rounded-full font-bold">Pronósticos Confirmados / Congelados</span>}
+            </div>
+
+            {cargandoPartidos ? (
+              <div className="text-center py-10">Cargando partidos...</div>
+            ) : partidosJornada.length === 0 ? (
+              <div className="text-center py-10 bg-black/20 rounded-xl">No hay partidos programados para esta jornada.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {partidosJornada.map((partido) => (
+                  <div key={partido.id} className="bg-black/30 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3 w-1/3">
+                      <span className="font-bold text-sm">{partido.equipo_local}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        disabled={jornadaConfirmada}
+                        onClick={() => setPronosticos({ ...pronosticos, [partido.id]: '1' })}
+                        className={`px-4 py-2 rounded font-bold transition ${pronosticos[partido.id] === '1' ? 'bg-red-600 text-white' : 'bg-white/10 hover:bg-white/20'}`}
+                      >
+                        1
+                      </button>
+                      <button
+                        disabled={jornadaConfirmada}
+                        onClick={() => setPronosticos({ ...pronosticos, [partido.id]: '2' })}
+                        className={`px-4 py-2 rounded font-bold transition ${pronosticos[partido.id] === '2' ? 'bg-red-600 text-white' : 'bg-white/10 hover:bg-white/20'}`}
+                      >
+                        2
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3 w-1/3 justify-end">
+                      <span className="font-bold text-sm">{partido.equipo_visitante}</span>
                     </div>
                   </div>
                 ))}
               </div>
-            </section>
-          )}
+            )}
 
-          {pestanaActiva === 'pronosticos' && (
-            <section className="space-y-4">
-              <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron'] italic">
-                Partidos de la Jornada {jornadaActual} {modoTest && '(Modo Test)'}
-              </h2>
+            {!jornadaConfirmada && partidosJornada.length > 0 && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setJornadaConfirmada(true)}
+                  className="bg-white text-[#8B0000] font-black px-6 py-3 rounded-xl shadow-lg hover:bg-gray-100 transition"
+                >
+                  Confirmar Pronóstico de la Jornada
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-              {cargandoPartidos ? (
-                <div className="text-center py-12 font-['Orbitron'] text-amber-300">Cargando partidos desde Supabase...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {partidosJornada.length === 0 ? (
-                    <p className="text-zinc-300 font-['Orbitron']">No hay partidos registrados para esta jornada.</p>
-                  ) : (
-                    partidosJornada.map((partido) => (
-                      <div key={partido.id || partido.id_partido} className="bg-black/60 border border-zinc-800 p-4 rounded-xl flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 w-[40%] justify-end">
-                          <span className="text-xs font-bold text-right truncate">{partido.local}</span>
-                          {partido.local_logo && <img src={partido.local_logo} alt={partido.local} className="w-8 h-8 object-contain" />}
-                        </div>
-                        <div className="text-xs font-bold font-['Orbitron'] px-2 py-1 bg-red-900/40 rounded">VS</div>
-                        <div className="flex items-center gap-2 w-[40%]">
-                          {partido.visitante_logo && <img src={partido.visitante_logo} alt={partido.visitante} className="w-8 h-8 object-contain" />}
-                          <span className="text-xs font-bold truncate">{partido.visitante}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
+        {/* PESTAÑA: JORNADA / RESULTADOS */}
+        {pestanaActiva === 'jornada' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold tracking-wider mb-4 uppercase">RESULTADOS Y VALIDACIÓN - JORNADA {jornadaActual}</h2>
+            <div className="bg-black/30 border border-white/10 rounded-xl p-6 text-center">
+              <p className="text-gray-300">Los resultados oficiales se actualizarán una vez finalizada o validada la jornada actual.</p>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: EQUIPOS */}
+        {pestanaActiva === 'equipos' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold tracking-wider mb-4 uppercase">CLASIFICACIÓN DE FRANQUICIAS Y EQUIPOS</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {usuarios.map(u => (
+                <div key={u.id} className="bg-black/30 border border-white/10 rounded-xl p-4 flex flex-col items-center text-center">
+                  <img src={u.logoEquipo} alt={u.nombreEquipo} className="w-16 h-16 object-contain mb-3" />
+                  <h3 className="font-bold text-lg">{u.nombreEquipo}</h3>
+                  <span className="text-xs text-gray-300">Manager: {u.nombre}</span>
                 </div>
-              )}
-            </section>
-          )}
-        </div>
-      </main>
-    </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: NOTICIAS */}
+        {pestanaActiva === 'noticias' && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold tracking-wider mb-4 uppercase">ACTUALIDAD NFL</h2>
+            <div className="bg-black/30 border border-white/10 rounded-xl p-6">
+              <h3 className="font-bold text-xl mb-2">Arranca la Temporada Regular 2026</h3>
+              <p className="text-sm text-gray-200">Todo listo en los emparrillados para vivir una temporada apasionante llena de emoción y sorpresas en cada jornada.</p>
+            </div>
+          </div>
+        )}
+
+        {/* PESTAÑA: PERFIL */}
+        {pestanaActiva === 'perfil' && (
+          <div className="space-y-4 max-w-md mx-auto bg-black/30 border border-white/10 rounded-xl p-6">
+            <h2 className="text-lg font-bold tracking-wider mb-4 uppercase text-center">CONFIGURAR PERFIL</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold block mb-1">Nombre</label>
+                <input 
+                  type="text" 
+                  value={nombrePerfil} 
+                  onChange={e => setNombrePerfil(e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 rounded p-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold block mb-1">Nombre de Equipo</label>
+                <input 
+                  type="text" 
+                  value={nombreEquipo} 
+                  onChange={e => setNombreEquipo(e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 rounded p-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold block mb-1">URL Avatar</label>
+                <input 
+                  type="text" 
+                  value={avatarUrlInput} 
+                  onChange={e => setAvatarUrlInput(e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 rounded p-2 text-white"
+                />
+              </div>
+              <button 
+                onClick={guardarCambiosPerfil}
+                disabled={guardandoPerfil}
+                className="w-full bg-white text-[#8B0000] font-black py-2.5 rounded mt-4 hover:bg-gray-100 transition"
+              >
+                {guardandoPerfil ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </main>
   );
 }
