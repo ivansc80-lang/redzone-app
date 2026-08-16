@@ -173,7 +173,6 @@ export default function Home() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
 
-  // Escuchador global de teclado para procesar /BB y /mbb de manera continua
   useEffect(() => {
     let buffer = '';
 
@@ -555,48 +554,53 @@ export default function Home() {
     setEstadoBotonConfirmar('confirmado');
   };
 
-  const renderTablaDivision = (div: Division, idx: number) => (
-    <div key={idx} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden shadow-lg">
-      <div className="bg-red-950/80 px-4 py-2.5 border-b border-red-900/60 font-['Orbitron'] text-sm md:text-base font-bold uppercase tracking-wider text-white">
-        {div.nombre}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left font-sans">
-          <thead className="bg-zinc-900/80 text-zinc-400 uppercase font-mono text-xs md:text-sm">
-            <tr>
-              <th className="py-2.5 px-3">Equipo</th>
-              <th className="py-2.5 px-2 text-center">G</th>
-              <th className="py-2.5 px-2 text-center">P</th>
-              <th className="py-2.5 px-2 text-center">E</th>
-              <th className="py-2.5 px-3 text-right">%</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/60 text-sm md:text-base">
-            {div.equipos.map((eq) => (
-              <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
-                <td className="py-3 px-3 flex items-center gap-2.5 font-['Orbitron'] font-bold text-white">
-                  <img 
-                    src={eq.logo} 
-                    alt={eq.nombre} 
-                    className={`object-contain ${eq.abrev === 'NYJ' ? 'scale-125 filter brightness-200' : ''}`}
-                    style={{ 
-                      width: eq.abrev === 'NYJ' ? '40px' : '28px', 
-                      height: eq.abrev === 'NYJ' ? '40px' : '28px' 
-                    }} 
-                  />
-                  <span className="truncate">{eq.nombre}</span>
-                </td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-red-400 text-base md:text-lg">{eq.derrotas}</td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-zinc-300 text-base md:text-lg">{eq.empates}</td>
-                <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-400 text-base md:text-lg">{eq.pct}</td>
+  const renderTablaDivision = (div: Division, idx: number) => {
+    const esAfc = div.conferencia === 'AFC';
+    const headerBgClass = esAfc ? 'bg-red-700 border-red-800' : 'bg-blue-700 border-blue-800';
+
+    return (
+      <div key={idx} className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+        <div className={`${headerBgClass} px-4 py-2.5 border-b font-['Orbitron'] text-sm md:text-base font-bold uppercase tracking-wider text-white`}>
+          {div.nombre}
+        </div>
+        <div className="w-full">
+          <table className="w-full table-fixed text-left font-sans">
+            <thead className="bg-zinc-900/80 text-zinc-400 uppercase font-mono text-[10px] md:text-sm">
+              <tr>
+                <th className="py-2.5 px-2 w-[48%]">EQUIPO</th>
+                <th className="py-2.5 px-1 w-[12%] text-center">G</th>
+                <th className="py-2.5 px-1 w-[12%] text-center">P</th>
+                <th className="py-2.5 px-1 w-[12%] text-center">E</th>
+                <th className="py-2.5 px-2 w-[16%] text-right">%</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/60 text-xs md:text-base">
+              {div.equipos.map((eq) => (
+                <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
+                  <td className="py-3 px-2 flex items-center gap-2 font-['Orbitron'] font-bold text-white truncate">
+                    <img 
+                      src={eq.logo} 
+                      alt={eq.nombre} 
+                      className={`object-contain flex-shrink-0 ${eq.abrev === 'NYJ' ? 'scale-125 filter brightness-200' : ''}`}
+                      style={{ 
+                        width: eq.abrev === 'NYJ' ? '32px' : '24px', 
+                        height: eq.abrev === 'NYJ' ? '32px' : '24px' 
+                      }} 
+                    />
+                    <span className="truncate">{eq.nombre}</span>
+                  </td>
+                  <td className="py-3 px-1 text-center font-mono font-bold text-emerald-400 text-sm md:text-lg">{eq.victorias}</td>
+                  <td className="py-3 px-1 text-center font-mono font-bold text-red-400 text-sm md:text-lg">{eq.derrotas}</td>
+                  <td className="py-3 px-1 text-center font-mono font-bold text-zinc-300 text-sm md:text-lg">{eq.empates}</td>
+                  <td className="py-3 px-2 text-right font-mono font-extrabold text-amber-400 text-xs md:text-lg truncate">{eq.pct}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const navItems = [
     {
@@ -934,7 +938,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* SECCIÓN AFC: Marco Blanco con Fondo Blanco Relleno */}
+                  {/* SECCIÓN AFC */}
                   <div className="space-y-4">
                     <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
                       <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2">
@@ -949,7 +953,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* SECCIÓN NFC: Marco Blanco con Fondo Blanco Relleno */}
+                  {/* SECCIÓN NFC */}
                   <div className="space-y-4 pt-4">
                     <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
                       <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2">
