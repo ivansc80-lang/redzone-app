@@ -173,12 +173,10 @@ export default function Home() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
 
-  // Escuchador global de teclado para procesar /BB y /mbb de manera continua
   useEffect(() => {
     let buffer = '';
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignorar teclas que no sean letras, números o símbolos de control
       if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
 
       buffer = (buffer + e.key).slice(-4);
@@ -556,49 +554,6 @@ export default function Home() {
     setEstadoBotonConfirmar('confirmado');
   };
 
-  const renderTablaDivision = (div: Division, idx: number) => (
-    <div key={idx} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden shadow-lg">
-      <div className="bg-red-950/80 px-4 py-2.5 border-b border-red-900/60 font-['Orbitron'] text-sm md:text-base font-bold uppercase tracking-wider text-white">
-        {div.nombre}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left font-sans">
-          <thead className="bg-zinc-900/80 text-zinc-400 uppercase font-mono text-xs md:text-sm">
-            <tr>
-              <th className="py-2.5 px-3">Equipo</th>
-              <th className="py-2.5 px-2 text-center">G</th>
-              <th className="py-2.5 px-2 text-center">P</th>
-              <th className="py-2.5 px-2 text-center">E</th>
-              <th className="py-2.5 px-3 text-right">%</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/60 text-sm md:text-base">
-            {div.equipos.map((eq) => (
-              <tr key={eq.id} className="hover:bg-zinc-900/50 transition-colors">
-                <td className="py-3 px-3 flex items-center gap-2.5 font-['Orbitron'] font-bold text-white">
-                  <img 
-                    src={eq.logo} 
-                    alt={eq.nombre} 
-                    className={`object-contain ${eq.abrev === 'NYJ' ? 'scale-125 filter brightness-200' : ''}`}
-                    style={{ 
-                      width: eq.abrev === 'NYJ' ? '40px' : '28px', 
-                      height: eq.abrev === 'NYJ' ? '40px' : '28px' 
-                    }} 
-                  />
-                  <span className="truncate">{eq.nombre}</span>
-                </td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-emerald-400 text-base md:text-lg">{eq.victorias}</td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-red-400 text-base md:text-lg">{eq.derrotas}</td>
-                <td className="py-3 px-2 text-center font-mono font-bold text-zinc-300 text-base md:text-lg">{eq.empates}</td>
-                <td className="py-3 px-3 text-right font-mono font-extrabold text-amber-400 text-base md:text-lg">{eq.pct}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   const navItems = [
     {
       id: 'clasificacion',
@@ -667,7 +622,6 @@ export default function Home() {
                   {item.label}
                 </span>
 
-                {/* --- LÍNEA INDICADORA DEBAJO DEL TEXTO (+15% MÁS GRANDE) --- */}
                 <div className={`h-1 w-7 rounded-full transition-all duration-300 mt-0.5 ${
                   pestanaActiva === item.id 
                     ? 'bg-red-700 opacity-100 scale-100' 
@@ -928,103 +882,108 @@ export default function Home() {
                 </button>
               </div>
 
-          {subPestanaEquipos === 'score' ? (
-            <div className="space-y-8">
-              
-              {/* CONFERENCIA AMERICANA */}
-              <div>
-                <div className="bg-white p-[1px] rounded-sm mb-4">
-                  <div className="bg-neutral-950 px-4 py-2.5 flex items-center gap-3">
-                    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                    <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron']">
-                      CONFERENCIA AMERICANA (AFC)
-                    </h3>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((d, index) => (
-                    <div key={index} className="bg-black/80 border border-red-900/40 rounded-lg p-4">
-                      <div className="text-white font-bold mb-3">{d.nombre}</div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-zinc-300">
-                          <thead>
-                            <tr className="border-b border-neutral-800 text-neutral-400">
-                              <th className="pb-2">EQUIPO</th>
-                              <th className="pb-2 text-center">G</th>
-                              <th className="pb-2 text-center">P</th>
-                              <th className="pb-2 text-center">E</th>
-                              <th className="pb-2 text-right">%</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {d.equipos.map((eq: any, eqIdx: number) => (
-                              <tr key={eqIdx} className="border-b border-neutral-900/50">
-                                <td className="py-2 flex items-center gap-2">
-                                  {eq.logo && <img src={eq.logo} alt={eq.nombre} className="w-5 h-5 object-contain" />}
-                                  <span className="text-white font-medium">{eq.nombre}</span>
-                                </td>
-                                <td className="text-center text-emerald-400 font-bold">{eq.g}</td>
-                                <td className="text-center text-rose-500 font-bold">{eq.p}</td>
-                                <td className="text-center text-zinc-400 font-bold">{eq.e}</td>
-                                <td className="text-right text-amber-400 font-mono">{eq.porcentaje}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+              {subPestanaEquipos === 'score' ? (
+                <div className="space-y-8">
+                  {/* CONFERENCIA AMERICANA */}
+                  <div>
+                    <div className="bg-white p-[1px] rounded-sm mb-4">
+                      <div className="bg-neutral-950 px-4 py-2.5 flex items-center gap-3">
+                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron']">
+                          CONFERENCIA AMERICANA (AFC)
+                        </h3>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* CONFERENCIA NACIONAL */}
-              <div>
-                <div className="bg-white p-[1px] rounded-sm mb-4">
-                  <div className="bg-neutral-950 px-4 py-2.5 flex items-center gap-3">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                    <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-500 font-['Orbitron']">
-                      CONFERENCIA NACIONAL (NFC)
-                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((d, index) => (
+                        <div key={index} className="bg-black/80 border border-red-900/40 rounded-lg p-4">
+                          <div className="text-white font-bold mb-3">{d.nombre}</div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs text-zinc-300">
+                              <thead>
+                                <tr className="border-b border-neutral-800 text-neutral-400">
+                                  <th className="pb-2">EQUIPO</th>
+                                  <th className="pb-2 text-center">G</th>
+                                  <th className="pb-2 text-center">P</th>
+                                  <th className="pb-2 text-center">E</th>
+                                  <th className="pb-2 text-right">%</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {d.equipos.map((eq: any, eqIdx: number) => (
+                                  <tr key={eqIdx} className="border-b border-neutral-900/50">
+                                    <td className="py-2 flex items-center gap-2">
+                                      {eq.logo && <img src={eq.logo} alt={eq.nombre} className="w-5 h-5 object-contain" />}
+                                      <span className="text-white font-medium">{eq.nombre}</span>
+                                    </td>
+                                    <td className="text-center text-emerald-400 font-bold">{eq.g}</td>
+                                    <td className="text-center text-rose-500 font-bold">{eq.p}</td>
+                                    <td className="text-center text-zinc-400 font-bold">{eq.e}</td>
+                                    <td className="text-right text-amber-400 font-mono">{eq.porcentaje}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((d, index) => (
-                    <div key={index} className="bg-black/80 border border-blue-900/40 rounded-lg p-4">
-                      <div className="text-white font-bold mb-3">{d.nombre}</div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-zinc-300">
-                          <thead>
-                            <tr className="border-b border-neutral-800 text-neutral-400">
-                              <th className="pb-2">EQUIPO</th>
-                              <th className="pb-2 text-center">G</th>
-                              <th className="pb-2 text-center">P</th>
-                              <th className="pb-2 text-center">E</th>
-                              <th className="pb-2 text-right">%</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {d.equipos.map((eq: any, eqIdx: number) => (
-                              <tr key={eqIdx} className="border-b border-neutral-900/50">
-                                <td className="py-2 flex items-center gap-2">
-                                  {eq.logo && <img src={eq.logo} alt={eq.nombre} className="w-5 h-5 object-contain" />}
-                                  <span className="text-white font-medium">{eq.nombre}</span>
-                                </td>
-                                <td className="text-center text-emerald-400 font-bold">{eq.g}</td>
-                                <td className="text-center text-rose-500 font-bold">{eq.p}</td>
-                                <td className="text-center text-zinc-400 font-bold">{eq.e}</td>
-                                <td className="text-right text-amber-400 font-mono">{eq.porcentaje}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+
+                  {/* CONFERENCIA NACIONAL */}
+                  <div>
+                    <div className="bg-white p-[1px] rounded-sm mb-4">
+                      <div className="bg-neutral-950 px-4 py-2.5 flex items-center gap-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-500 font-['Orbitron']">
+                          CONFERENCIA NACIONAL (NFC)
+                        </h3>
                       </div>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((d, index) => (
+                        <div key={index} className="bg-black/80 border border-blue-900/40 rounded-lg p-4">
+                          <div className="text-white font-bold mb-3">{d.nombre}</div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs text-zinc-300">
+                              <thead>
+                                <tr className="border-b border-neutral-800 text-neutral-400">
+                                  <th className="pb-2">EQUIPO</th>
+                                  <th className="pb-2 text-center">G</th>
+                                  <th className="pb-2 text-center">P</th>
+                                  <th className="pb-2 text-center">E</th>
+                                  <th className="pb-2 text-right">%</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {d.equipos.map((eq: any, eqIdx: number) => (
+                                  <tr key={eqIdx} className="border-b border-neutral-900/50">
+                                    <td className="py-2 flex items-center gap-2">
+                                      {eq.logo && <img src={eq.logo} alt={eq.nombre} className="w-5 h-5 object-contain" />}
+                                      <span className="text-white font-medium">{eq.nombre}</span>
+                                    </td>
+                                    <td className="text-center text-emerald-400 font-bold">{eq.g}</td>
+                                    <td className="text-center text-rose-500 font-bold">{eq.p}</td>
+                                    <td className="text-center text-zinc-400 font-bold">{eq.e}</td>
+                                    <td className="text-right text-amber-400 font-mono">{eq.porcentaje}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-            </div>
-          ) : (
+              ) : (
+                <div className="bg-black/80 border border-red-900/60 rounded-2xl p-8 text-center space-y-3">
+                  <h3 className="text-lg font-bold font-['Orbitron'] text-amber-400">Calendario de Partidos (GAMES)</h3>
+                  <p className="text-xs text-zinc-300">Próximamente se mostrarán los enfrentamientos y calendarios detallados.</p>
+                </div>
+              )}
+            </section>
+          )}
 
           {pestanaActiva === 'noticias' && (
             <section className="space-y-4">
