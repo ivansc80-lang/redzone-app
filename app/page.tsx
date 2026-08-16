@@ -77,7 +77,7 @@ const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
   ]
 };
 
-// Generar estructura vacía para las 18 jornadas[cite: 6]
+// Generar estructura vacía para las 18 jornadas
 for (let j = 2; j <= 18; j++) {
   JORNADAS_OFICIALES[j] = JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])).map((p: any, idx: number) => ({
     ...p,
@@ -169,7 +169,7 @@ const DIVISIONES_BASE: Division[] = [
   },
 ];
 
-export default function Home() {[cite: 6]
+export default function Home() {
   const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
   const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
   
@@ -870,11 +870,11 @@ export default function Home() {[cite: 6]
                             <div key={p.id} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-1.5 bg-[#2a2a2a] px-2.5 py-2 rounded transition-colors border border-zinc-700/50">
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
                                 <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.local}</span>
+                                <span className="hidden md:inline font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.local}</span>
                               </div>
                               <span className="font-['Orbitron'] font-bold text-zinc-300 text-[0.65rem] md:text-[0.75rem] px-0.5 text-center">vs</span>
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
-                                <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.visitante}</span>
+                                <span className="hidden md:inline font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.visitante}</span>
                                 <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
                               </div>
                               <div className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs md:text-sm ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
