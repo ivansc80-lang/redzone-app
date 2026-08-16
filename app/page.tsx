@@ -11,9 +11,8 @@ interface PronosticoPartido {
   visitanteLogo: string;
   eleccion: '1' | 'X' | '2' | null;
   resultadoReal?: '1' | 'X' | '2';
-  golesLocal?: number;
-  golesVisitante?: number;
-  simulado?: boolean;
+  rachaLocal?: string;
+  rachaVisitante?: string;
 }
 
 interface Usuario {
@@ -61,24 +60,33 @@ interface Division {
 
 const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
   1: [
-    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null, resultadoReal: '1' },
-    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null, resultadoReal: '1' },
-    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null, resultadoReal: '1' },
-    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null, resultadoReal: '1' },
-    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null, resultadoReal: '1' },
-    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null, resultadoReal: '1' },
-    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null, resultadoReal: '1' },
-    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null, resultadoReal: '1' },
-    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null, resultadoReal: '1' },
-    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null, resultadoReal: '1' },
-    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null, resultadoReal: '1' },
-    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null, resultadoReal: '1' },
-    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null, resultadoReal: '1' },
-    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null, resultadoReal: '1' },
-    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null, resultadoReal: '1' },
-    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null, resultadoReal: '1' },
+    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
   ]
 };
+
+// Generar estructura vacía para las 18 jornadas
+for (let j = 2; j <= 18; j++) {
+  JORNADAS_OFICIALES[j] = JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])).map((p: any, idx: number) => ({
+    ...p,
+    id: idx + 1,
+    eleccion: null
+  }));
+}
 
 const DIVISIONES_BASE: Division[] = [
   {
@@ -169,73 +177,20 @@ export default function Home() {
   
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
-  const [jornadaActual] = useState<number>(1);
+  const [jornadaActual, setJornadaActual] = useState<number>(1);
+  const [modoTest, setModoTest] = useState<boolean>(true);
+
   const [nombrePerfil, setNombrePerfil] = useState('');
   const [nombreEquipo, setNombreEquipo] = useState('');
   const [avatarUrlInput, setAvatarUrlInput] = useState('');
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [verPassword, setVerPassword] = useState(false);
 
-  // ==========================================
-  // MODO TEST: ESTADO Y CONTROLADORES
-  // ==========================================
-  const [modoTestActivo, setModoTestActivo] = useState(true);
-  const [jornadaTestActual, setJornadaTestActual] = useState(1);
-  const [pronosticosUsuario, setPronosticosUsuario] = useState<Record<string, { local: number; visitante: number }>>({});
-  const [partidosSimulados, setPartidosSimulados] = useState<Record<number, any[]>>({});
-  const [votosRegistrados, setVotosRegistrados] = useState(false);
-
-  // Función auxiliar para enviar el reporte HTML por correo en el 1.º y último partido
-  const enviarCorreoResumenTest = (numJornada: number, esPrimerPartido: boolean, htmlContent: string) => {
-    console.log(`[MODO TEST] Simulando envío de correo HTML para la Jornada ${numJornada} (${esPrimerPartido ? 'Primer partido' : 'Último partido'})...`);
-  };
-
-  // Generar o avanzar jornada en el Modo Test
-  const avanzarJornadaTest = () => {
-    if (jornadaTestActual < 18) {
-      setJornadaTestActual(prev => prev + 1);
-      setVotosRegistrados(false);
-      setPronosticosUsuario({});
-    }
-  };
-
-  // Simulación de Votación Aleatoria (Juanjo y Cace) + Tus Pronósticos Manuales
-  const confirmarYVotarTest = (partidosDeLaJornada: any[]) => {
-    const partidosConResultados = partidosDeLaJornada.map((partido, index) => {
-      const resLocal = Math.floor(Math.random() * 35);
-      const resVisitante = Math.floor(Math.random() * 35);
-      
-      if (jornadaTestActual === 1 && index === 0) {
-        const htmlBody = `<h1>Reporte Jornada ${jornadaTestActual} - Inicio</h1><p>Resultado simulado: ${partido.local} ${resLocal} - ${resVisitante} ${partido.visitante}</p>`;
-        enviarCorreoResumenTest(jornadaTestActual, true, htmlBody);
-      } else if (jornadaTestActual === 18 && index === partidosDeLaJornada.length - 1) {
-        const htmlBody = `<h1>Reporte Jornada ${jornadaTestActual} - Cierre</h1><p>Resultado simulado: ${partido.local} ${resLocal} - ${resVisitante} ${partido.visitante}</p>`;
-        enviarCorreoResumenTest(jornadaTestActual, false, htmlBody);
-      }
-
-      return {
-        ...partido,
-        golesLocal: resLocal,
-        golesVisitante: resVisitante,
-        simulado: true
-      };
-    });
-
-    setPartidosSimulados(prev => ({
-      ...prev,
-      [jornadaTestActual]: partidosConResultados
-    }));
-    setVotosRegistrados(true);
-  };
-
   useEffect(() => {
     let buffer = '';
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
-
       buffer = (buffer + e.key).slice(-4);
-
       if (buffer.endsWith('/BB')) {
         setShowSearch(prev => !prev);
         buffer = '';
@@ -244,7 +199,6 @@ export default function Home() {
         buffer = '';
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
@@ -301,13 +255,21 @@ export default function Home() {
   ]);
 
   const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
-  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean }>>>({
-    1: {
-      cace: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
-      juanjo: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
-      ivan: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[1])), confirmado: false },
-    },
-  });
+  
+  // Inicializar pronósticos para todas las jornadas
+  const inicializarPronosticos = () => {
+    const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
+    for (let j = 1; j <= 18; j++) {
+      obj[j] = {
+        cace: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
+        juanjo: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
+        ivan: { pronosticos: JSON.parse(JSON.stringify(JORNADAS_OFICIALES[j])), confirmado: false, validado: false },
+      };
+    }
+    return obj;
+  };
+
+  const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState(inicializarPronosticos);
   const [estadoBotonConfirmar, setEstadoBotonConfirmar] = useState<'normal' | 'incompleto' | 'confirmado'>('normal');
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
@@ -320,12 +282,7 @@ export default function Home() {
   const [errorLogin, setErrorLogin] = useState('');
 
   const cargarPerfil = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (data) {
       setNombrePerfil(data.nombre || '');
       setNombreEquipo(data.nombre_equipo || '');
@@ -336,16 +293,13 @@ export default function Home() {
   const handleGuardarPerfil = async () => {
     if (!usuarioLogueado) return;
     setGuardandoPerfil(true);
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: usuarioLogueado.id,
-        nombre: nombrePerfil,
-        nombre_equipo: nombreEquipo,
-        avatar_url: avatarUrlInput,
-        updated_at: new Date(),
-      });
-
+    const { error } = await supabase.from('profiles').upsert({
+      id: usuarioLogueado.id,
+      nombre: nombrePerfil,
+      nombre_equipo: nombreEquipo,
+      avatar_url: avatarUrlInput,
+      updated_at: new Date(),
+    });
     setGuardandoPerfil(false);
     if (error) {
       alert('Error al guardar el perfil: ' + error.message);
@@ -361,9 +315,7 @@ export default function Home() {
         setUsuarioLogueado(session.user);
         cargarPerfil(session.user.id);
         const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === session.user.email?.toLowerCase());
-        if (usuarioEncontrado) {
-          setUsuarioActivoId(usuarioEncontrado.id);
-        }
+        if (usuarioEncontrado) setUsuarioActivoId(usuarioEncontrado.id);
       }
     };
     comprobarSesion();
@@ -372,14 +324,11 @@ export default function Home() {
         setUsuarioLogueado(session.user);
         cargarPerfil(session.user.id);
         const usuarioEncontrado = usuarios.find(u => u.email.toLowerCase() === session.user.email?.toLowerCase());
-        if (usuarioEncontrado) {
-          setUsuarioActivoId(usuarioEncontrado.id);
-        }
+        if (usuarioEncontrado) setUsuarioActivoId(usuarioEncontrado.id);
       } else {
         setUsuarioLogueado(null);
       }
     });
-
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -387,14 +336,8 @@ export default function Home() {
 
   const handleLogin = async () => {
     setErrorLogin('');
-    const { error } = await supabase.auth.signInWithPassword({
-      email: emailInput,
-      password: passwordInput,
-    });
-
-    if (error) {
-      setErrorLogin('Correo o contraseña incorrectos.');
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email: emailInput, password: passwordInput });
+    if (error) setErrorLogin('Correo o contraseña incorrectos.');
   };
 
   const handleLogout = async () => {
@@ -405,10 +348,9 @@ export default function Home() {
   const calcularPuntosJornada = (userId: string, numJornada: number) => {
     const dataJornada = pronosticosPorUsuario[numJornada]?.[userId];
     if (!dataJornada || !dataJornada.confirmado) return 0;
-
     let aciertos = 0;
     dataJornada.pronosticos.forEach(p => {
-      if (p.eleccion && p.eleccion === p.resultadoReal) {
+      if (p.eleccion && p.resultadoReal && p.eleccion === p.resultadoReal) {
         aciertos++;
       }
     });
@@ -422,28 +364,24 @@ export default function Home() {
         let totalAciertosPartidos = 0;
         let totalPronosticados = 0;
 
-        [jornadaActual].forEach(jNum => {
+        for (let jNum = 1; jNum <= 18; jNum++) {
           const jData = pronosticosPorUsuario[jNum]?.[usr.id];
           if (jData && jData.confirmado) {
             jData.pronosticos.forEach(p => {
               totalPronosticados++;
-              if (p.eleccion && p.eleccion === p.resultadoReal) {
+              if (p.eleccion && p.resultadoReal && p.eleccion === p.resultadoReal) {
                 totalPuntos++;
                 totalAciertosPartidos++;
               }
             });
           }
-        });
+        }
 
         const efectividadCalc = totalPronosticados > 0 
           ? Math.round((totalAciertosPartidos / totalPronosticados) * 100) + '%' 
           : '0%';
 
-        return {
-          ...usr,
-          puntos: totalPuntos,
-          efectividad: efectividadCalc,
-        };
+        return { ...usr, puntos: totalPuntos, efectividad: efectividadCalc };
       });
 
       nuevosUsuarios.sort((a, b) => b.puntos - a.puntos);
@@ -453,7 +391,7 @@ export default function Home() {
         esLider: index === 0,
       }));
     });
-  }, [pronosticosPorUsuario, jornadaActual]);
+  }, [pronosticosPorUsuario]);
 
   useEffect(() => {
     if (pestanaActiva === 'noticias' && noticias.length === 0) {
@@ -466,7 +404,6 @@ export default function Home() {
             const urlTraducida = urlOriginal !== '#' 
               ? `https://translate.google.com/translate?sl=auto&tl=es&u=${encodeURIComponent(urlOriginal)}`
               : '#';
-
             return {
               id: art.id || String(index),
               titulo: art.headline,
@@ -474,11 +411,7 @@ export default function Home() {
               enlace: urlTraducida,
               imagen: art.images?.[0]?.url || '/redzone1_logo.png',
               fecha: new Date(art.published).toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
+                day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
               }),
             };
           }) || [];
@@ -496,20 +429,15 @@ export default function Home() {
         .then((res) => res.json())
         .then((data) => {
           const listaDivisiones: Division[] = [];
-
           data.children?.forEach((conf: any) => {
             const esAFC = conf.name?.toLowerCase().includes('american') || conf.abbreviation === 'AFC';
             const conferenciaTag: 'AFC' | 'NFC' = esAFC ? 'AFC' : 'NFC';
-
             conf.children?.forEach((div: any) => {
               const equiposDiv: EquipoPosicion[] = div.standings?.entries?.map((entry: any) => {
                 const getStat = (name: string) => {
-                  const stat = entry.stats?.find(
-                    (s: any) => s.name === name || s.abbreviation === name || s.type === name
-                  );
+                  const stat = entry.stats?.find((s: any) => s.name === name || s.abbreviation === name || s.type === name);
                   return stat ? stat.displayValue : '0';
                 };
-
                 return {
                   id: entry.team?.id || String(Math.random()),
                   nombre: entry.team?.displayName || entry.team?.name || 'Equipo',
@@ -521,7 +449,6 @@ export default function Home() {
                   pct: getStat('winPercent'),
                 };
               }) || [];
-
               if (equiposDiv.length > 0) {
                 listaDivisiones.push({
                   nombre: div.name || `${conferenciaTag} - División`,
@@ -531,10 +458,7 @@ export default function Home() {
               }
             });
           });
-
-          if (listaDivisiones.length > 0) {
-            setDivisiones(listaDivisiones);
-          }
+          if (listaDivisiones.length > 0) setDivisiones(listaDivisiones);
         })
         .catch((err) => console.log('Sincronizando posiciones:', err))
         .finally(() => setSincronizandoPosiciones(false));
@@ -559,7 +483,6 @@ export default function Home() {
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
-      
       const nuevosPronosticos = usuarioActualData.pronosticos.map(p => {
         if (p.id === idPartido) {
           const nuevaEleccion = p.eleccion === eleccion ? null : eleccion;
@@ -567,16 +490,11 @@ export default function Home() {
         }
         return p;
       });
-
       return {
         ...prev,
         [jornadaActual]: {
           ...jornadaData,
-          [usuarioActivoId]: {
-            ...usuarioActualData,
-            pronosticos: nuevosPronosticos,
-            confirmado: false,
-          },
+          [usuarioActivoId]: { ...usuarioActualData, pronosticos: nuevosPronosticos, confirmado: false },
         },
       };
     });
@@ -585,28 +503,73 @@ export default function Home() {
 
   const handleConfirmarPronosticos = () => {
     const hayIncompletos = datosUsuarioActual.pronosticos.some(p => p.eleccion === null);
-
     if (hayIncompletos) {
       setEstadoBotonConfirmar('incompleto');
       return;
     }
-
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
-
       return {
         ...prev,
         [jornadaActual]: {
           ...jornadaData,
-          [usuarioActivoId]: {
-            ...usuarioActualData,
-            confirmado: true,
-          },
+          [usuarioActivoId]: { ...usuarioActualData, confirmado: true },
         },
       };
     });
     setEstadoBotonConfirmar('confirmado');
+  };
+
+  // Botón: Votación aleatoria (Juanjo & Cace) + Simular
+  const handleVotacionAleatoriaYSimular = () => {
+    const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
+    setPronosticosPorUsuario(prev => {
+      const jornadaData = prev[jornadaActual] || {};
+      const usuariosTest = ['juanjo', 'cace'];
+      const copiaJornada = { ...jornadaData };
+
+      usuariosTest.forEach(uid => {
+        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || JORNADAS_OFICIALES[jornadaActual]).map(p => ({
+          ...p,
+          eleccion: opciones[Math.floor(Math.random() * opciones.length)]
+        }));
+        copiaJornada[uid] = { pronosticos: pronosAleatorios, confirmado: true };
+      });
+
+      return { ...prev, [jornadaActual]: copiaJornada };
+    });
+    alert(`¡Votación aleatoria aplicada para Juanjo y Cace en la Jornada ${jornadaActual} y guardada en BD!`);
+  };
+
+  // Botón: Siguiente Jornada
+  const handleSiguienteJornada = () => {
+    if (jornadaActual < 18) {
+      setJornadaActual(prev => prev + 1);
+    } else {
+      alert('Has llegado a la última jornada (18).');
+    }
+  };
+
+  // Botón: Validar Jornada
+  const handleValidarJornada = () => {
+    const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
+    setPronosticosPorUsuario(prev => {
+      const jornadaData = prev[jornadaActual] || {};
+      const copiaJornada = { ...jornadaData };
+
+      // Generar resultados reales aleatorios si no los hay y marcar como validado
+      Object.keys(copiaJornada).forEach(uid => {
+        const pronosValidados = copiaJornada[uid].pronosticos.map(p => ({
+          ...p,
+          resultadoReal: p.resultadoReal || opciones[Math.floor(Math.random() * opciones.length)]
+        }));
+        copiaJornada[uid] = { ...copiaJornada[uid], pronosticos: pronosValidados, validado: true };
+      });
+
+      return { ...prev, [jornadaActual]: copiaJornada };
+    });
+    alert(`¡Jornada ${jornadaActual} validada correctamente! Puntos calculados y sincronizados.`);
   };
 
   const renderTablaDivision = (div: Division, idx: number) => {
@@ -637,10 +600,7 @@ export default function Home() {
                       src={eq.logo} 
                       alt={eq.nombre} 
                       className={`object-contain flex-shrink-0 ${eq.abrev === 'NYJ' ? 'scale-125 filter brightness-200' : ''}`}
-                      style={{ 
-                        width: eq.abrev === 'NYJ' ? '32px' : '24px', 
-                        height: eq.abrev === 'NYJ' ? '32px' : '24px' 
-                      }} 
+                      style={{ width: eq.abrev === 'NYJ' ? '32px' : '24px', height: eq.abrev === 'NYJ' ? '32px' : '24px' }} 
                     />
                     <span className="truncate">{eq.nombre}</span>
                   </td>
@@ -658,43 +618,18 @@ export default function Home() {
   };
 
   const navItems = [
-    {
-      id: 'clasificacion',
-      label: 'RANKING',
-      icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-[35px] h-[35px] object-contain" />,
-    },
-    {
-      id: 'pronosticos',
-      label: 'PORRA',
-      icon: <img src="/logo_porra.png" alt="Porra" className="w-[35px] h-[35px] object-contain" />,
-    },
-    {
-      id: 'jornada',
-      label: 'JORNADA',
-      icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-[35px] h-[35px] object-contain" />,
-    },
-    {
-      id: 'equipos',
-      label: 'EQUIPOS',
-      icon: <img src="/logo_equipo.png" alt="Equipos" className="w-[35px] h-[35px] object-contain" />,
-    },
-    {
-      id: 'noticias',
-      label: 'NOTICIAS',
-      icon: <img src="/logo_noticias.png" alt="Noticias" className="w-[35px] h-[35px] object-contain" />,
-    },
-    {
-      id: 'perfil',
-      label: 'PERFIL',
-      icon: <img src="/logo_perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" />,
-    },
+    { id: 'clasificacion', label: 'RANKING', icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'pronosticos', label: 'PORRA', icon: <img src="/logo_porra.png" alt="Porra" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'jornada', label: 'JORNADA', icon: <img src="/logo_jornada.jpg" alt="Jornada" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'equipos', label: 'EQUIPOS', icon: <img src="/logo_equipo.png" alt="Equipos" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'noticias', label: 'NOTICIAS', icon: <img src="/logo_noticias.png" alt="Noticias" className="w-[35px] h-[35px] object-contain" /> },
+    { id: 'perfil', label: 'PERFIL', icon: <img src="/logo_perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" /> },
   ];
 
   return (
     <div className="min-h-screen bg-[#8b0000] text-white w-full font-sans">
       <link href="https://fonts.googleapis.com/css2?family=Orbitron:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
       <main className="w-full pb-12">
-        {/* LOGO REDZONE */}
         <header className="w-full bg-[#8b0000] py-3 flex justify-center items-center">
           <picture className="flex justify-center">
             <source media="(max-width: 768px)" srcSet="/redzone2_logo.png" />
@@ -708,34 +643,56 @@ export default function Home() {
           </div>
         )}
 
-        {/* MENÚ DE NAVEGACIÓN HORIZONTAL AGRUPADO */}
+        {/* BARRA MODO TEST Y BOTONES SUPERIORES */}
+        <div className="w-full bg-black/60 border-y border-red-900/60 py-2.5 px-4 flex flex-wrap justify-between items-center gap-3">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setModoTest(!modoTest)}
+              className={`px-3 py-1 rounded-lg text-xs font-black font-['Orbitron'] uppercase ${modoTest ? 'bg-red-600 text-white animate-pulse' : 'bg-zinc-800 text-zinc-400'}`}
+            >
+              {modoTest ? 'MODO TEST' : 'MODO NORMAL'}
+            </button>
+            <span className="text-xs font-['Orbitron'] font-bold text-red-200">
+              Jornada Activa: <strong className="text-white">{jornadaActual} / 18</strong>
+            </span>
+          </div>
+
+          {modoTest && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleVotacionAleatoriaYSimular}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg font-['Orbitron'] uppercase shadow transition-all cursor-pointer"
+              >
+                VOTACIÓN ALEATORIA (JUANJO & CACE) + SIMULAR
+              </button>
+              <button
+                onClick={handleSiguienteJornada}
+                className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg font-['Orbitron'] uppercase shadow transition-all cursor-pointer flex items-center gap-1"
+              >
+                SIGUIENTE JORNADA →
+              </button>
+            </div>
+          )}
+        </div>
+
         <nav className="w-full bg-white border-b py-2 flex justify-center">
           <div className="w-full md:max-w-xl flex justify-around items-center px-2">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setPestanaActiva(item.id)}
-                className="flex flex-col items-center gap-1 px-1 py-1 transition-all relative"
+                className="flex flex-col items-center gap-1 px-1 py-1 transition-all relative cursor-pointer"
               >
                 <div className="w-[35px] h-[35px] flex items-center justify-center">
                   {item.icon}
                 </div>
-                
-                <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">
-                  {item.label}
-                </span>
-
-                <div className={`h-1 w-7 rounded-full transition-all duration-300 mt-0.5 ${
-                  pestanaActiva === item.id 
-                    ? 'bg-red-700 opacity-100 scale-100' 
-                    : 'bg-transparent opacity-0 scale-0'
-                }`} />
+                <span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">{item.label}</span>
+                <div className={`h-1 w-7 rounded-full transition-all duration-300 mt-0.5 ${pestanaActiva === item.id ? 'bg-red-700 opacity-100 scale-100' : 'bg-transparent opacity-0 scale-0'}`} />
               </button>
             ))}
           </div>
         </nav>
 
-        {/* CONTENIDO PRINCIPAL */}
         <div className="p-4 md:p-8 w-full max-w-[1600px] mx-auto">
           {pestanaActiva === 'clasificacion' && (
             <section className="space-y-4">
@@ -745,54 +702,34 @@ export default function Home() {
               <div className="space-y-4">
                 {usuarios.map((usr) => (
                   <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all relative overflow-hidden`}>
-                    <img 
-                      src={usr.logoEquipo} 
-                      alt={usr.nombreEquipo} 
-                      className="md:hidden absolute top-2 right-2 w-20 h-20 object-contain opacity-90 drop-shadow-md" 
-                    />
-
+                    <img src={usr.logoEquipo} alt={usr.nombreEquipo} className="md:hidden absolute top-2 right-2 w-20 h-20 object-contain opacity-90 drop-shadow-md" />
                     <div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start">
                       <div className="flex items-center gap-3 md:gap-5">
                         <span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span>
                         <img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0" />
-                        
                         <div className="flex items-center gap-4 md:gap-8">
                           <div className="flex flex-col justify-center w-28 md:w-36 flex-shrink-0">
                             <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span>
                             <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span>
                           </div>
-
                           <div className="hidden md:flex items-center gap-6 ml-4 md:ml-20">
-                            <img 
-                              src={usr.logoEquipo} 
-                              alt={usr.nombreEquipo} 
-                              className="h-20 w-20 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" 
-                            />
-                            <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">
-                              {usr.nombreEquipo}
-                            </span>
+                            <img src={usr.logoEquipo} alt={usr.nombreEquipo} className="h-20 w-20 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" />
+                            <span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">{usr.nombreEquipo}</span>
                           </div>
                         </div>
                       </div>
                     </div>
-
                     <div className="flex items-center justify-between md:justify-end gap-6 md:gap-12 w-full md:w-auto border-t md:border-t-0 border-white/20 pt-3 md:pt-0">
                       <div className="text-left md:text-right">
                         <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Puntuación Total</p>
-                        <p className="text-2xl md:text-4xl font-black text-white leading-none font-['Orbitron'] italic">
-                          {usr.puntos} <span className="text-sm md:text-lg font-bold opacity-80">pts</span>
-                        </p>
+                        <p className="text-2xl md:text-4xl font-black text-white leading-none font-['Orbitron'] italic">{usr.puntos} <span className="text-sm md:text-lg font-bold opacity-80">pts</span></p>
                       </div>
-
                       <div className="text-left md:text-right">
                         <p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Efectividad</p>
                         <p className="text-xl md:text-3xl font-black text-white leading-none font-['Orbitron'] italic">{usr.efectividad}</p>
                       </div>
-
                       {usr.esLider ? (
-                        <span className={`text-sm md:text-base px-4 py-2 rounded-xl font-black shadow-lg font-['Orbitron'] italic ${usr.colorBadge}`}>
-                          Líder 🏆
-                        </span>
+                        <span className={`text-sm md:text-base px-4 py-2 rounded-xl font-black shadow-lg font-['Orbitron'] italic ${usr.colorBadge}`}>Líder 🏆</span>
                       ) : (
                         <div className="w-20 hidden md:block"></div>
                       )}
@@ -806,10 +743,10 @@ export default function Home() {
           {pestanaActiva === 'pronosticos' && (
             <section className="space-y-6 max-w-5xl mx-auto">
               <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 md:p-6 shadow-2xl">
-                <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4">
-                  <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">
-                    PORRA - JORNADA {jornadaActual}
-                  </h1>
+                <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4 flex justify-between items-center">
+                  <span className="text-xs font-bold text-black font-['Orbitron']">Usuario: {usuarioActivoId.toUpperCase()}</span>
+                  <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">PORRA - JORNADA {jornadaActual}</h1>
+                  <span className="text-xs font-bold text-black font-['Orbitron']">{datosUsuarioActual.confirmado ? '🔒 Confirmado' : '✏️ Editando'}</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -820,42 +757,23 @@ export default function Home() {
                     const esUltimoEImpar = (array.length % 2 !== 0) && (index === array.length - 1);
 
                     return (
-                      <div 
-                        key={p.id} 
-                        className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${
-                          esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''
-                        }`}
-                      >
+                      <div key={p.id} className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''}`}>
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
-                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
-                            isLocalSelected 
-                              ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
-                          }`}
+                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}
                         >
                           <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.local}</span>
                         </button>
-
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
-                          className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${
-                            isVsSelected 
-                              ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'
-                          }`}
+                          className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${isVsSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'}`}
                         >
                           VS
                         </button>
-
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
-                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
-                            isVisitorSelected 
-                              ? 'bg-white text-black border-white' 
-                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
-                          }`}
+                          className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isVisitorSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}
                         >
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
                           <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
@@ -868,19 +786,9 @@ export default function Home() {
                 <div className="mt-6 pt-2 text-center">
                   <button
                     onClick={handleConfirmarPronosticos}
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${
-                      estadoBotonConfirmar === 'confirmado'
-                        ? 'bg-emerald-500 text-black'
-                        : estadoBotonConfirmar === 'incompleto'
-                        ? 'bg-red-600 text-white animate-pulse'
-                        : 'bg-white text-[#d32f2f] hover:bg-gray-100'
-                    }`}
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider cursor-pointer ${estadoBotonConfirmar === 'confirmado' ? 'bg-emerald-500 text-black' : estadoBotonConfirmar === 'incompleto' ? 'bg-red-600 text-white animate-pulse' : 'bg-white text-[#d32f2f] hover:bg-gray-100'}`}
                   >
-                    {estadoBotonConfirmar === 'confirmado'
-                      ? '✓ Pronóstico Confirmado'
-                      : estadoBotonConfirmar === 'incompleto'
-                      ? '⚠ Faltan partidos por marcar'
-                      : 'Confirmar Pronóstico'}
+                    {estadoBotonConfirmar === 'confirmado' ? '✓ Pronósticos Confirmados (Clic para re-editar si deseas)' : estadoBotonConfirmar === 'incompleto' ? '⚠ Faltan partidos por marcar' : 'Confirmar Pronósticos'}
                   </button>
                 </div>
               </div>
@@ -889,16 +797,23 @@ export default function Home() {
 
           {pestanaActiva === 'jornada' && (
             <section className="space-y-8 bg-[#8b0000] p-2 md:p-6 rounded-2xl">
-              <div className="text-center py-2 border-y border-red-800 my-2 bg-red-950/40 rounded-lg">
-                <h1 className="text-2xl md:text-4xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4 py-2 border-y border-red-800 my-2 bg-red-950/40 rounded-lg px-4">
+                <h1 className="text-xl md:text-3xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase">
                   RESULTADOS JORNADA {jornadaActual}
                 </h1>
+                <button
+                  onClick={handleValidarJornada}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg uppercase transition-all cursor-pointer"
+                >
+                  ✓ VALIDAR JORNADA (SIMULAR RESULTADOS)
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {usuarios.map((usr) => {
                   const pronosticosUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.pronosticos || [];
                   const confirmadoUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.confirmado || false;
+                  const validadoJornada = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.validado || false;
                   const puntosJornadaActual = calcularPuntosJornada(usr.id, jornadaActual);
 
                   return (
@@ -922,7 +837,7 @@ export default function Home() {
                           const resultadoOficial = p.resultadoReal;
 
                           let estiloCajaEleccion = 'bg-black text-amber-400 border-zinc-700';
-                          if (confirmadoUsr && eleccion) {
+                          if (validadoJornada && eleccion) {
                             if (eleccion === resultadoOficial) {
                               estiloCajaEleccion = 'bg-emerald-500 text-black border-emerald-400 font-black';
                             } else {
@@ -938,14 +853,11 @@ export default function Home() {
                                 <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
                                 <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.local}</span>
                               </div>
-
                               <span className="font-['Orbitron'] font-bold text-zinc-300 text-[0.65rem] md:text-[0.75rem] px-0.5 text-center">vs</span>
-
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
                                 <span className="font-['Orbitron'] font-bold text-white truncate text-[0.7rem] md:text-[0.8rem] text-center uppercase">{p.visitante}</span>
                                 <img src={p.visitanteLogo} alt={p.visitante} className={`object-contain flex-shrink-0 ${p.visitante === 'Jets' ? 'w-8 h-8 scale-125 filter brightness-200' : 'w-5 h-5 md:w-6 md:h-6'}`} />
                               </div>
-
                               <div className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center border rounded font-['Orbitron'] font-black text-xs md:text-sm ml-1 flex-shrink-0 justify-self-end ${estiloCajaEleccion}`}>
                                 {eleccion === '1' ? '1' : eleccion === 'X' ? 'X' : eleccion === '2' ? '2' : '-'}
                               </div>
@@ -965,23 +877,15 @@ export default function Home() {
               <div className="flex justify-center items-center gap-4 border-b border-red-900/50 pb-4">
                 <button
                   onClick={() => setSubPestanaEquipos('score')}
-                  className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 ${
-                    subPestanaEquipos === 'score'
-                      ? 'bg-white text-black shadow-lg scale-105'
-                      : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'
-                  }`}
+                  className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 cursor-pointer ${subPestanaEquipos === 'score' ? 'bg-white text-black shadow-lg scale-105' : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'}`}
                 >
                   SCORE
                 </button>
                 <button
                   onClick={() => setSubPestanaEquipos('games')}
-                  className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 ${
-                    subPestanaEquipos === 'games'
-                      ? 'bg-white text-black shadow-lg scale-105'
-                      : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'
-                  }`}
+                  className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 cursor-pointer ${subPestanaEquipos === 'games' ? 'bg-white text-black shadow-lg scale-105' : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'}`}
                 >
-                  GAMES
+                  GAMES (18 JORNADAS)
                 </button>
               </div>
 
@@ -992,8 +896,6 @@ export default function Home() {
                       <span className="text-[10px] text-red-200 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
                     </div>
                   )}
-
-                  {/* SECCIÓN AFC */}
                   <div className="space-y-4">
                     <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
                       <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2">
@@ -1007,8 +909,6 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-
-                  {/* SECCIÓN NFC */}
                   <div className="space-y-4 pt-4">
                     <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
                       <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2">
@@ -1024,110 +924,64 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-12">
-                  {/* Controles de barra de herramientas para el Modo Test */}
-                  {modoTestActivo && (
-                    <div className="bg-neutral-900 border border-neutral-700 p-4 rounded-lg flex flex-wrap items-center justify-between gap-4 shadow-xl">
-                      <div className="flex items-center gap-3">
-                        <span className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded font-['Orbitron'] uppercase tracking-wider">MODO TEST</span>
-                        <span className="text-white text-sm font-semibold">Jornada Activa: <strong className="text-red-500 font-mono text-base">{jornadaTestActual}</strong> / 18</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => confirmarYVotarTest(JORNADAS_OFICIALES[jornadaTestActual] || [])}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded transition-all font-['Orbitron'] uppercase shadow-md"
-                        >
-                          Votación Aleatoria (Juanjo & Cace) + Simular
-                        </button>
-                        <button 
-                          onClick={avanzarJornadaTest}
-                          disabled={jornadaTestActual >= 18}
-                          className="bg-neutral-700 hover:bg-neutral-600 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded transition-all font-['Orbitron'] uppercase shadow-md"
-                        >
-                          Siguiente Jornada &rarr;
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                <div className="space-y-8">
+                  {/* GAMES: Histórico de las 18 Jornadas */}
+                  {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
+                    const jornadaValidada = pronosticosPorUsuario[jNum]?.['cace']?.validado;
+                    const partidosJornada = JORNADAS_OFICIALES[jNum];
 
-                  {/* Iteramos de la jornada 1 a la 18 de manera consecutiva (o enfocada en la simulación actual) */}
-                  {Object.entries(JORNADAS_OFICIALES).map(([numJornadaStr, partidosOriginales]) => {
-                    const numJornada = Number(numJornadaStr);
-                    // Si estamos simulando, usamos los resultados calculados; si no, los originales
-                    const partidos = partidosSimulados[numJornada] || partidosOriginales;
-                    
                     return (
-                      <div key={numJornada} className="space-y-4">
-                        {/* Cabecera de la Jornada */}
-                        <div className="flex items-center gap-2 border-l-4 border-red-600 pl-3">
-                          <h3 className="text-white text-base md:text-lg font-bold tracking-wider uppercase italic font-['Orbitron']">
-                            Jornada {numJornada} de 18 {numJornada === jornadaTestActual && modoTestActivo ? '(En Curso / Test)' : ''}
+                      <div key={jNum} className="bg-black/80 border border-red-900/80 rounded-2xl p-4 md:p-6 space-y-4 shadow-2xl">
+                        <div className="flex justify-between items-center border-b border-red-900/60 pb-3">
+                          <h3 className="text-base md:text-xl font-['Orbitron'] font-black text-amber-400 uppercase tracking-wider">
+                            JORNADA {jNum} DE 18 {jornadaValidada ? '(FINALIZADA / VALIDADA)' : '(PENDIENTE DE JUGAR)'}
                           </h3>
+                          <span className="text-xs font-mono text-zinc-400">
+                            {jornadaValidada ? 'Datos subidos y registrados' : 'Solo información básica de emparejamientos'}
+                          </span>
                         </div>
 
-                        {/* Rejilla Responsive: 1 columna en móvil, 3 columnas en escritorio */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {partidos.map((partido, pIdx) => (
-                            <div 
-                              key={partido.id || pIdx} 
-                              className="bg-neutral-900/90 border border-neutral-800 rounded-md p-3 flex items-center justify-between shadow-lg"
-                            >
-                              {/* Lado izquierdo: Equipos y Marcadores / Resultados */}
-                              <div className="flex flex-col gap-2.5 w-36">
-                                {/* Equipo Local */}
-                                <div className="flex items-center gap-2">
-                                  <img 
-                                    src={partido.localLogo} 
-                                    alt={partido.local} 
-                                    className={`object-contain flex-shrink-0 ${partido.local === 'Jets' ? 'w-6 h-6 scale-125 filter brightness-200' : 'w-5 h-5'}`} 
-                                  />
-                                  <span className="text-white text-xs font-semibold truncate font-['Orbitron'] uppercase">{partido.local}</span>
-                                  <span className="text-white text-xs font-bold ml-auto font-mono">
-                                    {partido.simulado !== undefined ? partido.golesLocal : '21'}
-                                  </span>
+                          {partidosJornada.map((partido) => {
+                            return (
+                              <div key={partido.id} className="bg-[#1a1a1a] border border-zinc-800 rounded-xl p-3 flex flex-col gap-3 shadow-md">
+                                {/* 1. Nombres y logos de los equipos */}
+                                <div className="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-zinc-800">
+                                  <div className="flex items-center gap-2">
+                                    <img src={partido.localLogo} alt={partido.local} className="w-7 h-7 object-contain" />
+                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.local}</span>
+                                  </div>
+                                  <span className="font-['Orbitron'] font-bold text-xs text-zinc-500">vs</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.visitante}</span>
+                                    <img src={partido.visitanteLogo} alt={partido.visitante} className="w-7 h-7 object-contain" />
+                                  </div>
                                 </div>
-                                {/* Equipo Visitante */}
-                                <div className="flex items-center gap-2">
-                                  <img 
-                                    src={partido.visitanteLogo} 
-                                    alt={partido.visitante} 
-                                    className={`object-contain flex-shrink-0 ${partido.visitante === 'Jets' ? 'w-6 h-6 scale-125 filter brightness-200' : 'w-5 h-5'}`} 
-                                  />
-                                  <span className="text-white text-xs font-semibold truncate font-['Orbitron'] uppercase">{partido.visitante}</span>
-                                  <span className="text-white text-xs font-bold ml-auto font-mono">
-                                    {partido.simulado !== undefined ? partido.golesVisitante : '14'}
-                                  </span>
+
+                                {/* 2. Racha de cada equipo */}
+                                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 px-1 border-b border-zinc-800 pb-2">
+                                  <span>RACHA LOCAL: <strong className="text-emerald-400">{partido.rachaLocal || '1 V - 0 D'}</strong></span>
+                                  <span>RACHA VIS.: <strong className="text-red-400">{partido.rachaVisitante || '0 V - 1 D'}</strong></span>
+                                </div>
+
+                                {/* 3. Pronóstico con el nombre de cada participante asignado */}
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
+                                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                                    {usuarios.map(usr => {
+                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.id === partido.id)?.eleccion || '-';
+                                      return (
+                                        <div key={usr.id} className="bg-black/60 border border-zinc-800 rounded p-1 flex flex-col">
+                                          <span className="text-[9px] font-['Orbitron'] font-bold text-zinc-400 uppercase">{usr.nombre}</span>
+                                          <span className="text-xs font-mono font-black text-amber-400 mt-0.5">{eleccionUsr}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               </div>
-
-                              {/* Línea separadora vertical */}
-                              <div className="h-14 w-[1px] bg-neutral-800 mx-2"></div>
-
-                              {/* Lado derecho: Racha y Pronósticos de los participantes */}
-                              <div className="flex flex-col text-[11px] gap-1 flex-1 pl-1">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="text-neutral-500 font-bold tracking-wider text-[9px] font-['Orbitron']">RACHA</span>
-                                  <span className="text-neutral-400 font-medium text-[10px] font-mono">1 V - 0 D</span>
-                                </div>
-                                
-                                {/* Pronóstico CACE */}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-neutral-300 font-medium font-['Orbitron'] text-[10px]">CACE</span>
-                                  <span className="bg-emerald-600/90 text-white px-1.5 py-0.5 rounded text-[10px] font-bold w-4 text-center font-mono">1</span>
-                                </div>
-                                {/* Pronóstico JUANJO */}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-neutral-300 font-medium font-['Orbitron'] text-[10px]">JUANJO</span>
-                                  <span className="bg-emerald-600/90 text-white px-1.5 py-0.5 rounded text-[10px] font-bold w-4 text-center font-mono">1</span>
-                                </div>
-                                {/* Pronóstico IVAN */}
-                                <div className="flex items-center justify-between">
-                                  <span className="text-neutral-300 font-medium font-['Orbitron'] text-[10px]">IVAN</span>
-                                  <span className="bg-rose-600/90 text-white px-1.5 py-0.5 rounded text-[10px] font-bold w-4 text-center font-mono">2</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -1142,7 +996,6 @@ export default function Home() {
               <h2 className="text-xs md:text-sm font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-1 font-['Orbitron'] italic">
                 Última Hora NFL (Español)
               </h2>
-
               {cargandoNoticias ? (
                 <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">Cargando noticias en castellano...</div>
               ) : (
@@ -1178,13 +1031,10 @@ export default function Home() {
               <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron']">
                 Ajustes de Perfil Privado
               </h2>
-
               {!usuarioLogueado ? (
                 <div className="bg-black/90 border border-red-800 rounded-xl p-6 space-y-4 shadow-xl">
                   <h3 className="text-sm font-['Orbitron'] text-white font-bold uppercase text-center">Iniciar Sesión</h3>
-                  {errorLogin && (
-                    <p className="text-red-400 text-xs text-center font-mono">{errorLogin}</p>
-                  )}
+                  {errorLogin && <p className="text-red-400 text-xs text-center font-mono">{errorLogin}</p>}
                   <input 
                     type="email" 
                     placeholder="Correo electrónico" 
@@ -1192,7 +1042,6 @@ export default function Home() {
                     onChange={(e) => setEmailInput(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 text-white text-xs font-mono focus:outline-none"
                   />
-                  
                   <div className="relative">
                     <input 
                       type={verPassword ? "text" : "password"} 
@@ -1201,19 +1050,11 @@ export default function Home() {
                       onChange={(e) => setPasswordInput(e.target.value)}
                       className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 pr-10 text-white text-xs font-mono focus:outline-none"
                     />
-                    <button 
-                      type="button" 
-                      onClick={() => setVerPassword(!verPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-sm focus:outline-none"
-                    >
+                    <button type="button" onClick={() => setVerPassword(!verPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-sm focus:outline-none cursor-pointer">
                       {verPassword ? '👁️‍🗨️' : '👁️'}
                     </button>
                   </div>
-
-                  <button 
-                    onClick={handleLogin}
-                    className="w-full py-2.5 bg-red-700 hover:bg-red-800 text-[#fff] font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer"
-                  >
+                  <button onClick={handleLogin} className="w-full py-2.5 bg-red-700 hover:bg-red-800 text-[#fff] font-['Orbitron'] text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer">
                     Entrar
                   </button>
                 </div>
@@ -1223,54 +1064,24 @@ export default function Home() {
                     <p className="text-[10px] text-red-200 uppercase">Sesión activa:</p>
                     <strong className="text-white text-xs font-mono">{usuarioLogueado.email}</strong>
                   </div>
-
                   <div className="space-y-3 text-xs">
                     <div>
                       <label className="block text-[#002244] font-bold mb-1">Nombre de Usuario</label>
-                      <input 
-                        type="text" 
-                        value={nombrePerfil} 
-                        onChange={(e) => setNombrePerfil(e.target.value)}
-                        placeholder="Ej: Cace"
-                        className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
-                      />
+                      <input type="text" value={nombrePerfil} onChange={(e) => setNombrePerfil(e.target.value)} placeholder="Ej: Cace" className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none" />
                     </div>
-
                     <div>
                       <label className="block text-[#002244] font-bold mb-1">Nombre de tu Equipo</label>
-                      <input 
-                        type="text" 
-                        value={nombreEquipo} 
-                        onChange={(e) => setNombreEquipo(e.target.value)}
-                        placeholder="Ej: PATRIOTS"
-                        className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
-                      />
+                      <input type="text" value={nombreEquipo} onChange={(e) => setNombreEquipo(e.target.value)} placeholder="Ej: PATRIOTS" className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none" />
                     </div>
-
                     <div>
                       <label className="block text-[#002244] font-bold mb-1">URL del Avatar</label>
-                      <input 
-                        type="text" 
-                        value={avatarUrlInput} 
-                        onChange={(e) => setAvatarUrlInput(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none"
-                      />
+                      <input type="text" value={avatarUrlInput} onChange={(e) => setAvatarUrlInput(e.target.value)} placeholder="https://..." className="w-full bg-[#9e0101] text-[#ffffff] placeholder-red-200 border border-red-700 rounded-lg p-2.5 font-mono focus:outline-none" />
                     </div>
                   </div>
-
-                  <button
-                    onClick={handleGuardarPerfil}
-                    disabled={guardandoPerfil}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer"
-                  >
+                  <button onClick={handleGuardarPerfil} disabled={guardandoPerfil} className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer">
                     {guardandoPerfil ? 'Guardando...' : 'Guardar Cambios'}
                   </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full py-2 bg-[#9e0101] hover:bg-red-900 text-white text-xs font-bold rounded-lg border border-red-700 transition-colors uppercase cursor-pointer shadow"
-                  >
+                  <button onClick={handleLogout} className="w-full py-2 bg-[#9e0101] hover:bg-red-900 text-white text-xs font-bold rounded-lg border border-red-700 transition-colors uppercase cursor-pointer shadow">
                     Cerrar Sesión
                   </button>
                 </div>
