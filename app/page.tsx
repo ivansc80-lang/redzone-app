@@ -930,34 +930,43 @@ export default function Home() {
 
               {subPestanaEquipos === 'score' ? (
                 <div className="space-y-8">
-                  <div className="flex items-center justify-between border-b border-red-900/50 pb-2">
-                    <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 font-['Orbitron'] italic">
-                      POSICIONES OFICIALES NFL (STANDINGS)
-                    </h2>
-                    {sincronizandoPosiciones && (
-                      <span className="text-[10px] text-red-300 font-mono animate-pulse">Actualizando datos desde ESPN...</span>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 border-b-2 border-red-700 pb-2">
-                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Americana (AFC)</h3>
+                  
+                  {/* CONFERENCIA AMERICANA */}
+                  <div>
+                    <div className="bg-white p-[1px] rounded-sm mb-4">
+                      <div className="bg-black px-4 py-2 flex items-center gap-3">
+                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron']">
+                          CONFERENCIA AMERICANA (AFC)
+                        </h3>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}
+                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((d, index) => (
+                        // Contenido de la tarjeta de división
+                        <div key={index}></div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="space-y-4 pt-4">
-                    <div className="flex items-center gap-3 border-b-2 border-blue-600 pb-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                      <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-white font-['Orbitron'] italic">Conferencia Nacional (NFC)</h3>
+                  {/* CONFERENCIA NACIONAL */}
+                  <div>
+                    <div className="bg-white p-[1px] rounded-sm mb-4">
+                      <div className="bg-black px-4 py-2 flex items-center gap-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-500 font-['Orbitron']">
+                          CONFERENCIA NACIONAL (NFC)
+                        </h3>
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}
+                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((d, index) => (
+                        // Contenido de la tarjeta de división
+                        <div key={index}></div>
+                      ))}
                     </div>
                   </div>
+
                 </div>
               ) : (
                 <div className="bg-black/80 border border-red-900/60 rounded-2xl p-8 text-center space-y-3">
