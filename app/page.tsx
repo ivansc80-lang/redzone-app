@@ -161,7 +161,7 @@ const DIVISIONES_BASE: Division[] = [
 ];
 
 export default function Home() {
-  const [pestanaActiva, setPestanaActiva] = useState<string>('pronosticos');
+  const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
   const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
   
   const [showSearch, setShowSearch] = useState(false);
@@ -501,7 +501,6 @@ export default function Home() {
   };
 
   const handleSeleccionPronostico = (idPartido: number, eleccion: '1' | 'X' | '2') => {
-    if (datosUsuarioActual.confirmado) return; // Si ya está confirmado, no se puede cambiar
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
@@ -751,8 +750,8 @@ export default function Home() {
 
           {pestanaActiva === 'pronosticos' && (
             <section className="space-y-6 max-w-5xl mx-auto">
-              <div className="bg-white border border-gray-200 rounded-2xl p-3 md:p-6 shadow-2xl">
-                <div className="bg-white border-2 border-red-600 py-3 px-4 rounded-t-xl text-center mb-4 shadow-sm">
+              <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 md:p-6 shadow-2xl">
+                <div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4">
                   <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">
                     PORRA - JORNADA {jornadaActual}
                   </h1>
@@ -764,22 +763,20 @@ export default function Home() {
                     const isVsSelected = p.eleccion === 'X';
                     const isVisitorSelected = p.eleccion === '2';
                     const esUltimoEImpar = (array.length % 2 !== 0) && (index === array.length - 1);
-                    const confirmado = datosUsuarioActual.confirmado;
 
                     return (
                       <div 
                         key={p.id} 
-                        className={`bg-[#d32f2f] border border-red-700 rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 shadow-md ${
+                        className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${
                           esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''
                         }`}
                       >
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '1')}
-                          disabled={confirmado}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
                             isLocalSelected 
-                              ? (confirmado ? 'bg-emerald-500 text-black border-emerald-600 font-bold' : 'bg-zinc-800 text-white border-zinc-700 font-bold shadow-inner')
-                              : 'bg-white hover:bg-gray-100 border-gray-200 text-gray-800'
+                              ? 'bg-white text-black border-white' 
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
                           <img src={p.localLogo} alt={p.local} className={`object-contain flex-shrink-0 ${p.local === 'Jets' ? 'w-10 h-10 scale-125 filter brightness-200' : 'w-[2.25rem] h-[2.25rem] md:w-9 md:h-9'}`} />
@@ -788,11 +785,10 @@ export default function Home() {
 
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, 'X')}
-                          disabled={confirmado}
                           className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${
                             isVsSelected 
-                              ? (confirmado ? 'bg-emerald-500 text-black border-emerald-600 font-bold' : 'bg-zinc-800 text-white border-zinc-700 font-bold shadow-inner')
-                              : 'bg-white hover:bg-gray-100 border-gray-200 text-gray-600'
+                              ? 'bg-white text-black border-white' 
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'
                           }`}
                         >
                           VS
@@ -800,11 +796,10 @@ export default function Home() {
 
                         <button
                           onClick={() => handleSeleccionPronostico(p.id, '2')}
-                          disabled={confirmado}
                           className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${
                             isVisitorSelected 
-                              ? (confirmado ? 'bg-emerald-500 text-black border-emerald-600 font-bold' : 'bg-zinc-800 text-white border-zinc-700 font-bold shadow-inner')
-                              : 'bg-white hover:bg-gray-100 border-gray-200 text-gray-800'
+                              ? 'bg-white text-black border-white' 
+                              : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'
                           }`}
                         >
                           <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">{p.visitante}</span>
@@ -818,12 +813,12 @@ export default function Home() {
                 <div className="mt-6 pt-2 text-center">
                   <button
                     onClick={handleConfirmarPronosticos}
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider border-2 border-red-600 ${
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${
                       estadoBotonConfirmar === 'confirmado'
-                        ? 'bg-emerald-500 text-black border-emerald-600'
+                        ? 'bg-emerald-500 text-black'
                         : estadoBotonConfirmar === 'incompleto'
-                        ? 'bg-red-600 text-white animate-pulse border-red-600'
-                        : 'bg-white text-[#d32f2f] hover:bg-gray-50'
+                        ? 'bg-red-600 text-white animate-pulse'
+                        : 'bg-white text-[#d32f2f] hover:bg-gray-100'
                     }`}
                   >
                     {estadoBotonConfirmar === 'confirmado'
