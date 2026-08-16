@@ -928,54 +928,103 @@ export default function Home() {
                 </button>
               </div>
 
-              {subPestanaEquipos === 'score' ? (
-                <div className="space-y-8">
-                  
-                  {/* CONFERENCIA AMERICANA */}
-                  <div>
-                    <div className="bg-white p-[1px] rounded-sm mb-4">
-                      <div className="bg-black px-4 py-2 flex items-center gap-3">
-                        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron']">
-                          CONFERENCIA AMERICANA (AFC)
-                        </h3>
+          {subPestanaEquipos === 'score' ? (
+            <div className="space-y-8">
+              
+              {/* CONFERENCIA AMERICANA */}
+              <div>
+                <div className="bg-white p-[1px] rounded-sm mb-4">
+                  <div className="bg-neutral-950 px-4 py-2.5 flex items-center gap-3">
+                    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+                    <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron']">
+                      CONFERENCIA AMERICANA (AFC)
+                    </h3>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((d, index) => (
+                    <div key={index} className="bg-black/80 border border-red-900/40 rounded-lg p-4">
+                      <div className="text-white font-bold mb-3">{d.nombre}</div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-zinc-300">
+                          <thead>
+                            <tr className="border-b border-neutral-800 text-neutral-400">
+                              <th className="pb-2">EQUIPO</th>
+                              <th className="pb-2 text-center">G</th>
+                              <th className="pb-2 text-center">P</th>
+                              <th className="pb-2 text-center">E</th>
+                              <th className="pb-2 text-right">%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {d.equipos.map((eq: any, eqIdx: number) => (
+                              <tr key={eqIdx} className="border-b border-neutral-900/50">
+                                <td className="py-2 flex items-center gap-2">
+                                  {eq.logo && <img src={eq.logo} alt={eq.nombre} className="w-5 h-5 object-contain" />}
+                                  <span className="text-white font-medium">{eq.nombre}</span>
+                                </td>
+                                <td className="text-center text-emerald-400 font-bold">{eq.g}</td>
+                                <td className="text-center text-rose-500 font-bold">{eq.p}</td>
+                                <td className="text-center text-zinc-400 font-bold">{eq.e}</td>
+                                <td className="text-right text-amber-400 font-mono">{eq.porcentaje}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((d, index) => (
-                        // Contenido de la tarjeta de división
-                        <div key={index}></div>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
+                </div>
+              </div>
 
-                  {/* CONFERENCIA NACIONAL */}
-                  <div>
-                    <div className="bg-white p-[1px] rounded-sm mb-4">
-                      <div className="bg-black px-4 py-2 flex items-center gap-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-500 font-['Orbitron']">
-                          CONFERENCIA NACIONAL (NFC)
-                        </h3>
+              {/* CONFERENCIA NACIONAL */}
+              <div>
+                <div className="bg-white p-[1px] rounded-sm mb-4">
+                  <div className="bg-neutral-950 px-4 py-2.5 flex items-center gap-3">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                    <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-500 font-['Orbitron']">
+                      CONFERENCIA NACIONAL (NFC)
+                    </h3>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((d, index) => (
+                    <div key={index} className="bg-black/80 border border-blue-900/40 rounded-lg p-4">
+                      <div className="text-white font-bold mb-3">{d.nombre}</div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-zinc-300">
+                          <thead>
+                            <tr className="border-b border-neutral-800 text-neutral-400">
+                              <th className="pb-2">EQUIPO</th>
+                              <th className="pb-2 text-center">G</th>
+                              <th className="pb-2 text-center">P</th>
+                              <th className="pb-2 text-center">E</th>
+                              <th className="pb-2 text-right">%</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {d.equipos.map((eq: any, eqIdx: number) => (
+                              <tr key={eqIdx} className="border-b border-neutral-900/50">
+                                <td className="py-2 flex items-center gap-2">
+                                  {eq.logo && <img src={eq.logo} alt={eq.nombre} className="w-5 h-5 object-contain" />}
+                                  <span className="text-white font-medium">{eq.nombre}</span>
+                                </td>
+                                <td className="text-center text-emerald-400 font-bold">{eq.g}</td>
+                                <td className="text-center text-rose-500 font-bold">{eq.p}</td>
+                                <td className="text-center text-zinc-400 font-bold">{eq.e}</td>
+                                <td className="text-right text-amber-400 font-mono">{eq.porcentaje}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((d, index) => (
-                        // Contenido de la tarjeta de división
-                        <div key={index}></div>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
+                </div>
+              </div>
 
-                </div>
-              ) : (
-                <div className="bg-black/80 border border-red-900/60 rounded-2xl p-8 text-center space-y-3">
-                  <h3 className="text-lg md:text-xl font-['Orbitron'] font-bold text-amber-400 uppercase">Calendario de Partidos (GAMES)</h3>
-                  <p className="text-xs md:text-sm text-zinc-300 font-mono">Próximamente se mostrarán los enfrentamientos directos de la temporada regular.</p>
-                </div>
-              )}
-            </section>
-          )}
+            </div>
+          ) : (
 
           {pestanaActiva === 'noticias' && (
             <section className="space-y-4">
