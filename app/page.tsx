@@ -11,8 +11,6 @@ interface PronosticoPartido {
   visitanteLogo: string;
   eleccion: '1' | 'X' | '2' | null;
   resultadoReal?: '1' | 'X' | '2';
-  rachaLocal?: string;
-  rachaVisitante?: string;
 }
 
 interface Usuario {
@@ -46,9 +44,9 @@ interface EquipoPosicion {
   nombre: string;
   abrev: string;
   logo: string;
-  victorias: string | number;
-  derrotas: string | number;
-  empates: string | number;
+  victorias: number;
+  derrotas: number;
+  empates: number;
   pct: string;
 }
 
@@ -60,22 +58,22 @@ interface Division {
 
 const JORNADAS_OFICIALES: Record<number, PronosticoPartido[]> = {
   1: [
-    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
-    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null, resultadoReal: '1', rachaLocal: '1 V - 0 D', rachaVisitante: '0 V - 1 D' },
+    { id: 1, local: 'Seahawks', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sea.png', visitante: 'Patriots', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ne.png', eleccion: null },
+    { id: 2, local: 'Rams', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lar.png', visitante: '49ers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/sf.png', eleccion: null },
+    { id: 3, local: 'Lions', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/det.png', visitante: 'Saints', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/no.png', eleccion: null },
+    { id: 4, local: 'Bengals', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cin.png', visitante: 'Buccaneers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/tb.png', eleccion: null },
+    { id: 5, local: 'Colts', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ind.png', visitante: 'Ravens', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/bal.png', eleccion: null },
+    { id: 6, local: 'Jaguars', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/jax.png', visitante: 'Browns', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/cle.png', eleccion: null },
+    { id: 7, local: 'Titans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ten.png', visitante: 'Jets', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyj.png', eleccion: null },
+    { id: 8, local: 'Texans', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/hou.png', visitante: 'Bills', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/buf.png', eleccion: null },
+    { id: 9, local: 'Steelers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/pit.png', visitante: 'Falcons', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/atl.png', eleccion: null },
+    { id: 10, local: 'Panthers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/car.png', visitante: 'Bears', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/chi.png', eleccion: null },
+    { id: 11, local: 'Vikings', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/min.png', visitante: 'Packers', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/gb.png', eleccion: null },
+    { id: 12, local: 'Raiders', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lv.png', visitante: 'Dolphins', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/mia.png', eleccion: null },
+    { id: 13, local: 'Chargers', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/lac.png', visitante: 'Cardinals', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/ari.png', eleccion: null },
+    { id: 14, local: 'Eagles', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/phi.png', visitante: 'Washington', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/was.png', eleccion: null },
+    { id: 15, local: 'Giants', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/nyg.png', visitante: 'Cowboys', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', eleccion: null },
+    { id: 16, local: 'Chiefs', localLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png', visitante: 'Broncos', visitanteLogo: 'https://a.espncdn.com/i/teamlogos/nfl/500/den.png', eleccion: null },
   ]
 };
 
@@ -256,7 +254,6 @@ export default function Home() {
 
   const [usuarioActivoId, setUsuarioActivoId] = useState<string>('cace');
   
-  // Inicializar pronósticos para todas las jornadas
   const inicializarPronosticos = () => {
     const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
     for (let j = 1; j <= 18; j++) {
@@ -357,6 +354,29 @@ export default function Home() {
     return aciertos;
   };
 
+  // Función para obtener las estadísticas actuales de un equipo basadas en las jornadas ya validadas
+  const obtenerRachaEquipo = (nombreEquipo: string, hastaJornada: number) => {
+    let v = 0;
+    let d = 0;
+
+    for (let j = 1; j < hastaJornada; j++) {
+      const jornadaValidada = pronosticosPorUsuario[j]?.['cace']?.validado;
+      if (jornadaValidada) {
+        const partidos = pronosticosPorUsuario[j]?.['cace']?.pronosticos || [];
+        partidos.forEach(p => {
+          if (p.local.toLowerCase() === nombreEquipo.toLowerCase()) {
+            if (p.resultadoReal === '1') v++;
+            else if (p.resultadoReal === '2') d++;
+          } else if (p.visitante.toLowerCase() === nombreEquipo.toLowerCase()) {
+            if (p.resultadoReal === '2') v++;
+            else if (p.resultadoReal === '1') d++;
+          }
+        });
+      }
+    }
+    return `${v} V - ${d} D`;
+  };
+
   useEffect(() => {
     setUsuarios(prevUsuarios => {
       const nuevosUsuarios = prevUsuarios.map(usr => {
@@ -436,6 +456,10 @@ export default function Home() {
               const equiposDiv: EquipoPosicion[] = div.standings?.entries?.map((entry: any) => {
                 const getStat = (name: string) => {
                   const stat = entry.stats?.find((s: any) => s.name === name || s.abbreviation === name || s.type === name);
+                  return stat ? parseInt(stat.displayValue, 10) || 0 : 0;
+                };
+                const getStatStr = (name: string) => {
+                  const stat = entry.stats?.find((s: any) => s.name === name || s.abbreviation === name || s.type === name);
                   return stat ? stat.displayValue : '0';
                 };
                 return {
@@ -446,7 +470,7 @@ export default function Home() {
                   victorias: getStat('wins'),
                   derrotas: getStat('losses'),
                   empates: getStat('ties'),
-                  pct: getStat('winPercent'),
+                  pct: getStatStr('winPercent'),
                 };
               }) || [];
               if (equiposDiv.length > 0) {
@@ -521,7 +545,6 @@ export default function Home() {
     setEstadoBotonConfirmar('confirmado');
   };
 
-  // Botón: Votación aleatoria (Juanjo & Cace) + Simular
   const handleVotacionAleatoriaYSimular = () => {
     const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
     setPronosticosPorUsuario(prev => {
@@ -539,10 +562,9 @@ export default function Home() {
 
       return { ...prev, [jornadaActual]: copiaJornada };
     });
-    alert(`¡Votación aleatoria aplicada para Juanjo y Cace en la Jornada ${jornadaActual} y guardada en BD!`);
+    alert(`¡Votación aleatoria aplicada para Juanjo y Cace en la Jornada ${jornadaActual}!`);
   };
 
-  // Botón: Siguiente Jornada
   const handleSiguienteJornada = () => {
     if (jornadaActual < 18) {
       setJornadaActual(prev => prev + 1);
@@ -551,14 +573,12 @@ export default function Home() {
     }
   };
 
-  // Botón: Validar Jornada
   const handleValidarJornada = () => {
     const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const copiaJornada = { ...jornadaData };
 
-      // Generar resultados reales aleatorios si no los hay y marcar como validado
       Object.keys(copiaJornada).forEach(uid => {
         const pronosValidados = copiaJornada[uid].pronosticos.map(p => ({
           ...p,
@@ -569,7 +589,7 @@ export default function Home() {
 
       return { ...prev, [jornadaActual]: copiaJornada };
     });
-    alert(`¡Jornada ${jornadaActual} validada correctamente! Puntos calculados y sincronizados.`);
+    alert(`¡Jornada ${jornadaActual} validada correctamente! Puntos y rachas actualizados.`);
   };
 
   const renderTablaDivision = (div: Division, idx: number) => {
@@ -925,7 +945,6 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {/* GAMES: Histórico de las 18 Jornadas */}
                   {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
                     const jornadaValidada = pronosticosPorUsuario[jNum]?.['cace']?.validado;
                     const partidosJornada = JORNADAS_OFICIALES[jNum];
@@ -943,9 +962,11 @@ export default function Home() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {partidosJornada.map((partido) => {
+                            const rachaLocalAcumulada = obtenerRachaEquipo(partido.local, jNum);
+                            const rachaVisitanteAcumulada = obtenerRachaEquipo(partido.visitante, jNum);
+
                             return (
                               <div key={partido.id} className="bg-[#1a1a1a] border border-zinc-800 rounded-xl p-3 flex flex-col gap-3 shadow-md">
-                                {/* 1. Nombres y logos de los equipos */}
                                 <div className="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-zinc-800">
                                   <div className="flex items-center gap-2">
                                     <img src={partido.localLogo} alt={partido.local} className="w-7 h-7 object-contain" />
@@ -958,13 +979,12 @@ export default function Home() {
                                   </div>
                                 </div>
 
-                                {/* 2. Racha de cada equipo */}
+                                {/* Racha acumulada real calculada según las jornadas previas validadas */}
                                 <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 px-1 border-b border-zinc-800 pb-2">
-                                  <span>RACHA LOCAL: <strong className="text-emerald-400">{partido.rachaLocal || '1 V - 0 D'}</strong></span>
-                                  <span>RACHA VIS.: <strong className="text-red-400">{partido.rachaVisitante || '0 V - 1 D'}</strong></span>
+                                  <span>RACHA LOCAL: <strong className="text-emerald-400">{rachaLocalAcumulada}</strong></span>
+                                  <span>RACHA VIS.: <strong className="text-red-400">{rachaVisitanteAcumulada}</strong></span>
                                 </div>
 
-                                {/* 3. Pronóstico con el nombre de cada participante asignado */}
                                 <div className="space-y-1">
                                   <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
                                   <div className="grid grid-cols-3 gap-1.5 text-center">
