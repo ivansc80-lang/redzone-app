@@ -19,7 +19,7 @@ export interface PartidoTemporada {
  */
 export async function getPartidosPorJornada(jornada: number): Promise<PartidoTemporada[]> {
   const { data, error } = await supabase
-    .from('temporada_regular')
+    .from('partidos')
     .select('*')
     .eq('jornada', jornada)
     .order('fecha_partido', { ascending: true });
