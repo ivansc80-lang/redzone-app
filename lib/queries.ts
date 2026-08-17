@@ -12,24 +12,40 @@ export interface PartidoTemporada {
   puntos_visitante: number | null;
   resultado_oficial: string | null;
   espn_event_id: string;
+  // Añadimos esto:
+  info_local?: { nombre: string; logo_url: string };
+  info_visitante?: { nombre: string; logo_url: string };
 }
 
 /**
  * Obtiene todos los partidos de una jornada específica.
  */
 export async function getPartidosPorJornada(jornada: number): Promise<PartidoTemporada[]> {
-  const { data, error } = await supabase
-    .from('partidos')
-    .select('*')
-    .eq('jornada', jornada)
-    .order('fecha_partido', { ascending: true });
+  try {
+    console.log("➡️ [queries.ts] Solicitando partidos para la jornada:", jornada);
 
-  if (error) {
-    console.error(`Error al obtener los partidos de la jornada ${jornada}:`, error.message);
+    const { data, error } = await supabase
+      .from('partidos')
+      .select(`
+        *,
+        info_local:equipos!partidos_equipo_local_fkey(nombre, logo_url),
+        info_visitante:equipos!partidos_equipo_visitante_fkey(nombre, logo_url)
+      `)
+      .eq('jornada', jornada)
+      .order('fecha_partido', { ascending: true });
+
+    console.log("📥 [queries.ts] Datos obtenidos de Supabase:", data);
+
+    if (error) {
+      console.error(`Error al obtener los partidos de la jornada ${jornada}:`, error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error("Excepción en getPartidosPorJornada:", err);
     return [];
   }
-
-  return data || [];
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { getPartidosPorJornada } from '@/lib/queries';
 
 interface PronosticoPartido {
   id: number;
@@ -156,6 +157,33 @@ export default function Home() {
 
   // Estado para las jornadas oficiales cargadas desde Supabase
   const [jornadasOficiales, setJornadasOficiales] = useState<Record<number, PronosticoPartido[]>>({});
+
+  useEffect(() => {
+    async function cargarPartidosDeJornada() {
+      if (jornadaActual) {
+        const dataSupabase = await getPartidosPorJornada(jornadaActual);
+        
+        // Mapeamos los campos usando las columnas reales de Supabase
+        const partidosMapeados: PronosticoPartido[] = dataSupabase.map((p: any) => ({
+          id: p.id,
+          local: p.equipo_local || p.local || '',
+          equipo_local: p.equipo_local || p.local || '',
+          localLogo: p.local_logo || p.equipo_local_logo || '',
+          visitante: p.equipo_visitante || p.visitante || '',
+          equipo_visitante: p.equipo_visitante || p.visitante || '',
+          visitanteLogo: p.visitante_logo || p.equipo_visitante_logo || '',
+          eleccion: null,
+          resultadoReal: p.resultado_oficial || p.resultadoReal || undefined
+        }));
+
+        setJornadasOficiales(prev => ({
+          ...prev,
+          [Number(jornadaActual)]: partidosMapeados
+        }));
+      }
+    }
+    cargarPartidosDeJornada();
+  }, [jornadaActual]);
 
   useEffect(() => {
     let buffer = '';
@@ -1057,11 +1085,11 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {partidosJornada.map((partido) => {
-                            const local = partido.local || (partido as any).equipo_local || '';
-                            const visitante = partido.visitante || (partido as any).equipo_visitante || '';
-                            const localLogo = partido.localLogo || (partido as any).logo_local || (partido as any).equipo_local_logo || '';
-                            const visitanteLogo = partido.visitanteLogo || (partido as any).logo_visitante || (partido as any).equipo_visitante_logo || '';
+                          {partidosJornada.map((partido: any) => {
+                            const local = partido.info_local?.nombre || partido.equipo_local || '';
+                            const visitante = partido.info_visitante?.nombre || partido.equipo_visitante || '';
+                            const localLogo = partido.info_local?.logo_url || '';
+                            const visitanteLogo = partido.info_visitante?.logo_url || '';
 
                             const rachaLocalAcumulada = obtenerRachaEquipo(local, jNum);
                             const rachaVisitanteAcumulada = obtenerRachaEquipo(visitante, jNum);
@@ -1089,7 +1117,7 @@ export default function Home() {
                                   <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
                                   <div className="grid grid-cols-3 gap-1.5 text-center">
                                     {usuarios.map(usr => {
-                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.id === partido.id)?.eleccion || '-';
+                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.equipo_local === local || p.id === partido.id)?.eleccion || '-';
                                       return (
                                         <div key={usr.id} className="bg-black/60 border border-zinc-800 rounded p-1 flex flex-col">
                                           <span className="text-[9px] font-['Orbitron'] font-bold text-zinc-400 uppercase">{usr.nombre}</span>
