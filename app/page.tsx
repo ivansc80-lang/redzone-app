@@ -238,21 +238,23 @@ export default function Home() {
   const [passwordInput, setPasswordInput] = useState('');
   const [errorLogin, setErrorLogin] = useState('');
 
-  // Cargar la temporada regular desde Supabase al iniciar
+  // Cargar la temporada regular y pronósticos guardados desde Supabase al iniciar o cambiar de jornada
   useEffect(() => {
-    const cargarTemporadaRegular = async () => {
-      const { data, error } = await supabase.from('temporada_regular').select('*');
-      if (error) {
-        console.error('Error al cargar temporada_regular:', error);
+    const cargarDatosSupabase = async () => {
+      // 1. Cargar partidos de la temporada regular
+      const { data: partidosData, error: partidosError } = await supabase.from('temporada_regular').select('*');
+      if (partidosError) {
+        console.error('Error al cargar temporada_regular:', partidosError);
         return;
       }
-      if (data) {
-        const agrupadas: Record<number, PronosticoPartido[]> = {};
-        for (let j = 1; j <= 18; j++) {
-          agrupadas[j] = [];
-        }
 
-        data.forEach((row: any) => {
+      const agrupadas: Record<number, PronosticoPartido[]> = {};
+      for (let j = 1; j <= 18; j++) {
+        agrupadas[j] = [];
+      }
+
+      if (partidosData) {
+        partidosData.forEach((row: any) => {
           const numJornada = row.jornada || 1;
           if (!agrupadas[numJornada]) agrupadas[numJornada] = [];
           agrupadas[numJornada].push({
@@ -267,21 +269,42 @@ export default function Home() {
         });
 
         setJornadasOficiales(agrupadas);
-
-        // Inicializar pronosticosPorUsuario con los datos obtenidos de Supabase
-        const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
-        for (let j = 1; j <= 18; j++) {
-          obj[j] = {
-            cace: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
-            juanjo: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
-            ivan: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
-          };
-        }
-        setPronosticosPorUsuario(obj);
       }
+
+      // 2. Cargar pronósticos de los usuarios desde Supabase
+      const { data: pronosData, error: pronosError } = await supabase.from('pronosticos').select('*');
+      if (pronosError) {
+        console.error('Error al cargar pronosticos:', pronosError);
+      }
+
+      const obj: Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>> = {};
+      for (let j = 1; j <= 18; j++) {
+        obj[j] = {
+          cace: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
+          juanjo: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
+          ivan: { pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])), confirmado: false, validado: false },
+        };
+      }
+
+      if (pronosData && pronosData.length > 0) {
+        pronosData.forEach((row: any) => {
+          const { jornada, usuario_id, partido_id, eleccion, confirmado, validado } = row;
+          if (obj[jornada] && obj[jornada][usuario_id]) {
+            if (confirmado) obj[jornada][usuario_id].confirmado = confirmado;
+            if (validado) obj[jornada][usuario_id].validado = validado;
+
+            const partido = obj[jornada][usuario_id].pronosticos.find(p => p.id === partido_id);
+            if (partido) {
+              partido.eleccion = eleccion;
+            }
+          }
+        });
+      }
+
+      setPronosticosPorUsuario(obj);
     };
 
-    cargarTemporadaRegular();
+    cargarDatosSupabase();
   }, []);
 
   const cargarPerfil = async (userId: string) => {
@@ -530,12 +553,34 @@ export default function Home() {
     setEstadoBotonConfirmar('normal');
   };
 
-  const handleConfirmarPronosticos = () => {
+  const handleConfirmarPronosticos = async () => {
     const hayIncompletos = datosUsuarioActual.pronosticos.some(p => p.eleccion === null);
     if (hayIncompletos) {
       setEstadoBotonConfirmar('incompleto');
       return;
     }
+
+    // 1. Guardar o actualizar en Supabase
+    const filasGuardar = datosUsuarioActual.pronosticos.map(p => ({
+      jornada: jornadaActual,
+      usuario_id: usuarioActivoId,
+      partido_id: p.id,
+      eleccion: p.eleccion,
+      confirmado: true,
+      updated_at: new Date()
+    }));
+
+    const { error } = await supabase
+      .from('pronosticos')
+      .upsert(filasGuardar, { onConflict: 'jornada,usuario_id,partido_id' });
+
+    if (error) {
+      console.error('Error al guardar pronósticos en Supabase:', error);
+      alert('Hubo un error al guardar tus pronósticos en Supabase.');
+      return;
+    }
+
+    // 2. Actualizar estado local
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
@@ -550,24 +595,39 @@ export default function Home() {
     setEstadoBotonConfirmar('confirmado');
   };
 
-  const handleVotacionAleatoriaYSimular = () => {
+  const handleVotacionAleatoriaYSimular = async () => {
     const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
+    const usuariosTest = ['juanjo', 'cace'];
+    const filasGuardar: any[] = [];
+
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
-      const usuariosTest = ['juanjo', 'cace'];
       const copiaJornada = { ...jornadaData };
 
       usuariosTest.forEach(uid => {
-        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || jornadasOficiales[jornadaActual] || []).map(p => ({
-          ...p,
-          eleccion: opciones[Math.floor(Math.random() * opciones.length)]
-        }));
+        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || jornadasOficiales[jornadaActual] || []).map(p => {
+          const elec = opciones[Math.floor(Math.random() * opciones.length)];
+          filasGuardar.push({
+            jornada: jornadaActual,
+            usuario_id: uid,
+            partido_id: p.id,
+            eleccion: elec,
+            confirmado: true,
+            updated_at: new Date()
+          });
+          return { ...p, eleccion: elec };
+        });
         copiaJornada[uid] = { pronosticos: pronosAleatorios, confirmado: true };
       });
 
       return { ...prev, [jornadaActual]: copiaJornada };
     });
-    alert(`¡Votación aleatoria aplicada para Juanjo y Cace en la Jornada ${jornadaActual}!`);
+
+    if (filasGuardar.length > 0) {
+      await supabase.from('pronosticos').upsert(filasGuardar, { onConflict: 'jornada,usuario_id,partido_id' });
+    }
+
+    alert(`¡Votación aleatoria aplicada y guardada para Juanjo y Cace en la Jornada ${jornadaActual}!`);
   };
 
   const handleSiguienteJornada = () => {
@@ -578,23 +638,55 @@ export default function Home() {
     }
   };
 
-  const handleValidarJornada = () => {
+  const handleValidarJornada = async () => {
     const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
+    const partidosAActualizar: { id: number; resultado_real: '1' | 'X' | '2' }[] = [];
+    const filasGuardarPronos: any[] = [];
+
+    const partidosBase = jornadasOficiales[jornadaActual] || [];
+    partidosBase.forEach(p => {
+      const resReal = p.resultadoReal || opciones[Math.floor(Math.random() * opciones.length)];
+      partidosAActualizar.push({ id: p.id, resultado_real: resReal });
+    });
+
+    // Guardar los resultados reales en la tabla temporada_regular
+    for (const p of partidosAActualizar) {
+      await supabase.from('temporada_regular').update({ resultado_real: p.resultado_real }).eq('id', p.id);
+    }
+
+    // Actualizar estado local y pronosticos
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const copiaJornada = { ...jornadaData };
 
       Object.keys(copiaJornada).forEach(uid => {
-        const pronosValidados = copiaJornada[uid].pronosticos.map(p => ({
-          ...p,
-          resultadoReal: p.resultadoReal || opciones[Math.floor(Math.random() * opciones.length)]
-        }));
+        const pronosValidados = copiaJornada[uid].pronosticos.map(p => {
+          const resObj = partidosAActualizar.find(item => item.id === p.id);
+          const resReal = resObj ? resObj.resultado_real : p.resultadoReal;
+          
+          filasGuardarPronos.push({
+            jornada: jornadaActual,
+            usuario_id: uid,
+            partido_id: p.id,
+            eleccion: p.eleccion,
+            confirmado: copiaJornada[uid].confirmado,
+            validado: true,
+            updated_at: new Date()
+          });
+
+          return { ...p, resultadoReal: resReal };
+        });
         copiaJornada[uid] = { ...copiaJornada[uid], pronosticos: pronosValidados, validado: true };
       });
 
       return { ...prev, [jornadaActual]: copiaJornada };
     });
-    alert(`¡Jornada ${jornadaActual} validada correctamente! Puntos y rachas actualizados.`);
+
+    if (filasGuardarPronos.length > 0) {
+      await supabase.from('pronosticos').upsert(filasGuardarPronos, { onConflict: 'jornada,usuario_id,partido_id' });
+    }
+
+    alert(`¡Jornada ${jornadaActual} validada correctamente! Puntos, rachas y datos guardados en Supabase.`);
   };
 
   const renderTablaDivision = (div: Division, idx: number) => {
