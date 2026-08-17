@@ -242,7 +242,7 @@ export default function Home() {
   useEffect(() => {
     const cargarDatosSupabase = async () => {
       // 1. Cargar partidos de la temporada regular
-      const { data: partidosData, error: partidosError } = await supabase.from('temporada_regular').select('*');
+      const { data: partidosData, error: partidosError } = await supabase.from('partidos').select('*');
       if (partidosError) {
         console.error('Error al cargar temporada_regular:', partidosError);
         return;
