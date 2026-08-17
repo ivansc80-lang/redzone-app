@@ -70,7 +70,7 @@ export async function sincronizarTemporadaCompleta(temporada = 2026) {
         }
 
         // Inserta o actualiza automáticamente según espn_event_id
-        await supabase.from('temporada_regular').upsert(
+        await supabase.from('partidos').upsert(
           {
             espn_event_id: evento.id,
             jornada: semana,
