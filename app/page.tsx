@@ -1057,46 +1057,49 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {partidosJornada.map((partido) => {
-                            const rachaLocalAcumulada = obtenerRachaEquipo(partido.local, jNum);
-                            const rachaVisitanteAcumulada = obtenerRachaEquipo(partido.visitante, jNum);
+                  {partidosJornada.map((partido) => {
+                    // 1. Declaramos las variables aquí dentro del ámbito del map, antes del return
+                    const local = partido.local || partido.equipo_local || '';
+                    const visitante = partido.visitante || partido.equipo_visitante || '';
+                    const localLogo = partido.localLogo || partido.logo_local || partido.equipo_local_logo || '';
+                    const visitanteLogo = partido.visitanteLogo || partido.logo_visitante || partido.equipo_visitante_logo || '';
 
-                            return (
-                              <div key={partido.id} className="bg-[#1a1a1a] border border-zinc-800 rounded-xl p-3 flex flex-col gap-3 shadow-md">
-                                <div className="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-zinc-800">
-                                  <div className="flex items-center gap-2">
-                                    <img src={partido.localLogo} alt={partido.local} className="w-7 h-7 object-contain" />
-                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.local}</span>
-                                  </div>
-                                  <span className="font-['Orbitron'] font-bold text-xs text-zinc-500">vs</span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{partido.visitante}</span>
-                                    <img src={partido.visitanteLogo} alt={partido.visitante} className="w-7 h-7 object-contain" />
-                                  </div>
-                                </div>
+                    const rachaLocalAcumulada = obtenerRachaEquipo(local, jNum);
+                    const rachaVisitanteAcumulada = obtenerRachaEquipo(visitante, jNum);
 
-                                <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 px-1 border-b border-zinc-800 pb-2">
-                                  <span>RACHA LOCAL: <strong className="text-emerald-400">{rachaLocalAcumulada}</strong></span>
-                                  <span>RACHA VIS.: <strong className="text-red-400">{rachaVisitanteAcumulada}</strong></span>
-                                </div>
+                    // 2. Ahora sí devolvemos el JSX limpio
+                    return (
+                      <div key={partido.id} className="bg-[#1a1a1a] border border-zinc-800 rounded-xl p-3 flex flex-col gap-3 shadow-md">
+                        <div className="flex justify-between items-center bg-black/40 p-2 rounded-lg border border-zinc-800">
+                          <div className="flex items-center gap-2">
+                            <img src={localLogo} alt={local} className="w-7 h-7 object-contain" />
+                            <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{local}</span>
+                          </div>
+                          <span className="font-['Orbitron'] font-bold text-xs text-zinc-500">vs</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-['Orbitron'] font-bold text-xs text-white uppercase">{visitante}</span>
+                            <img src={visitanteLogo} alt={visitante} className="w-7 h-7 object-contain" />
+                          </div>
+                        </div>
 
-                                <div className="space-y-1">
-                                  <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
-                                  <div className="grid grid-cols-3 gap-1.5 text-center">
-                                    {usuarios.map(usr => {
-                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.id === partido.id)?.eleccion || '-';
-                                      return (
-                                        <div key={usr.id} className="bg-black/60 border border-zinc-800 rounded p-1 flex flex-col">
-                                          <span className="text-[9px] font-['Orbitron'] font-bold text-zinc-400 uppercase">{usr.nombre}</span>
-                                          <span className="text-xs font-mono font-black text-amber-400 mt-0.5">{eleccionUsr}</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
+                        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 px-1 border-b border-zinc-800 pb-2">
+                          <span>RACHA LOCAL: <strong className="text-emerald-400">{rachaLocalAcumulada}</strong></span>
+                          <span>RACHA VIS.: <strong className="text-red-400">{rachaVisitanteAcumulada}</strong></span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
+                          <div className="grid grid-cols-3 gap-1.5 text-center">
+                            {usuarios.map(usr => {
+                              const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.id === partido.id)?.eleccion || '-';
+                              return (
+                                <div key={usr.id} className="bg-black/60 border border-zinc-800 rounded p-1 flex flex-col">
+                                  <span className="text-[9px] font-['Orbitron'] font-bold text-zinc-400 uppercase">{usr.nombre}</span>
+                                  <span className="text-xs font-mono font-black text-amber-400 mt-0.5">{eleccionUsr}</span>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     );
