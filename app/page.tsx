@@ -741,7 +741,6 @@ export default function Home() {
     { id: 'equipos', label: 'EQUIPOS', icon: <img src="/logo_equipo.png" alt="Equipos" className="w-[35px] h-[35px] object-contain" /> },
     { id: 'noticias', label: 'NOTICIAS', icon: <img src="/logo_noticias.png" alt="Noticias" className="w-[35px] h-[35px] object-contain" /> },
     { id: 'perfil', label: 'PERFIL', icon: <img src="/logo_perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" /> },
-  ];
 
   return (
     <div className="min-h-screen bg-[#8b0000] text-white w-full font-sans">
