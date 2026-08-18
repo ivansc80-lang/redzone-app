@@ -984,6 +984,13 @@ const handleVotacionAleatoriaYSimular = async () => {
                   <span className="text-xs font-bold text-black font-['Orbitron']">{datosUsuarioActual.confirmado ? '🔒 Confirmado' : '✏️ Editando'}</span>
                 </div>
 
+                {(estadoJornadaActual === 'cerrada' ||
+                  estadoJornadaActual === 'finalizada') && (
+                  <div className="mb-4 bg-red-700 border border-red-500 text-white text-center py-3 px-4 rounded-xl font-['Orbitron'] font-black uppercase tracking-widest">
+                    🔒 PORRA CERRADA
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                   {datosUsuarioActual.pronosticos.map((p, index, array) => {
@@ -1022,9 +1029,29 @@ const handleVotacionAleatoriaYSimular = async () => {
                 <div className="mt-6 pt-2 text-center">
                   <button
                     onClick={handleConfirmarPronosticos}
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider cursor-pointer ${estadoBotonConfirmar === 'confirmado' ? 'bg-emerald-500 text-black' : estadoBotonConfirmar === 'incompleto' ? 'bg-red-600 text-white animate-pulse' : 'bg-white text-[#d32f2f] hover:bg-gray-100'}`}
+                    disabled={
+                      estadoJornadaActual === 'cerrada' ||
+                      estadoJornadaActual === 'finalizada'
+                    }
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${
+                      estadoJornadaActual === 'cerrada' ||
+                      estadoJornadaActual === 'finalizada'
+                        ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed'
+                        : estadoBotonConfirmar === 'confirmado'
+                          ? 'bg-emerald-500 text-black cursor-pointer'
+                          : estadoBotonConfirmar === 'incompleto'
+                            ? 'bg-red-600 text-white animate-pulse cursor-pointer'
+                            : 'bg-white text-[#d32f2f] hover:bg-gray-100 cursor-pointer'
+                    }`}
                   >
-                    {estadoBotonConfirmar === 'confirmado' ? '✓ Pronósticos Confirmados (Clic para re-editar si deseas)' : estadoBotonConfirmar === 'incompleto' ? '⚠ Faltan partidos por marcar' : 'Confirmar Pronósticos'}
+                    {estadoJornadaActual === 'cerrada' ||
+                    estadoJornadaActual === 'finalizada'
+                      ? '🔒 PORRA CERRADA'
+                      : estadoBotonConfirmar === 'confirmado'
+                        ? '✓ Pronósticos Confirmados (Clic para re-editar si deseas)'
+                        : estadoBotonConfirmar === 'incompleto'
+                          ? '⚠ Faltan partidos por marcar'
+                          : 'Confirmar Pronósticos'}
                   </button>
                 </div>
               </div>
