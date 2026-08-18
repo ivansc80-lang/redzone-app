@@ -159,33 +159,6 @@ export default function Home() {
   const [jornadasOficiales, setJornadasOficiales] = useState<Record<number, PronosticoPartido[]>>({});
 
   useEffect(() => {
-    async function cargarPartidosDeJornada() {
-      if (jornadaActual) {
-        const dataSupabase = await getPartidosPorJornada(jornadaActual);
-        
-        // Mapeamos los campos usando las columnas reales de Supabase
-        const partidosMapeados: PronosticoPartido[] = dataSupabase.map((p: any) => ({
-          id: p.id,
-          local: p.equipo_local || p.local || '',
-          equipo_local: p.equipo_local || p.local || '',
-          localLogo: p.local_logo || p.equipo_local_logo || '',
-          visitante: p.equipo_visitante || p.visitante || '',
-          equipo_visitante: p.equipo_visitante || p.visitante || '',
-          visitanteLogo: p.visitante_logo || p.equipo_visitante_logo || '',
-          eleccion: null,
-          resultadoReal: p.resultado_oficial || p.resultadoReal || undefined
-        }));
-
-        setJornadasOficiales(prev => ({
-          ...prev,
-          [Number(jornadaActual)]: partidosMapeados
-        }));
-      }
-    }
-    cargarPartidosDeJornada();
-  }, [jornadaActual]);
-
-  useEffect(() => {
     let buffer = '';
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
@@ -270,11 +243,11 @@ export default function Home() {
   useEffect(() => {
     const cargarDatosSupabase = async () => {
       // 1. Cargar partidos de la temporada regular
-      const { data: partidosData, error: partidosError } = await supabase.from('partidos').select('*');
-      if (partidosError) {
-        console.error('Error al cargar temporada_regular:', partidosError);
-        return;
-      }
+      const todasLasJornadas = await Promise.all(
+        Array.from({ length: 18 }, (_, i) => getPartidosPorJornada(i + 1))
+      );
+
+      const partidosData = todasLasJornadas.flat();
 
       const agrupadas: Record<number, PronosticoPartido[]> = {};
       for (let j = 1; j <= 18; j++) {
@@ -287,12 +260,12 @@ export default function Home() {
           if (!agrupadas[numJornada]) agrupadas[numJornada] = [];
           agrupadas[numJornada].push({
             id: row.id,
-            local: row.local,
-            localLogo: row.local_logo,
-            visitante: row.visitante,
-            visitanteLogo: row.visitante_logo,
+            local: row.equipo_local,
+            localLogo: row.info_local?.logo_url || '',
+            visitante: row.equipo_visitante,
+            visitanteLogo: row.info_visitante?.logo_url || '',
             eleccion: null,
-            resultadoReal: row.resultado_real || undefined
+            resultadoReal: row.resultado_oficial || undefined
           });
         });
 
@@ -894,6 +867,7 @@ export default function Home() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
                   {datosUsuarioActual.pronosticos.map((p, index, array) => {
                     const isLocalSelected = p.eleccion === '1';
                     const isVsSelected = p.eleccion === 'X';
@@ -1086,10 +1060,10 @@ export default function Home() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {partidosJornada.map((partido: any) => {
-                            const local = partido.info_local?.nombre || partido.equipo_local || '';
-                            const visitante = partido.info_visitante?.nombre || partido.equipo_visitante || '';
-                            const localLogo = partido.info_local?.logo_url || '';
-                            const visitanteLogo = partido.info_visitante?.logo_url || '';
+                            const local = partido.local || '';
+                            const visitante = partido.visitante || '';
+                            const localLogo = partido.localLogo || '';
+                            const visitanteLogo = partido.visitanteLogo || '';
 
                             const rachaLocalAcumulada = obtenerRachaEquipo(local, jNum);
                             const rachaVisitanteAcumulada = obtenerRachaEquipo(visitante, jNum);

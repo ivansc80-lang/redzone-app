@@ -22,19 +22,24 @@ export interface PartidoTemporada {
  */
 export async function getPartidosPorJornada(jornada: number): Promise<PartidoTemporada[]> {
   try {
-    console.log("➡️ [queries.ts] Solicitando partidos para la jornada:", jornada);
 
     const { data, error } = await supabase
-      .from('partidos')
-      .select(`
-        *,
-        info_local:equipos!partidos_equipo_local_fkey(nombre, logo_url),
-        info_visitante:equipos!partidos_equipo_visitante_fkey(nombre, logo_url)
-      `)
-      .eq('jornada', jornada)
-      .order('fecha_partido', { ascending: true });
-
-    console.log("📥 [queries.ts] Datos obtenidos de Supabase:", data);
+          .from('partidos')
+          .select(`
+            *,
+            info_local:equipos!partidos_equipo_local_fkey (
+              id,
+              nombre,
+              logo_url
+            ),
+            info_visitante:equipos!partidos_equipo_visitante_fkey (
+              id,
+              nombre,
+              logo_url
+            )
+          `)
+          .eq('jornada', jornada)
+          .order('fecha_partido', { ascending: true });
 
     if (error) {
       console.error(`Error al obtener los partidos de la jornada ${jornada}:`, error.message);
