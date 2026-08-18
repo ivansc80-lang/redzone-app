@@ -31,10 +31,14 @@ function calcularFechasLimite(jornada: number, primerPartidoFecha: Date) {
   };
 }
 
-export async function sincronizarTemporadaCompleta(temporada = 2026) {
+export async function sincronizarTemporadaCompleta(
+  temporada = 2026,
+  semanaInicio = 1,
+  semanaFin = 18
+) {
   console.log(`Iniciando sincronización de las 18 jornadas para la temporada ${temporada}...`);
 
-  for (let semana = 1; semana <= 18; semana++) {
+  for (let semana = semanaInicio; semana <= semanaFin; semana++) {
     try {
       const res = await fetch(
         `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&week=${semana}`
@@ -58,33 +62,49 @@ export async function sincronizarTemporadaCompleta(temporada = 2026) {
         const localAbrev = local?.team?.abbreviation || '';
         const visitAbrev = visitante?.team?.abbreviation || '';
         const fechaPartido = new Date(evento.date).toISOString();
+        const estado = comp.status?.type?.name || 'STATUS_SCHEDULED';
 
         let resultadoOficial = null;
-        let puntosLocal = null;
-        let puntosVisitante = null;
 
+        // Guardamos siempre el marcador que devuelve ESPN.
+        // Esto permitirá mostrarlo también mientras el partido está en directo.
+        const puntosLocal = parseInt(local?.score || '0');
+        const puntosVisitante = parseInt(visitante?.score || '0');
+
+        // El resultado 1 / X / 2 solo se considera oficial
+        // cuando ESPN confirma que el partido ha terminado.
         if (comp.status?.type?.completed) {
-          puntosLocal = parseInt(local?.score || '0');
-          puntosVisitante = parseInt(visitante?.score || '0');
-          resultadoOficial = puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
+          resultadoOficial =
+            puntosLocal > puntosVisitante
+              ? '1'
+              : puntosLocal < puntosVisitante
+                ? '2'
+                : 'X';
         }
 
         // Inserta o actualiza automáticamente según espn_event_id
-        await supabase.from('partidos').upsert(
-          {
-            espn_event_id: evento.id,
-            jornada: semana,
-            equipo_local: localAbrev,
-            equipo_visitante: visitAbrev,
-            fecha_partido: fechaPartido,
-            inicio_porra,
-            inicio_jornada,
-            puntos_local: puntosLocal,
-            puntos_visitante: puntosVisitante,
-            resultado_oficial: resultadoOficial,
-          },
-          { onConflict: 'espn_event_id' }
-        );
+        const { error: upsertError } = await supabase
+          .from('partidos')
+          .upsert(
+            {
+              espn_event_id: evento.id,
+              jornada: semana,
+              equipo_local: localAbrev,
+              equipo_visitante: visitAbrev,
+              fecha_partido: fechaPartido,
+              estado,
+              puntos_local: puntosLocal,
+              puntos_visitante: puntosVisitante,
+              resultado_oficial: resultadoOficial,
+            },
+            { onConflict: 'espn_event_id' }
+          );
+
+        if (upsertError) {
+          throw new Error(
+            `Error al guardar partido ESPN ${evento.id} de la jornada ${semana}: ${upsertError.message}`
+          );
+        }
       }
       console.log(`Jornada ${semana} sincronizada correctamente.`);
     } catch (error) {
