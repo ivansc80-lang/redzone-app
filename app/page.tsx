@@ -292,15 +292,23 @@ export default function Home() {
 
       if (pronosData && pronosData.length > 0) {
         pronosData.forEach((row: any) => {
-          const { jornada, usuario_id, partido_id, eleccion, confirmado, validado } = row;
-          if (obj[jornada] && obj[jornada][usuario_id]) {
-            if (confirmado) obj[jornada][usuario_id].confirmado = confirmado;
-            if (validado) obj[jornada][usuario_id].validado = validado;
+          const { user_id, partido_id, eleccion } = row;
 
-            const partido = obj[jornada][usuario_id].pronosticos.find(p => p.id === partido_id);
+          const partidoEncontrado = partidosData.find((p: any) => p.id === partido_id);
+          const jornada = partidoEncontrado?.jornada;
+          const usuarioInterno =
+            user_id === usuarioLogueado?.id ? usuarioActivoId : null;
+
+          if (jornada && usuarioInterno && obj[jornada]?.[usuarioInterno]) {
+            const partido = obj[jornada][usuarioInterno].pronosticos.find(
+              p => p.id === partido_id
+            );
+
             if (partido) {
               partido.eleccion = eleccion;
             }
+
+            obj[jornada][usuarioInterno].confirmado = true;
           }
         });
       }
@@ -308,8 +316,10 @@ export default function Home() {
       setPronosticosPorUsuario(obj);
     };
 
-    cargarDatosSupabase();
-  }, []);
+    if (usuarioLogueado?.id) {
+      cargarDatosSupabase();
+    }
+  }, [usuarioLogueado?.id, usuarioActivoId]);
 
   const cargarPerfil = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
