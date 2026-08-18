@@ -161,8 +161,11 @@ export default function Home() {
   useEffect(() => {
     let buffer = '';
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.key) return;
       if (e.key.length > 1 && e.key !== 'Enter' && e.key !== 'Backspace') return;
+
       buffer = (buffer + e.key).slice(-4);
+      
       if (buffer.endsWith('/BB')) {
         setShowSearch(prev => !prev);
         buffer = '';
@@ -309,7 +312,7 @@ export default function Home() {
   }, []);
 
   const cargarPerfil = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
     if (data) {
       setNombrePerfil(data.nombre || '');
       setNombreEquipo(data.nombre_equipo || '');
@@ -562,18 +565,21 @@ export default function Home() {
     }
 
     // 1. Guardar o actualizar en Supabase
+    if (!usuarioLogueado) {
+      alert('Debes iniciar sesión para guardar tus pronósticos.');
+      return;
+    }
+
     const filasGuardar = datosUsuarioActual.pronosticos.map(p => ({
-      jornada: jornadaActual,
-      usuario_id: usuarioActivoId,
+      user_id: usuarioLogueado.id,
       partido_id: p.id,
       eleccion: p.eleccion,
-      confirmado: true,
-      updated_at: new Date()
+      updated_at: new Date().toISOString()
     }));
 
     const { error } = await supabase
       .from('pronosticos')
-      .upsert(filasGuardar, { onConflict: 'jornada,usuario_id,partido_id' });
+      .upsert(filasGuardar, { onConflict: 'user_id,partido_id' });
 
     if (error) {
       console.error('Error al guardar pronósticos en Supabase:', error);
