@@ -294,10 +294,19 @@ export default function Home() {
         pronosData.forEach((row: any) => {
           const { user_id, partido_id, eleccion } = row;
 
-          const partidoEncontrado = partidosData.find((p: any) => p.id === partido_id);
+          const partidoEncontrado = partidosData.find(
+            (p: any) => p.id === partido_id
+          );
+
           const jornada = partidoEncontrado?.jornada;
-          const usuarioInterno =
-            user_id === usuarioLogueado?.id ? usuarioActivoId : null;
+
+          const mapaUsuarios: Record<string, string> = {
+            '351a81a5-86f9-4d6d-a567-f49ed5959e57': 'ivan',
+            'dadb359a-8bc1-442e-8202-62fa2f8ddab9': 'juanjo',
+            '088072d0-0782-409f-b5e4-f8a558f27b4f': 'cace',
+          };
+
+          const usuarioInterno = mapaUsuarios[user_id] || null;
 
           if (jornada && usuarioInterno && obj[jornada]?.[usuarioInterno]) {
             const partido = obj[jornada][usuarioInterno].pronosticos.find(
@@ -545,7 +554,36 @@ export default function Home() {
     confirmado: false,
   };
 
+  const [estadoJornadaActual, setEstadoJornadaActual] = useState<string>('pendiente');
+
+  useEffect(() => {
+    const cargarEstadoJornada = async () => {
+      const { data, error } = await supabase
+        .from('jornadas_eventos')
+        .select('estado')
+        .eq('jornada', jornadaActual)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error al cargar estado de jornada:', error);
+        return;
+      }
+
+      if (data?.estado) {
+        setEstadoJornadaActual(data.estado);
+      }
+    };
+
+    cargarEstadoJornada();
+  }, [jornadaActual]);
+
   const handleSeleccionPronostico = (idPartido: number, eleccion: '1' | 'X' | '2') => {
+    if (
+      estadoJornadaActual === 'cerrada' ||
+      estadoJornadaActual === 'finalizada'
+    ) {
+      return;
+    }
     setPronosticosPorUsuario(prev => {
       const jornadaData = prev[jornadaActual] || {};
       const usuarioActualData = jornadaData[usuarioActivoId] || { pronosticos: [], confirmado: false };
@@ -568,6 +606,13 @@ export default function Home() {
   };
 
   const handleConfirmarPronosticos = async () => {
+    if (
+      estadoJornadaActual === 'cerrada' ||
+      estadoJornadaActual === 'finalizada'
+    ) {
+      alert('La porra de esta jornada ya está cerrada.');
+      return;
+    }
     const hayIncompletos = datosUsuarioActual.pronosticos.some(p => p.eleccion === null);
     if (hayIncompletos) {
       setEstadoBotonConfirmar('incompleto');
@@ -612,40 +657,97 @@ export default function Home() {
     setEstadoBotonConfirmar('confirmado');
   };
 
-  const handleVotacionAleatoriaYSimular = async () => {
-    const opciones: ('1' | 'X' | '2')[] = ['1', 'X', '2'];
-    const usuariosTest = ['juanjo', 'cace'];
-    const filasGuardar: any[] = [];
-
-    setPronosticosPorUsuario(prev => {
-      const jornadaData = prev[jornadaActual] || {};
-      const copiaJornada = { ...jornadaData };
-
-      usuariosTest.forEach(uid => {
-        const pronosAleatorios = (copiaJornada[uid]?.pronosticos || jornadasOficiales[jornadaActual] || []).map(p => {
-          const elec = opciones[Math.floor(Math.random() * opciones.length)];
-          filasGuardar.push({
-            jornada: jornadaActual,
-            usuario_id: uid,
-            partido_id: p.id,
-            eleccion: elec,
-            confirmado: true,
-            updated_at: new Date()
-          });
-          return { ...p, eleccion: elec };
-        });
-        copiaJornada[uid] = { pronosticos: pronosAleatorios, confirmado: true };
-      });
-
-      return { ...prev, [jornadaActual]: copiaJornada };
+const handleVotacionAleatoriaYSimular = async () => {
+  try {
+    const response = await fetch('/api/test-votacion', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jornada: jornadaActual,
+      }),
     });
 
-    if (filasGuardar.length > 0) {
-      await supabase.from('pronosticos').upsert(filasGuardar, { onConflict: 'jornada,usuario_id,partido_id' });
+    const resultado = await response.json();
+
+    if (!response.ok || !resultado.success) {
+      console.error('Error al generar votación de prueba:', resultado);
+      alert(
+        resultado?.error ||
+          'No se pudieron generar los pronósticos de prueba.'
+      );
+      return;
     }
 
-    alert(`¡Votación aleatoria aplicada y guardada para Juanjo y Cace en la Jornada ${jornadaActual}!`);
-  };
+    // Volvemos a leer los pronósticos reales desde Supabase
+    const { data: pronosData, error: pronosError } = await supabase
+      .from('pronosticos')
+      .select('*');
+
+    if (pronosError) {
+      console.error(
+        'Error al recargar pronósticos después de la simulación:',
+        pronosError
+      );
+      alert(
+        'Los pronósticos se guardaron, pero hubo un error al recargarlos.'
+      );
+      return;
+    }
+
+    // UUID reales de los usuarios de prueba
+    const mapaUsuarios: Record<string, string> = {
+      'dadb359a-8bc1-442e-8202-62fa2f8ddab9': 'juanjo',
+      '088072d0-0782-409f-b5e4-f8a558f27b4f': 'cace',
+      '351a81a5-86f9-4d6d-a567-f49ed5959e57': 'ivan',
+    };
+
+    setPronosticosPorUsuario(prev => {
+      const copia = { ...prev };
+
+      if (!copia[jornadaActual]) {
+        copia[jornadaActual] = {};
+      }
+
+      Object.values(mapaUsuarios).forEach(usuarioInterno => {
+        if (!copia[jornadaActual][usuarioInterno]) {
+          copia[jornadaActual][usuarioInterno] = {
+            pronosticos: JSON.parse(
+              JSON.stringify(jornadasOficiales[jornadaActual] || [])
+            ),
+            confirmado: false,
+            validado: false,
+          };
+        }
+      });
+
+      pronosData?.forEach((row: any) => {
+        const usuarioInterno = mapaUsuarios[row.user_id];
+
+        if (!usuarioInterno) return;
+
+        const partido = copia[jornadaActual][
+          usuarioInterno
+        ]?.pronosticos.find(p => p.id === row.partido_id);
+
+        if (partido) {
+          partido.eleccion = row.eleccion;
+          copia[jornadaActual][usuarioInterno].confirmado = true;
+        }
+      });
+
+      return copia;
+    });
+
+    alert(
+      `¡Votación aleatoria guardada correctamente para Juanjo y Cace en la Jornada ${jornadaActual}!`
+    );
+  } catch (error) {
+    console.error('Error inesperado en Modo Test:', error);
+    alert('Ha ocurrido un error inesperado en el Modo Test.');
+  }
+};
 
   const handleSiguienteJornada = () => {
     if (jornadaActual < 18) {
@@ -967,7 +1069,11 @@ export default function Home() {
 
                       <div className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-xl p-2 space-y-2">
                         {pronosticosUsr.map((p) => {
-                          const eleccion = p.eleccion;
+                          const pronosticosVisibles =
+                            estadoJornadaActual === 'cerrada' ||
+                            estadoJornadaActual === 'finalizada';
+
+                          const eleccion = pronosticosVisibles ? p.eleccion : null;
                           const resultadoOficial = p.resultadoReal;
 
                           let estiloCajaEleccion = 'bg-black text-amber-400 border-zinc-700';
