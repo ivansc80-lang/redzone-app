@@ -1091,7 +1091,7 @@ export default function Home() {
                                   <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider">Pronósticos de Participantes:</span>
                                   <div className="grid grid-cols-3 gap-1.5 text-center">
                                     {usuarios.map(usr => {
-                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.equipo_local === local || p.id === partido.id)?.eleccion || '-';
+                                      const eleccionUsr = pronosticosPorUsuario[jNum]?.[usr.id]?.pronosticos?.find(p => p.local === local || p.id === partido.id)?.eleccion || '-';
                                       return (
                                         <div key={usr.id} className="bg-black/60 border border-zinc-800 rounded p-1 flex flex-col">
                                           <span className="text-[9px] font-['Orbitron'] font-bold text-zinc-400 uppercase">{usr.nombre}</span>
