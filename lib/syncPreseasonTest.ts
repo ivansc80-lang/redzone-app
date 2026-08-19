@@ -1,7 +1,7 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 
 const PRESEASON_TEST_END = new Date('2026-08-25T12:00:00.000Z');
-const PRESEASON_WEEK = 2;
+const PRESEASON_WEEK = 3;
 
 export interface PreseasonSyncResult {
   active: boolean;
@@ -68,7 +68,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
   }
 
   const res = await fetch(
-    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?limit=100&dates=2026&seasontype=1&week=2',
+    'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?limit=100&dates=2026&seasontype=1&week=3',
     { cache: 'no-store' }
   );
 
@@ -91,7 +91,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     );
 
   if (eventos.length === 0) {
-    throw new Error('ESPN no devolvió partidos de pretemporada para la semana 2 de 2026.');
+    throw new Error('ESPN no devolvió partidos de pretemporada para la semana 3 de 2026.');
   }
 
   const primerPartidoFecha = new Date(eventos[0].date);
