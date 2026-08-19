@@ -12,6 +12,7 @@ interface PronosticoPartido {
   visitanteLogo: string;
   eleccion: '1' | 'X' | '2' | null;
   resultadoReal?: '1' | 'X' | '2';
+  acierto?: boolean | null;
 }
 
 interface Usuario {
