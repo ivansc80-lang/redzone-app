@@ -2,6 +2,7 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 
 const PRESEASON_TEST_END = new Date('2026-08-25T12:00:00.000Z');
 const PRESEASON_WEEK = 3;
+const PICK_CLOSE_MINUTES = 30;
 
 export interface PreseasonSyncResult {
   active: boolean;
@@ -20,15 +21,10 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     .eq('id', 1)
     .maybeSingle();
 
-  if (configError) {
-    throw new Error(`Error al leer app_config: ${configError.message}`);
-  }
+  if (configError) throw new Error(`Error al leer app_config: ${configError.message}`);
 
   if (!config?.modo_pretemporada_test) {
-    return {
-      active: false,
-      message: 'El modo de pretemporada de prueba no está activo.',
-    };
+    return { active: false, message: 'El modo de pretemporada de prueba no está activo.' };
   }
 
   const limite = config.modo_pretemporada_hasta
@@ -38,15 +34,11 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
   if (ahora >= limite) {
     const { error: desactivarError } = await supabase
       .from('app_config')
-      .update({
-        modo_pretemporada_test: false,
-      })
+      .update({ modo_pretemporada_test: false })
       .eq('id', 1);
 
     if (desactivarError) {
-      throw new Error(
-        `Error al desactivar el modo de pretemporada: ${desactivarError.message}`
-      );
+      throw new Error(`Error al desactivar el modo de pretemporada: ${desactivarError.message}`);
     }
 
     const { error: restaurarJornadaError } = await supabase
@@ -55,16 +47,10 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
       .eq('jornada', 1);
 
     if (restaurarJornadaError) {
-      throw new Error(
-        `Error al restaurar la jornada 1: ${restaurarJornadaError.message}`
-      );
+      throw new Error(`Error al restaurar la jornada 1: ${restaurarJornadaError.message}`);
     }
 
-    return {
-      active: false,
-      expired: true,
-      message: 'Modo de pretemporada finalizado automáticamente.',
-    };
+    return { active: false, expired: true, message: 'Modo de pretemporada finalizado automáticamente.' };
   }
 
   const res = await fetch(
@@ -72,23 +58,15 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     { cache: 'no-store' }
   );
 
-  if (!res.ok) {
-    throw new Error(`ESPN respondió con HTTP ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`ESPN respondió con HTTP ${res.status}`);
 
   const data = await res.json();
   const eventos = (data.events || [])
     .filter((evento: any) => {
       const fecha = new Date(evento.date);
-      return (
-        fecha >= new Date('2026-08-20T00:00:00.000Z') &&
-        fecha < new Date('2026-08-25T00:00:00.000Z')
-      );
+      return fecha >= new Date('2026-08-20T00:00:00.000Z') && fecha < new Date('2026-08-25T00:00:00.000Z');
     })
-    .sort(
-      (a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (eventos.length === 0) {
     throw new Error('ESPN no devolvió partidos de pretemporada para la semana 3 de 2026.');
@@ -97,7 +75,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
   const primerPartidoFecha = new Date(eventos[0].date);
   const ultimoPartidoFecha = new Date(eventos[eventos.length - 1].date);
   const cierrePronosticos = new Date(
-    primerPartidoFecha.getTime() - 5 * 60 * 1000
+    primerPartidoFecha.getTime() - PICK_CLOSE_MINUTES * 60 * 1000
   );
 
   let todosFinalizados = true;
@@ -106,13 +84,8 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     const comp = evento.competitions?.[0];
     if (!comp) continue;
 
-    const local = comp.competitors?.find(
-      (c: any) => c.homeAway === 'home'
-    );
-    const visitante = comp.competitors?.find(
-      (c: any) => c.homeAway === 'away'
-    );
-
+    const local = comp.competitors?.find((c: any) => c.homeAway === 'home');
+    const visitante = comp.competitors?.find((c: any) => c.homeAway === 'away');
     const localAbrev = local?.team?.abbreviation || '';
     const visitAbrev = visitante?.team?.abbreviation || '';
 
@@ -126,14 +99,8 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     if (!completado) todosFinalizados = false;
 
     let resultadoOficial: '1' | 'X' | '2' | null = null;
-
     if (completado) {
-      resultadoOficial =
-        puntosLocal > puntosVisitante
-          ? '1'
-          : puntosLocal < puntosVisitante
-            ? '2'
-            : 'X';
+      resultadoOficial = puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
     }
 
     const { data: partidoGuardado, error: upsertError } = await supabase
@@ -158,9 +125,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
       .single();
 
     if (upsertError) {
-      throw new Error(
-        `Error al guardar partido de pretemporada ESPN ${evento.id}: ${upsertError.message}`
-      );
+      throw new Error(`Error al guardar partido de pretemporada ESPN ${evento.id}: ${upsertError.message}`);
     }
 
     if (completado && resultadoOficial && partidoGuardado) {
@@ -170,11 +135,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         .eq('partido_id', partidoGuardado.id)
         .eq('eleccion', resultadoOficial);
 
-      if (aciertosError) {
-        throw new Error(
-          `Error al validar aciertos de pretemporada: ${aciertosError.message}`
-        );
-      }
+      if (aciertosError) throw new Error(`Error al validar aciertos de pretemporada: ${aciertosError.message}`);
 
       const { error: fallosError } = await supabase
         .from('pronosticos')
@@ -182,20 +143,12 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         .eq('partido_id', partidoGuardado.id)
         .neq('eleccion', resultadoOficial);
 
-      if (fallosError) {
-        throw new Error(
-          `Error al validar fallos de pretemporada: ${fallosError.message}`
-        );
-      }
+      if (fallosError) throw new Error(`Error al validar fallos de pretemporada: ${fallosError.message}`);
     }
   }
 
   const estadoPretemporada: 'pendiente' | 'cerrada' | 'finalizada' =
-    todosFinalizados
-      ? 'finalizada'
-      : ahora >= cierrePronosticos
-        ? 'cerrada'
-        : 'pendiente';
+    todosFinalizados ? 'finalizada' : ahora >= cierrePronosticos ? 'cerrada' : 'pendiente';
 
   const { error: configUpdateError } = await supabase
     .from('app_config')
@@ -210,9 +163,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     .eq('id', 1);
 
   if (configUpdateError) {
-    throw new Error(
-      `Error al actualizar app_config de pretemporada: ${configUpdateError.message}`
-    );
+    throw new Error(`Error al actualizar app_config de pretemporada: ${configUpdateError.message}`);
   }
 
   const { error: jornadaError } = await supabase
@@ -226,15 +177,13 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     .eq('jornada', 1);
 
   if (jornadaError) {
-    throw new Error(
-      `Error al preparar jornada 1 para la prueba de pretemporada: ${jornadaError.message}`
-    );
+    throw new Error(`Error al preparar jornada 1 para la prueba de pretemporada: ${jornadaError.message}`);
   }
 
   return {
     active: true,
     games: eventos.length,
     estado: estadoPretemporada,
-    message: `Pretemporada de prueba sincronizada: ${eventos.length} partidos.`,
+    message: `Pretemporada de prueba sincronizada: ${eventos.length} partidos. Cierre de pronósticos ${PICK_CLOSE_MINUTES} minutos antes del primer partido.`,
   };
 }
