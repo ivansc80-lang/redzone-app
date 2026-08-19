@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
+import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +32,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Tomamos la primera jornada que todavía no está finalizada.
-    // Así, durante la temporada se sincroniza solo la jornada activa
-    // y no las 18 jornadas completas cada 15 minutos.
+    const { data: config, error: configError } = await supabase
+      .from('app_config')
+      .select('modo_pretemporada_test, modo_pretemporada_hasta')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (configError) {
+      throw new Error(`Error al leer app_config: ${configError.message}`);
+    }
+
+    if (config?.modo_pretemporada_test) {
+      const resultadoPretemporada = await sincronizarPretemporadaTest();
+
+      if (resultadoPretemporada.active) {
+        return NextResponse.json({
+          success: true,
+          mode: 'pretemporada_test',
+          ...resultadoPretemporada,
+        });
+      }
+
+      // Si acaba de caducar, en esta misma ejecución continuamos con
+      // temporada regular para que la PWA vuelva a su estado normal.
+    }
+
+    // En temporada regular tomamos la primera jornada que todavía no está
+    // finalizada y sincronizamos únicamente esa jornada.
     const { data: jornadaActiva, error: jornadaActivaError } = await supabase
       .from('jornadas_eventos')
       .select('jornada, estado')
@@ -51,6 +76,7 @@ export async function GET(request: NextRequest) {
     if (!jornadaActiva) {
       return NextResponse.json({
         success: true,
+        mode: 'regular',
         message: 'No hay jornadas pendientes de sincronización.',
       });
     }
@@ -61,6 +87,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      mode: 'regular',
       jornada,
       estado: jornadaActiva.estado,
       message: `Jornada ${jornada} sincronizada correctamente desde ESPN.`,
