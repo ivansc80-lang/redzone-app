@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const cronSecret = process.env.CRON_SECRET;
