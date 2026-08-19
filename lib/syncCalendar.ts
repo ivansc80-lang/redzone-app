@@ -20,21 +20,17 @@ export async function sincronizarTemporadaCompleta(
 
       if (eventos.length === 0) continue;
 
-      // Ordenar por fecha para identificar el primer partido.
       eventos.sort(
         (a: any, b: any) =>
           new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
       const primerPartidoFecha = new Date(eventos[0].date);
-
       const inicioJornadaReal = primerPartidoFecha.toISOString();
-
       const cierrePronosticos = new Date(
-        primerPartidoFecha.getTime() - 5 * 60 * 1000
+        primerPartidoFecha.getTime() - 30 * 60 * 1000
       ).toISOString();
 
-      // Comprobar el estado actual de la jornada.
       const {
         data: jornadaEvento,
         error: jornadaEventoError,
@@ -50,8 +46,6 @@ export async function sincronizarTemporadaCompleta(
         );
       }
 
-      // Si el cierre guardado ya ha vencido,
-      // cerramos la porra antes de permitir cambios de horario.
       if (
         jornadaEvento &&
         jornadaEvento.estado === 'pendiente' &&
@@ -60,9 +54,7 @@ export async function sincronizarTemporadaCompleta(
       ) {
         const { error: cerrarPorraError } = await supabase
           .from('jornadas_eventos')
-          .update({
-            estado: 'cerrada',
-          })
+          .update({ estado: 'cerrada' })
           .eq('jornada', semana)
           .eq('estado', 'pendiente');
 
@@ -75,7 +67,6 @@ export async function sincronizarTemporadaCompleta(
         jornadaEvento &&
         jornadaEvento.estado === 'pendiente'
       ) {
-        // Mientras siga pendiente, ESPN puede actualizar horarios.
         const { error: actualizarJornadaError } = await supabase
           .from('jornadas_eventos')
           .update({
@@ -92,7 +83,6 @@ export async function sincronizarTemporadaCompleta(
         }
       }
 
-      // Sincronizar cada partido de la jornada.
       for (const evento of eventos) {
         const comp = evento.competitions[0];
 
@@ -106,19 +96,13 @@ export async function sincronizarTemporadaCompleta(
 
         const localAbrev = local?.team?.abbreviation || '';
         const visitAbrev = visitante?.team?.abbreviation || '';
-
         const fechaPartido = new Date(evento.date).toISOString();
-
-        // Valores reales devueltos por ESPN.
-        const estado =
-          comp.status?.type?.name || 'STATUS_SCHEDULED';
-
+        const estado = comp.status?.type?.name || 'STATUS_SCHEDULED';
         const puntosLocal = parseInt(local?.score || '0');
         const puntosVisitante = parseInt(visitante?.score || '0');
 
         let resultadoOficial: '1' | 'X' | '2' | null = null;
 
-        // Solo existe resultado oficial cuando ESPN confirma el final.
         if (comp.status?.type?.completed) {
           resultadoOficial =
             puntosLocal > puntosVisitante
@@ -128,7 +112,6 @@ export async function sincronizarTemporadaCompleta(
                 : 'X';
         }
 
-        // Actualizar o crear el partido según espn_event_id.
         const {
           data: partidoActualizado,
           error: upsertError,
@@ -146,9 +129,7 @@ export async function sincronizarTemporadaCompleta(
               puntos_visitante: puntosVisitante,
               resultado_oficial: resultadoOficial,
             },
-            {
-              onConflict: 'espn_event_id',
-            }
+            { onConflict: 'espn_event_id' }
           )
           .select(
             'id, espn_event_id, estado, puntos_local, puntos_visitante, resultado_oficial'
@@ -161,8 +142,6 @@ export async function sincronizarTemporadaCompleta(
           );
         }
 
-        // Obtener el ID interno de nuestra tabla partidos.
-        // pronosticos.partido_id utiliza este ID, no el ID de ESPN.
         const partidoGuardado = partidoActualizado;
 
         if (!partidoGuardado) {
@@ -171,18 +150,10 @@ export async function sincronizarTemporadaCompleta(
           );
         }
 
-        // Validar automáticamente los pronósticos solamente
-        // cuando el partido está STATUS_FINAL.
-        if (
-          estado === 'STATUS_FINAL' &&
-          resultadoOficial
-        ) {
-          // Pronósticos acertados.
+        if (estado === 'STATUS_FINAL' && resultadoOficial) {
           const { error: validarPronosticosError } = await supabase
             .from('pronosticos')
-            .update({
-              acierto: true,
-            })
+            .update({ acierto: true })
             .eq('partido_id', partidoGuardado.id)
             .eq('eleccion', resultadoOficial);
 
@@ -192,12 +163,9 @@ export async function sincronizarTemporadaCompleta(
             );
           }
 
-          // Pronósticos fallados.
           const { error: marcarFallosError } = await supabase
             .from('pronosticos')
-            .update({
-              acierto: false,
-            })
+            .update({ acierto: false })
             .eq('partido_id', partidoGuardado.id)
             .neq('eleccion', resultadoOficial);
 
@@ -213,14 +181,14 @@ export async function sincronizarTemporadaCompleta(
         }
       }
 
-      // Comprobar si TODOS los partidos de la jornada han finalizado.
       const {
         data: partidosJornada,
         error: partidosJornadaError,
       } = await supabase
         .from('partidos')
         .select('estado')
-        .eq('jornada', semana);
+        .eq('jornada', semana)
+        .eq('tipo_competicion', 'regular');
 
       if (partidosJornadaError) {
         throw new Error(
@@ -235,7 +203,6 @@ export async function sincronizarTemporadaCompleta(
           (p: any) => p.estado === 'STATUS_FINAL'
         );
 
-      // Cuando todos están FINAL, la jornada queda finalizada.
       if (todosFinalizados) {
         const { error: cerrarJornadaError } = await supabase
           .from('jornadas_eventos')
@@ -252,14 +219,9 @@ export async function sincronizarTemporadaCompleta(
         }
       }
 
-      console.log(
-        `Jornada ${semana} sincronizada correctamente.`
-      );
+      console.log(`Jornada ${semana} sincronizada correctamente.`);
     } catch (error) {
-      console.error(
-        `Error al sincronizar jornada ${semana}:`,
-        error
-      );
+      console.error(`Error al sincronizar jornada ${semana}:`, error);
     }
   }
 }
