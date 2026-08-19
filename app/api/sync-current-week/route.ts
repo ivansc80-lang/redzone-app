@@ -5,6 +5,23 @@ import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
 
 export const dynamic = 'force-dynamic';
 
+function getSafeDebugInfo(config: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  let projectRef = 'unknown';
+
+  try {
+    projectRef = new URL(supabaseUrl).hostname.split('.')[0] || 'unknown';
+  } catch {
+    projectRef = 'invalid-url';
+  }
+
+  return {
+    projectRef,
+    modo_pretemporada_test: config?.modo_pretemporada_test ?? null,
+    modo_pretemporada_hasta: config?.modo_pretemporada_hasta ?? null,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const cronSecret = process.env.CRON_SECRET;
@@ -42,6 +59,8 @@ export async function GET(request: NextRequest) {
       throw new Error(`Error al leer app_config: ${configError.message}`);
     }
 
+    const debug = getSafeDebugInfo(config);
+
     if (config?.modo_pretemporada_test) {
       const resultadoPretemporada = await sincronizarPretemporadaTest();
 
@@ -49,6 +68,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           success: true,
           mode: 'pretemporada_test',
+          debug,
           ...resultadoPretemporada,
         });
       }
@@ -77,6 +97,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         mode: 'regular',
+        debug,
         message: 'No hay jornadas pendientes de sincronización.',
       });
     }
@@ -88,6 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       mode: 'regular',
+      debug,
       jornada,
       estado: jornadaActiva.estado,
       message: `Jornada ${jornada} sincronizada correctamente desde ESPN.`,
