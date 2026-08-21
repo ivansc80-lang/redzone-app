@@ -101,6 +101,12 @@ export async function sincronizarTemporadaCompleta(
         const puntosLocal = parseInt(local?.score || '0');
         const puntosVisitante = parseInt(visitante?.score || '0');
 
+        const periodo = Number(comp.status?.period || 0) || null;
+        const reloj =
+          comp.status?.displayClock ||
+          comp.status?.type?.shortDetail ||
+          null;
+
         let resultadoOficial: '1' | 'X' | '2' | null = null;
 
         if (comp.status?.type?.completed) {
@@ -127,6 +133,8 @@ export async function sincronizarTemporadaCompleta(
               estado,
               puntos_local: puntosLocal,
               puntos_visitante: puntosVisitante,
+              periodo,
+              reloj,
               resultado_oficial: resultadoOficial,
             },
             { onConflict: 'espn_event_id' }
@@ -178,6 +186,19 @@ export async function sincronizarTemporadaCompleta(
           console.log(
             `✅ Pronósticos validados para ${localAbrev} - ${visitAbrev}. Resultado: ${resultadoOficial}`
           );
+        } else {
+          // Mientras ESPN no considere FINAL el partido,
+          // los pronósticos deben permanecer sin validar.
+          const { error: limpiarAciertosError } = await supabase
+            .from('pronosticos')
+            .update({ acierto: null })
+            .eq('partido_id', partidoGuardado.id);
+
+          if (limpiarAciertosError) {
+            throw new Error(
+              `Error al limpiar aciertos pendientes del partido ESPN ${evento.id}: ${limpiarAciertosError.message}`
+            );
+          }
         }
       }
 

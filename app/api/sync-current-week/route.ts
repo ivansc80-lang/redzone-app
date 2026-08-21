@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
 import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
+import { sincronizarPostemporada } from '@/lib/syncPostseason';
+import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     const { data: config, error: configError } = await supabase
       .from('app_config')
-      .select('modo_pretemporada_test, modo_pretemporada_hasta')
+      .select('modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
       .eq('id', 1)
       .maybeSingle();
 
@@ -75,6 +77,41 @@ export async function GET(request: NextRequest) {
 
       // Si acaba de caducar, en esta misma ejecución continuamos con
       // temporada regular para que la PWA vuelva a su estado normal.
+    }
+
+    if (config?.fase_competicion === 'playoffs') {
+      const semanaPostemporada = Number(config.semana_postemporada || 1);
+
+      await sincronizarPostemporada(
+        2026,
+        semanaPostemporada,
+        semanaPostemporada
+      );
+
+      return NextResponse.json({
+        success: true,
+        mode: 'playoffs',
+        debug,
+        semana: semanaPostemporada,
+        message: `Playoffs semana ${semanaPostemporada} sincronizados correctamente desde ESPN.`,
+      });
+    }
+
+    if (config?.fase_competicion === 'superbowl') {
+      const desempate = await activarDesempateSuperbowlSiProcede();
+
+      await sincronizarPostemporada(2026, 4, 4);
+
+      return NextResponse.json({
+        success: true,
+        mode: 'superbowl',
+        debug,
+        semana: 4,
+        desempate,
+        message: desempate.activado
+          ? 'Super Bowl sincronizada. Desempate activo.'
+          : 'Super Bowl sincronizada correctamente desde ESPN.',
+      });
     }
 
     // En temporada regular tomamos la primera jornada que todavía no está
