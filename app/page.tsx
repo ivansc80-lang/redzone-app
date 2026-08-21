@@ -550,10 +550,16 @@ export default function Home() {
       fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/news?limit=50&lang=es&region=es')
         .then((res) => res.json())
         .then((data) => {
-          const noticiasMapeadas: Noticia[] = data.articles?.map((art: any, index: number) => {
+          const articulosSoloNoticias = (data.articles || []).filter((art: any) => {
+            const esMedia = art.type === 'Media';
+            const esVideo = art.links?.api?.self?.href?.includes('/video/clips/');
+            return !esMedia && !esVideo;
+          });
+
+          const noticiasMapeadas: Noticia[] = articulosSoloNoticias.map((art: any, index: number) => {
             const urlOriginal = art.links?.web?.href || '#';
             return { id: art.id || String(index), titulo: art.headline, descripcion: art.description || 'Sin descripción disponible.', enlace: urlOriginal, imagen: art.images?.[0]?.url || '/redzone1_logo.png', fecha: new Date(art.published).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
-          }) || [];
+          });
           setNoticias(noticiasMapeadas);
         })
         .catch((err) => console.error('Error cargando noticias:', err))
