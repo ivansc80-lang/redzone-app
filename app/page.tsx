@@ -39,6 +39,14 @@ interface Usuario {
   esColider?: boolean;
 }
 
+type CategoriaNoticia =
+  | 'LESIONES'
+  | 'SANCIONES'
+  | 'FICHAJES'
+  | 'RUMORES'
+  | 'PARTIDOS'
+  | 'OTROS';
+
 interface Noticia {
   id: string;
   titulo: string;
@@ -46,6 +54,7 @@ interface Noticia {
   enlace: string;
   imagen: string;
   fecha: string;
+  categoria: CategoriaNoticia;
 }
 
 interface EquipoPosicion {
@@ -187,6 +196,181 @@ const DIVISIONES_BASE: Division[] = [
   },
 ];
 
+const contieneTexto = (texto: string, palabras: string[]) =>
+  palabras.some((palabra) => texto.includes(palabra));
+
+const clasificarNoticia = (
+  tituloOriginal: string,
+  descripcionOriginal: string
+): CategoriaNoticia => {
+  const titulo = (tituloOriginal || '').toLowerCase();
+  const descripcion = (descripcionOriginal || '').toLowerCase();
+
+  const sancionesTitulo = [
+    'sanción', 'sancionado', 'suspendido', 'suspensión',
+    'multado', 'multa', 'castigo'
+  ];
+
+  const sancionesDescripcion = [
+    'fue sancionado', 'ha sido sancionado',
+    'fue suspendido', 'ha sido suspendido',
+    'fue multado', 'ha sido multado'
+  ];
+
+  const lesionesTitulo = [
+    'lesión', 'lesionado', 'lesionó',
+    'esguince', 'fractura', 'conmoción',
+    'lca', 'acl', 'lcm', 'mcl',
+    'ligamento', 'cirugía',
+    'baja', 'se pierde', 'pierden',
+    'no estará listo', 'no es seguro que esté listo',
+    'salió en carrito', 'indefinidamente',
+    'espera estar listo', 'regreso',
+    'volverá', 'volveria', 'volvería'
+  ];
+
+  const lesionesDescripcion = [
+    'sufrió una lesión', 'sufrio una lesión',
+    'se lesionó', 'se lesiono',
+    'estará de baja', 'estara de baja',
+    'ligamento', 'esguince', 'fractura',
+    'conmoción', 'lca', 'acl', 'lcm', 'mcl',
+    'cirugía', 'operado', 'salió en carrito'
+  ];
+
+  const fichajesTitulo = [
+    'ficha ', 'ficha a ', 'fichará', 'ficharán',
+    'firma ', 'firma por ', 'firmará', 'firmarán',
+    'acuerda ', 'acuerdan ', 'acordó con',
+    'adquiere ', 'adquieren ',
+    'traspasa ', 'traspasan ',
+    'intercambia ', 'intercambian ',
+    'agente libre'
+  ];
+
+  const rumoresTitulo = [
+    'podría fichar', 'podria fichar',
+    'podría firmar', 'podria firmar',
+    'posible fichaje', 'posible traspaso',
+    'interés en', 'interes en',
+    'interesado en fichar',
+    'se especula', 'rumor', 'rumores',
+    'evalúan fichar', 'evaluan fichar',
+    'consideran fichar',
+    'posible destino'
+  ];
+
+  const partidosTitulo = [
+    'partido', 'partidos',
+    'juego ', 'juegos ',
+    'calendario', 'horario',
+    'pretemporada',
+    'semana 1', 'semana 2', 'semana 3', 'semana 4',
+    'vs.', ' vs '
+  ];
+
+  if (contieneTexto(titulo, sancionesTitulo)) return 'SANCIONES';
+  if (contieneTexto(titulo, lesionesTitulo)) return 'LESIONES';
+  if (contieneTexto(titulo, fichajesTitulo)) return 'FICHAJES';
+  if (contieneTexto(titulo, rumoresTitulo)) return 'RUMORES';
+  if (contieneTexto(titulo, partidosTitulo)) return 'PARTIDOS';
+
+  if (contieneTexto(descripcion, sancionesDescripcion)) return 'SANCIONES';
+  if (contieneTexto(descripcion, lesionesDescripcion)) return 'LESIONES';
+
+  return 'OTROS';
+};
+
+const IconoCategoriaNoticia = ({
+  categoria,
+  className = "w-7 h-7 md:w-8 md:h-8"
+}: {
+  categoria: 'TODAS' | CategoriaNoticia;
+  className?: string;
+}) => {
+  const base = {
+    className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const
+  };
+
+  switch (categoria) {
+    case 'TODAS':
+      return (
+        <svg {...base}>
+          <rect x="3" y="3" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
+          <rect x="14" y="3" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
+          <rect x="3" y="14" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
+          <rect x="14" y="14" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+
+    case 'LESIONES':
+      return (
+        <svg {...base}>
+          <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor" stroke="none" />
+          <path d="M4.8 12h3l1.2-2.3 2.1 5 1.7-3.2 1.2.5h5.2" stroke="#002244" strokeWidth="1.4" />
+        </svg>
+      );
+
+    case 'SANCIONES':
+      return (
+        <svg {...base}>
+          <path d="M14 4l6 6" />
+          <path d="M12.5 5.5l3-3 6 6-3 3z" fill="currentColor" stroke="none" />
+          <path d="M4 14l7-7 6 6-7 7z" fill="currentColor" stroke="none" />
+          <path d="M3 21h10" />
+        </svg>
+      );
+
+    case 'FICHAJES':
+      return (
+        <svg {...base}>
+          <path d="M8.5 12.5l2 2a2 2 0 0 0 3 0l2.8-2.8" />
+          <path d="M7.8 13.2l-2.6-2.6a2 2 0 0 0-2.8 0L1 12l5 5 1.8-1.8" />
+          <path d="M16.2 13.2l2.6-2.6a2 2 0 0 1 2.8 0L23 12l-5 5-1.8-1.8" />
+          <path d="M9 10l2-2a2.8 2.8 0 0 1 4 0l3 3" />
+        </svg>
+      );
+
+    case 'RUMORES':
+      return (
+        <svg {...base}>
+          <path d="M21 12a8 8 0 0 1-8 8H7l-4 2 1.4-4.2A8 8 0 1 1 21 12z" fill="currentColor" stroke="none" />
+          <circle cx="8" cy="12" r="1" fill="#002244" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="#002244" stroke="none" />
+          <circle cx="16" cy="12" r="1" fill="#002244" stroke="none" />
+        </svg>
+      );
+
+    case 'PARTIDOS':
+      return (
+        <svg {...base}>
+          <path
+            d="M5 19c-3-3-2-8 2-12s9-5 12-2 2 8-2 12-9 5-12 2z"
+            fill="currentColor"
+            stroke="none"
+          />
+          <path d="M8 16L16 8" stroke="#002244" strokeWidth="1.5" />
+          <path d="M10 11l3 3M12 9l3 3M8 13l3 3" stroke="#002244" strokeWidth="1.2" />
+        </svg>
+      );
+
+    case 'OTROS':
+      return (
+        <svg {...base}>
+          <circle cx="5" cy="12" r="2" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+          <circle cx="19" cy="12" r="2" fill="currentColor" stroke="none" />
+        </svg>
+      );
+  }
+};
+
 export default function Home() {
   const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
   const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
@@ -232,6 +416,7 @@ export default function Home() {
   const [pronosticosPorUsuario, setPronosticosPorUsuario] = useState<Record<number, Record<string, { pronosticos: PronosticoPartido[]; confirmado: boolean; validado?: boolean }>>>({});
   const [estadoBotonConfirmar, setEstadoBotonConfirmar] = useState<'normal' | 'incompleto' | 'confirmado'>('normal');
   const [noticias, setNoticias] = useState<Noticia[]>([]);
+  const [filtroNoticias, setFiltroNoticias] = useState<'TODAS' | CategoriaNoticia>('TODAS');
   const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
   const [divisiones, setDivisiones] = useState<Division[]>(DIVISIONES_BASE);
   const [sincronizandoPosiciones, setSincronizandoPosiciones] = useState<boolean>(false);
@@ -562,7 +747,22 @@ export default function Home() {
               'https://www.espn.es',
               'https://espndeportes.espn.com'
             );
-            return { id: art.id || String(index), titulo: art.headline, descripcion: art.description || 'Sin descripción disponible.', enlace: urlOriginal, imagen: art.images?.[0]?.url || '/redzone1_logo.png', fecha: new Date(art.published).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
+            const descripcion = art.description || 'Sin descripción disponible.';
+            return {
+              id: art.id || String(index),
+              titulo: art.headline,
+              descripcion,
+              enlace: urlOriginal,
+              imagen: art.images?.[0]?.url || '/redzone1_logo.png',
+              fecha: new Date(art.published).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              }),
+              categoria: clasificarNoticia(art.headline || '', descripcion)
+            };
           });
           setNoticias(noticiasMapeadas);
         })
@@ -1002,6 +1202,11 @@ export default function Home() {
   const eleccionUsuarioSuperbowl = eleccionesSuperbowl.find(
     (e: any) => e.user_id === usuarioLogueado?.id
   );
+
+  const noticiasFiltradas =
+    filtroNoticias === 'TODAS'
+      ? noticias
+      : noticias.filter((noticia) => noticia.categoria === filtroNoticias);
 
   const navItems = [
     { id: 'clasificacion', label: 'RANKING', icon: <img src="/logo.clasificacion.png" alt="Ranking" className="w-[35px] h-[35px] object-contain" /> },
@@ -1693,7 +1898,115 @@ export default function Home() {
           </section>
           )}
 
-          {pestanaActiva === 'noticias' && <section className="space-y-4"><h2 className="text-xs md:text-sm font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-1 font-['Orbitron'] italic">Última Hora NFL</h2>{cargandoNoticias ? <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">Cargando noticias en castellano...</div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{noticias.map((item) => <article key={item.id} className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-600 transition-all shadow-lg"><div>{item.imagen && <div className="h-44 w-full overflow-hidden bg-zinc-900"><img src={item.imagen} alt={item.titulo} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" /></div>}<div className="p-4 space-y-2"><span className="text-[10px] font-mono text-red-400 font-semibold uppercase">{item.fecha}</span><h3 className="font-['Orbitron'] text-sm font-bold leading-snug text-white">{item.titulo}</h3><p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">{item.descripcion}</p></div></div><div className="p-4 pt-0"><a href={item.enlace} target="_blank" rel="noopener noreferrer" className="inline-block w-full text-center bg-red-950/80 hover:bg-red-900 text-red-100 text-xs font-['Orbitron'] py-2 rounded border border-red-800 transition-colors uppercase">Leer Noticia Completa 🇪🇸</a></div></article>)}</div>}</section>}
+          {pestanaActiva === 'noticias' && (
+            <section className="space-y-4">
+              <div className="bg-[#002244] -mt-4">
+                <div className="max-w-7xl mx-auto flex items-start justify-start md:justify-evenly gap-5 md:gap-8 overflow-x-auto px-4 md:px-6 py-4 md:py-5">
+                  {[
+                    ['TODAS', '/todas.png'],
+                    ['LESIONES', '/lesion.png'],
+                    ['SANCIONES', '/sancion.png'],
+                    ['FICHAJES', '/fichajes.png'],
+                    ['RUMORES', '/rumores.png'],
+                    ['PARTIDOS', '/partidos.png'],
+                    ['OTROS', '/otros.png']
+                  ].map(([filtro, icono]) => (
+                    <button
+                      key={filtro}
+                      onClick={() => setFiltroNoticias(filtro as 'TODAS' | CategoriaNoticia)}
+                      className={`group shrink-0 min-w-[62px] md:min-w-[90px] flex flex-col items-center justify-center gap-1.5 md:gap-2 text-white transition-all ${
+                        filtroNoticias === filtro
+                          ? 'opacity-100'
+                          : 'opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      <img
+                        src={icono}
+                        alt={filtro}
+                        className={`object-contain transition-transform ${
+                          filtroNoticias === filtro ? 'scale-105' : ''
+                        } w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10`}
+                      />
+
+                      <span className="font-['Orbitron'] text-[7px] sm:text-[8px] md:text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">
+                        {filtro}
+                      </span>
+
+                      <span
+                        className={`h-[2px] w-7 rounded-full transition-opacity ${
+                          filtroNoticias === filtro
+                            ? 'bg-white opacity-100'
+                            : 'opacity-0'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {cargandoNoticias ? (
+                <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">
+                  Cargando noticias en castellano...
+                </div>
+              ) : noticiasFiltradas.length === 0 ? (
+                <div className="p-8 text-center text-zinc-400 font-['Orbitron'] text-xs">
+                  No hay noticias en esta categoría.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {noticiasFiltradas.map((item) => (
+                    <article
+                      key={item.id}
+                      className="bg-black/90 border border-red-900/60 rounded-xl overflow-hidden flex flex-col justify-between hover:border-red-600 transition-all shadow-lg"
+                    >
+                      <div>
+                        {item.imagen && (
+                          <div className="h-44 w-full overflow-hidden bg-zinc-900">
+                            <img
+                              src={item.imagen}
+                              alt={item.titulo}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+
+                        <div className="p-4 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono text-red-400 font-semibold uppercase">
+                              {item.fecha}
+                            </span>
+
+                            <span className="text-[9px] font-['Orbitron'] text-zinc-400 border border-zinc-700 px-2 py-1 rounded">
+                              {item.categoria}
+                            </span>
+                          </div>
+
+                          <h3 className="font-['Orbitron'] text-sm font-bold leading-snug text-white">
+                            {item.titulo}
+                          </h3>
+
+                          <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">
+                            {item.descripcion}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 pt-0">
+                        <a
+                          href={item.enlace}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block w-full text-center bg-red-950/80 hover:bg-red-900 text-red-100 text-xs font-['Orbitron'] py-2 rounded border border-red-800 transition-colors uppercase"
+                        >
+                          Leer Noticia Completa 🇪🇸
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {pestanaActiva === 'perfil' && (
             <section className="space-y-5 max-w-md mx-auto">
