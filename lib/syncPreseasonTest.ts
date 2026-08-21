@@ -3,10 +3,6 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 const PRESEASON_TEST_END = new Date('2026-08-25T12:00:00.000Z');
 const PRESEASON_WEEK = 3;
 const PICK_CLOSE_MINUTES = 30;
-// Ventana temporal SOLO para comprobar el cierre automático el 21/08/2026.
-// Después de la prueba hay que eliminar estas dos constantes y volver a usar la hora ESPN.
-const TEST_FIRST_GAME = new Date('2026-08-21T07:20:00.000Z'); // 09:20 España
-const TEST_PICK_CLOSE = new Date('2026-08-21T06:50:00.000Z'); // 08:50 España
 
 export interface PreseasonSyncResult {
   active: boolean;
@@ -76,9 +72,11 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     throw new Error('ESPN no devolvió partidos de pretemporada para la semana 3 de 2026.');
   }
 
-  const primerPartidoFecha = TEST_FIRST_GAME;
+  const primerPartidoFecha = new Date(eventos[0].date);
   const ultimoPartidoFecha = new Date(eventos[eventos.length - 1].date);
-  const cierrePronosticos = TEST_PICK_CLOSE;
+  const cierrePronosticos = new Date(
+    primerPartidoFecha.getTime() - PICK_CLOSE_MINUTES * 60 * 1000
+  );
 
   let todosFinalizados = true;
 
@@ -98,11 +96,36 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     const puntosLocal = parseInt(local?.score || '0', 10);
     const puntosVisitante = parseInt(visitante?.score || '0', 10);
 
+    const periodo = Number(comp.status?.period || 0) || null;
+    const reloj =
+      comp.status?.displayClock ||
+      comp.status?.type?.shortDetail ||
+      null;
+
     if (!completado) todosFinalizados = false;
 
     let resultadoOficial: '1' | 'X' | '2' | null = null;
     if (completado) {
       resultadoOficial = puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
+    }
+
+    // Si el partido fue finalizado manualmente durante las pruebas,
+    // el cron NO debe sobrescribir su resultado con el estado actual de ESPN.
+    const { data: partidoExistente, error: partidoExistenteError } = await supabase
+      .from('partidos')
+      .select('id, estado')
+      .eq('espn_event_id', evento.id)
+      .maybeSingle();
+
+    if (partidoExistenteError) {
+      throw new Error(
+        `Error al comprobar partido de prueba ESPN ${evento.id}: ${partidoExistenteError.message}`
+      );
+    }
+
+    if (partidoExistente?.estado === 'STATUS_FINAL_TEST') {
+      // Ya fue simulado y validado. Lo dejamos intacto.
+      continue;
     }
 
     const { data: partidoGuardado, error: upsertError } = await supabase
@@ -115,12 +138,12 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
           tipo_competicion: 'pretemporada_test',
           equipo_local: localAbrev,
           equipo_visitante: visitAbrev,
-          fecha_partido: localAbrev === 'HOU' && visitAbrev === 'LV'
-            ? TEST_FIRST_GAME.toISOString()
-            : new Date(evento.date).toISOString(),
+          fecha_partido: new Date(evento.date).toISOString(),
           estado,
           puntos_local: puntosLocal,
           puntos_visitante: puntosVisitante,
+          periodo,
+          reloj,
           resultado_oficial: resultadoOficial,
         },
         { onConflict: 'espn_event_id' }
@@ -148,11 +171,44 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         .neq('eleccion', resultadoOficial);
 
       if (fallosError) throw new Error(`Error al validar fallos de pretemporada: ${fallosError.message}`);
+    } else if (partidoGuardado) {
+      // Si ESPN indica que el partido todavía NO ha finalizado,
+      // ningún pronóstico puede conservar acierto/fallo.
+      const { error: limpiarAciertosError } = await supabase
+        .from('pronosticos')
+        .update({ acierto: null })
+        .eq('partido_id', partidoGuardado.id);
+
+      if (limpiarAciertosError) {
+        throw new Error(
+          `Error al limpiar aciertos pendientes de pretemporada: ${limpiarAciertosError.message}`
+        );
+      }
     }
   }
 
+  // Conservamos un cierre manual durante las pruebas controladas.
+  // El cron puede seguir sincronizando ESPN, pero no debe reabrir PORRA.
+  const { data: jornadaActual, error: jornadaActualError } = await supabase
+    .from('jornadas_eventos')
+    .select('estado')
+    .eq('jornada', 1)
+    .maybeSingle();
+
+  if (jornadaActualError) {
+    throw new Error(
+      `Error al consultar el estado actual de la jornada 1: ${jornadaActualError.message}`
+    );
+  }
+
   const estadoPretemporada: 'pendiente' | 'cerrada' | 'finalizada' =
-    todosFinalizados ? 'finalizada' : ahora >= cierrePronosticos ? 'cerrada' : 'pendiente';
+    todosFinalizados
+      ? 'finalizada'
+      : jornadaActual?.estado === 'cerrada'
+        ? 'cerrada'
+        : ahora >= cierrePronosticos
+          ? 'cerrada'
+          : 'pendiente';
 
   const { error: configUpdateError } = await supabase
     .from('app_config')
