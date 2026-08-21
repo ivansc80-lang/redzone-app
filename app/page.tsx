@@ -557,7 +557,11 @@ export default function Home() {
           });
 
           const noticiasMapeadas: Noticia[] = articulosSoloNoticias.map((art: any, index: number) => {
-            const urlOriginal = art.links?.web?.href || '#';
+            const urlEspn = art.links?.web?.href || art.links?.mobile?.href || '#';
+            const urlOriginal = urlEspn.replace(
+              'https://www.espn.es',
+              'https://espndeportes.espn.com'
+            );
             return { id: art.id || String(index), titulo: art.headline, descripcion: art.description || 'Sin descripción disponible.', enlace: urlOriginal, imagen: art.images?.[0]?.url || '/redzone1_logo.png', fecha: new Date(art.published).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
           });
           setNoticias(noticiasMapeadas);
