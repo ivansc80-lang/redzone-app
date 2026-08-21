@@ -12,7 +12,7 @@ export interface PartidoTemporada {
   puntos_visitante: number | null;
   resultado_oficial: string | null;
   espn_event_id: string;
-  tipo_competicion?: 'regular' | 'pretemporada_test';
+  tipo_competicion?: 'regular' | 'pretemporada_test' | 'playoffs' | 'superbowl';
   semana_competicion?: number | null;
   info_local?: { nombre: string; logo_url: string };
   info_visitante?: { nombre: string; logo_url: string };
@@ -39,6 +39,10 @@ async function modoPretemporadaActivo(): Promise<boolean> {
 export async function getPartidosPorJornada(jornada: number): Promise<PartidoTemporada[]> {
   try {
     const pretemporada = await modoPretemporadaActivo();
+
+    if (pretemporada && jornada !== 1) {
+      return [];
+    }
 
     let query = supabase
       .from('partidos')
@@ -94,4 +98,53 @@ export async function getResumenTemporada() {
   }
 
   return data || [];
+}
+
+/**
+ * Obtiene los partidos de postemporada.
+ * fase = 'playoffs' para Wild Card / Divisional / Conference
+ * fase = 'superbowl' para la final.
+ */
+export async function getPartidosPostemporada(
+  fase: 'playoffs' | 'superbowl',
+  semanaCompeticion?: number
+): Promise<PartidoTemporada[]> {
+  try {
+    let query = supabase
+      .from('partidos')
+      .select(`
+        *,
+        info_local:equipos!partidos_equipo_local_fkey (
+          id,
+          nombre,
+          logo_url
+        ),
+        info_visitante:equipos!partidos_equipo_visitante_fkey (
+          id,
+          nombre,
+          logo_url
+        )
+      `)
+      .eq('tipo_competicion', fase)
+      .order('fecha_partido', { ascending: true });
+
+    if (semanaCompeticion !== undefined) {
+      query = query.eq('semana_competicion', semanaCompeticion);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(
+        `Error al obtener postemporada ${fase}:`,
+        error.message
+      );
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error('Excepción en getPartidosPostemporada:', err);
+    return [];
+  }
 }
