@@ -3,6 +3,10 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 const PRESEASON_TEST_END = new Date('2026-08-25T12:00:00.000Z');
 const PRESEASON_WEEK = 3;
 const PICK_CLOSE_MINUTES = 30;
+// Ventana temporal SOLO para comprobar el cierre automático el 21/08/2026.
+// Después de la prueba hay que eliminar estas dos constantes y volver a usar la hora ESPN.
+const TEST_FIRST_GAME = new Date('2026-08-21T07:20:00.000Z'); // 09:20 España
+const TEST_PICK_CLOSE = new Date('2026-08-21T06:50:00.000Z'); // 08:50 España
 
 export interface PreseasonSyncResult {
   active: boolean;
@@ -72,11 +76,9 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     throw new Error('ESPN no devolvió partidos de pretemporada para la semana 3 de 2026.');
   }
 
-  const primerPartidoFecha = new Date(eventos[0].date);
+  const primerPartidoFecha = TEST_FIRST_GAME;
   const ultimoPartidoFecha = new Date(eventos[eventos.length - 1].date);
-  const cierrePronosticos = new Date(
-    primerPartidoFecha.getTime() - PICK_CLOSE_MINUTES * 60 * 1000
-  );
+  const cierrePronosticos = TEST_PICK_CLOSE;
 
   let todosFinalizados = true;
 
@@ -113,7 +115,9 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
           tipo_competicion: 'pretemporada_test',
           equipo_local: localAbrev,
           equipo_visitante: visitAbrev,
-          fecha_partido: new Date(evento.date).toISOString(),
+          fecha_partido: localAbrev === 'HOU' && visitAbrev === 'LV'
+            ? TEST_FIRST_GAME.toISOString()
+            : new Date(evento.date).toISOString(),
           estado,
           puntos_local: puntosLocal,
           puntos_visitante: puntosVisitante,
