@@ -552,8 +552,7 @@ export default function Home() {
         .then((data) => {
           const noticiasMapeadas: Noticia[] = data.articles?.map((art: any, index: number) => {
             const urlOriginal = art.links?.web?.href || '#';
-            const urlTraducida = urlOriginal !== '#' ? `https://translate.google.com/translate?sl=auto&tl=es&u=${encodeURIComponent(urlOriginal)}` : '#';
-            return { id: art.id || String(index), titulo: art.headline, descripcion: art.description || 'Sin descripción disponible.', enlace: urlTraducida, imagen: art.images?.[0]?.url || '/redzone1_logo.png', fecha: new Date(art.published).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
+            return { id: art.id || String(index), titulo: art.headline, descripcion: art.description || 'Sin descripción disponible.', enlace: urlOriginal, imagen: art.images?.[0]?.url || '/redzone1_logo.png', fecha: new Date(art.published).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
           }) || [];
           setNoticias(noticiasMapeadas);
         })
