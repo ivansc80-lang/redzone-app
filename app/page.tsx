@@ -2853,10 +2853,34 @@ export default function Home() {
                                       )
                                       ?.eleccion || '-';
 
+                                  const partidoFinalizado =
+                                    estadoCentral === 'FINAL';
+
+                                  const resultadoFinal =
+                                    Number(puntosLocal) > Number(puntosVisitante)
+                                      ? '1'
+                                      : Number(puntosLocal) < Number(puntosVisitante)
+                                      ? '2'
+                                      : 'X';
+
+                                  const pronosticoValidado =
+                                    partidoFinalizado && eleccionUsr !== '-';
+
+                                  const pronosticoCorrecto =
+                                    pronosticoValidado &&
+                                    eleccionUsr === resultadoFinal;
+
+                                  const estiloPronostico =
+                                    !pronosticoValidado
+                                      ? 'bg-[#2a2a2a] border-[#3a3a3a]'
+                                      : pronosticoCorrecto
+                                      ? 'bg-[#2a2a2a] border-green-500 ring-2 ring-green-500/70 shadow-[0_0_10px_rgba(34,197,94,0.45)]'
+                                      : 'bg-[#2a2a2a] border-red-500 ring-2 ring-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.45)]';
+
                                   return (
                                     <div
                                       key={usr.id}
-                                      className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg px-1 py-2 flex flex-col items-center justify-center"
+                                      className={`border rounded-lg px-1 py-2 flex flex-col items-center justify-center transition-all ${estiloPronostico}`}
                                     >
                                       <span className="text-[9px] font-['Orbitron'] font-bold text-white uppercase">
                                         {usr.nombre}
