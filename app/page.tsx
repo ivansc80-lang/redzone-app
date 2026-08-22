@@ -1447,6 +1447,118 @@ export default function Home() {
 
                     {vistaStatsCompleta &&
                     tipoStats === 'jugador' &&
+                    categoriaStatsJugador === 'defensiva' ? (
+
+                      /* ================= DETALLE_DEFENSIVA_JUGADOR_REDZONE ================= */
+                      <div className="w-full">
+                        <div className="flex items-center justify-between gap-3 border-b-2 border-blue-500 pb-3 mb-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
+                            <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4 truncate">
+                              Defensiva
+                            </h3>
+                          </div>
+
+                          <button
+                            onClick={() => setVistaStatsCompleta(false)}
+                            className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+                          >
+                            ← Volver a líderes
+                          </button>
+                        </div>
+
+                        <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
+                          Desliza para ver todas las estadísticas →
+                        </p>
+
+                        <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                          <table className="min-w-[1350px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+
+                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  NOMBRE
+                                </th>
+
+                                {[
+                                  'POS', 'GP', 'SOLO', 'AST', 'TOT',
+                                  'SACK', 'TFL', 'PD', 'INT',
+                                  'YDS', 'LNG', 'TD', 'FF', 'FR'
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {[
+                                ['Jordyn Brooks', 'MIA', 'LB', '17', '108', '75', '183', '3.0', '9', '6', '1', '12', '12', '0', '2', '1'],
+                                ['Jack Campbell', 'DET', 'LB', '17', '101', '75', '176', '2.5', '8', '5', '1', '7', '7', '0', '1', '1'],
+                                ['Devin White', 'LV', 'LB', '17', '105', '69', '174', '4.0', '11', '4', '1', '15', '15', '0', '2', '2'],
+                                ['Cedric Gray', 'TEN', 'LB', '17', '94', '70', '164', '2.0', '7', '5', '2', '21', '16', '0', '1', '1'],
+                                ['Bobby Wagner', 'WSH', 'LB', '17', '96', '66', '162', '3.5', '10', '4', '1', '8', '8', '0', '2', '1'],
+                                ['Myles Garrett', 'CLE', 'DE', '17', '48', '23', '71', '23.0', '28', '5', '0', '0', '0', '0', '4', '2'],
+                                ['Brian Burns', 'NYG', 'OLB', '17', '51', '27', '78', '16.5', '21', '6', '1', '11', '11', '0', '3', '1'],
+                                ['Danielle Hunter', 'HOU', 'DE', '17', '47', '29', '76', '15.0', '19', '4', '0', '0', '0', '0', '2', '2'],
+                                ['Kevin Byard', 'CHI', 'S', '17', '71', '39', '110', '1.0', '4', '12', '7', '96', '41', '1', '1', '1'],
+                                ['Devin Lloyd', 'JAX', 'LB', '17', '82', '46', '128', '2.0', '8', '9', '5', '67', '32', '1', '2', '1'],
+                              ].map((fila, i) => (
+                                <tr
+                                  key={fila[0]}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                                >
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {i + 1}
+                                  </td>
+
+                                  <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                        alt={fila[1]}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {fila[0]}
+                                        </div>
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {fila[1]}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {fila.slice(2).map((valor, idx) => (
+                                    <td
+                                      key={idx}
+                                      className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        idx === 4 || idx === 5 || idx === 8
+                                          ? 'font-black text-blue-700'
+                                          : 'text-zinc-600'
+                                      }`}
+                                    >
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                    ) : vistaStatsCompleta &&
+                    tipoStats === 'jugador' &&
                     categoriaStatsJugador === 'ofensiva' &&
                     (
                       subcategoriaStatsJugador === 'pasando' ||
@@ -2079,7 +2191,10 @@ export default function Home() {
                                 </div>
                               ))}
 
-                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors">
+                              <button
+                                onClick={() => setVistaStatsCompleta(true)}
+                                className="w-full py-3 text-xs font-black text-zinc-800 hover:text-blue-700 transition-colors"
+                              >
                                 LISTA COMPLETA
                               </button>
                             </div>
