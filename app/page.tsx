@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getPartidosPorJornada } from "@/lib/queries";
-import type { EspnPassingLeader } from "@/lib/espnStats";
+import type {
+  EspnPassingLeader,
+  EspnRushingLeader,
+  EspnReceivingLeader,
+} from "@/lib/espnStats";
 
 interface PronosticoPartido {
   id: string;
@@ -804,6 +808,16 @@ export default function Home() {
   const [cargandoPassing, setCargandoPassing] = useState(false);
   const [errorPassing, setErrorPassing] = useState<string | null>(null);
 
+  const [rushingLeaders, setRushingLeaders] = useState<EspnRushingLeader[]>([]);
+  const [cargandoRushing, setCargandoRushing] = useState(false);
+  const [errorRushing, setErrorRushing] = useState<string | null>(null);
+
+  const [receivingLeaders, setReceivingLeaders] = useState<
+    EspnReceivingLeader[]
+  >([]);
+  const [cargandoReceiving, setCargandoReceiving] = useState(false);
+  const [errorReceiving, setErrorReceiving] = useState<string | null>(null);
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
@@ -844,6 +858,91 @@ export default function Home() {
     }
 
     cargarPassingLeaders();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarRushingLeaders() {
+      setCargandoRushing(true);
+      setErrorRushing(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/rushing", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error cargando CORRIENDO: ${response.status}`);
+        }
+
+        const datos: EspnRushingLeader[] = await response.json();
+
+        if (!cancelado) {
+          setRushingLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando líderes de CORRIENDO desde ESPN:", error);
+
+        if (!cancelado) {
+          setErrorRushing("No se pudieron cargar las estadísticas de ESPN.");
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoRushing(false);
+        }
+      }
+    }
+
+    cargarRushingLeaders();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarReceivingLeaders() {
+      setCargandoReceiving(true);
+      setErrorReceiving(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/receiving", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error cargando RECIBIENDO: ${response.status}`);
+        }
+
+        const datos: EspnReceivingLeader[] = await response.json();
+
+        if (!cancelado) {
+          setReceivingLeaders(datos);
+        }
+      } catch (error) {
+        console.error(
+          "Error cargando líderes de RECIBIENDO desde ESPN:",
+          error,
+        );
+
+        if (!cancelado) {
+          setErrorReceiving("No se pudieron cargar las estadísticas de ESPN.");
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoReceiving(false);
+        }
+      }
+    }
+
+    cargarReceivingLeaders();
 
     return () => {
       cancelado = true;
@@ -3621,189 +3720,93 @@ export default function Home() {
                           </thead>
 
                           <tbody>
-                            {[
-                              [
-                                "Jaxon Smith-Njigba",
-                                "SEA",
-                                "WR",
-                                "17",
-                                "119",
-                                "168",
-                                "1,793",
-                                "15.1",
-                                "105.5",
-                                "72",
-                                "10",
-                                "1",
-                              ],
-                              [
-                                "Puka Nacua",
-                                "LAR",
-                                "WR",
-                                "17",
-                                "129",
-                                "174",
-                                "1,715",
-                                "13.3",
-                                "100.9",
-                                "65",
-                                "10",
-                                "1",
-                              ],
-                              [
-                                "Ja'Marr Chase",
-                                "CIN",
-                                "WR",
-                                "17",
-                                "117",
-                                "171",
-                                "1,589",
-                                "13.6",
-                                "93.5",
-                                "70",
-                                "12",
-                                "1",
-                              ],
-                              [
-                                "Amon-Ra St. Brown",
-                                "DET",
-                                "WR",
-                                "17",
-                                "115",
-                                "158",
-                                "1,478",
-                                "12.9",
-                                "86.9",
-                                "61",
-                                "11",
-                                "0",
-                              ],
-                              [
-                                "CeeDee Lamb",
-                                "DAL",
-                                "WR",
-                                "17",
-                                "108",
-                                "157",
-                                "1,421",
-                                "13.2",
-                                "83.6",
-                                "58",
-                                "9",
-                                "1",
-                              ],
-                              [
-                                "Justin Jefferson",
-                                "MIN",
-                                "WR",
-                                "17",
-                                "103",
-                                "153",
-                                "1,389",
-                                "13.5",
-                                "81.7",
-                                "63",
-                                "9",
-                                "0",
-                              ],
-                              [
-                                "Drake London",
-                                "ATL",
-                                "WR",
-                                "17",
-                                "101",
-                                "149",
-                                "1,342",
-                                "13.3",
-                                "78.9",
-                                "56",
-                                "10",
-                                "1",
-                              ],
-                              [
-                                "Nico Collins",
-                                "HOU",
-                                "WR",
-                                "16",
-                                "96",
-                                "141",
-                                "1,301",
-                                "13.6",
-                                "81.3",
-                                "67",
-                                "8",
-                                "0",
-                              ],
-                              [
-                                "George Pickens",
-                                "DAL",
-                                "WR",
-                                "17",
-                                "91",
-                                "139",
-                                "1,268",
-                                "13.9",
-                                "74.6",
-                                "64",
-                                "8",
-                                "1",
-                              ],
-                              [
-                                "Trey McBride",
-                                "ARI",
-                                "TE",
-                                "17",
-                                "112",
-                                "154",
-                                "1,239",
-                                "11.1",
-                                "72.9",
-                                "44",
-                                "8",
-                                "1",
-                              ],
-                            ].map((fila, i) => (
-                              <tr
-                                key={fila[0]}
-                                className="border-b border-zinc-100 hover:bg-zinc-50"
-                              >
-                                <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                  {i + 1}
+                            {cargandoReceiving ? (
+                              <tr>
+                                <td
+                                  colSpan={12}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  Cargando estadísticas desde ESPN...
                                 </td>
-
-                                <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <img
-                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                      alt={fila[1]}
-                                      className="w-7 h-7 object-contain flex-shrink-0"
-                                    />
-
-                                    <div className="min-w-0">
-                                      <div className="font-bold text-zinc-900 truncate">
-                                        {fila[0]}
-                                      </div>
-                                      <div className="text-[9px] text-zinc-400 font-semibold">
-                                        {fila[1]}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {fila.slice(2).map((valor, idx) => (
-                                  <td
-                                    key={idx}
-                                    className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                      idx === 4
-                                        ? "font-black text-red-700"
-                                        : "text-zinc-600"
-                                    }`}
-                                  >
-                                    {valor}
-                                  </td>
-                                ))}
                               </tr>
-                            ))}
+                            ) : errorReceiving ? (
+                              <tr>
+                                <td
+                                  colSpan={12}
+                                  className="px-4 py-8 text-center text-red-600 font-semibold"
+                                >
+                                  {errorReceiving}
+                                </td>
+                              </tr>
+                            ) : receivingLeaders.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={12}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  No hay estadísticas disponibles.
+                                </td>
+                              </tr>
+                            ) : (
+                              receivingLeaders.map((jugador) => {
+                                const valores = [
+                                  jugador.POS,
+                                  jugador.GP,
+                                  jugador.REC,
+                                  jugador.TGTS,
+                                  jugador.YDS,
+                                  jugador.AVG,
+                                  jugador.YDS_G,
+                                  jugador.LNG,
+                                  jugador.TD,
+                                  jugador.FUM,
+                                ];
+
+                                return (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {valores.map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 4
+                                            ? "font-black text-red-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })
+                            )}
                           </tbody>
                         </table>
                       ) : subcategoriaStatsJugador === "corriendo" ? (
@@ -3841,179 +3844,92 @@ export default function Home() {
                           </thead>
 
                           <tbody>
-                            {[
-                              [
-                                "James Cook III",
-                                "BUF",
-                                "RB",
-                                "17",
-                                "309",
-                                "1,621",
-                                "5.2",
-                                "95.4",
-                                "65",
-                                "16",
-                                "2",
-                              ],
-                              [
-                                "Derrick Henry",
-                                "BAL",
-                                "RB",
-                                "17",
-                                "315",
-                                "1,595",
-                                "5.1",
-                                "93.8",
-                                "72",
-                                "14",
-                                "3",
-                              ],
-                              [
-                                "Jonathan Taylor",
-                                "IND",
-                                "RB",
-                                "17",
-                                "326",
-                                "1,585",
-                                "4.9",
-                                "93.2",
-                                "68",
-                                "15",
-                                "2",
-                              ],
-                              [
-                                "Bijan Robinson",
-                                "ATL",
-                                "RB",
-                                "17",
-                                "292",
-                                "1,478",
-                                "5.1",
-                                "86.9",
-                                "58",
-                                "12",
-                                "2",
-                              ],
-                              [
-                                "DeVon Achane",
-                                "MIA",
-                                "RB",
-                                "17",
-                                "246",
-                                "1,350",
-                                "5.5",
-                                "79.4",
-                                "71",
-                                "11",
-                                "1",
-                              ],
-                              [
-                                "Saquon Barkley",
-                                "PHI",
-                                "RB",
-                                "17",
-                                "278",
-                                "1,326",
-                                "4.8",
-                                "78.0",
-                                "63",
-                                "13",
-                                "2",
-                              ],
-                              [
-                                "Jahmyr Gibbs",
-                                "DET",
-                                "RB",
-                                "17",
-                                "251",
-                                "1,281",
-                                "5.1",
-                                "75.4",
-                                "57",
-                                "13",
-                                "1",
-                              ],
-                              [
-                                "Kyren Williams",
-                                "LAR",
-                                "RB",
-                                "17",
-                                "279",
-                                "1,267",
-                                "4.5",
-                                "74.5",
-                                "48",
-                                "12",
-                                "2",
-                              ],
-                              [
-                                "Josh Jacobs",
-                                "GB",
-                                "RB",
-                                "17",
-                                "283",
-                                "1,245",
-                                "4.4",
-                                "73.2",
-                                "45",
-                                "11",
-                                "3",
-                              ],
-                              [
-                                "Bucky Irving",
-                                "TB",
-                                "RB",
-                                "17",
-                                "248",
-                                "1,208",
-                                "4.9",
-                                "71.1",
-                                "52",
-                                "10",
-                                "2",
-                              ],
-                            ].map((fila, i) => (
-                              <tr
-                                key={fila[0]}
-                                className="border-b border-zinc-100 hover:bg-zinc-50"
-                              >
-                                <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                  {i + 1}
+                            {cargandoRushing ? (
+                              <tr>
+                                <td
+                                  colSpan={11}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  Cargando estadísticas desde ESPN...
                                 </td>
-
-                                <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <img
-                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                      alt={fila[1]}
-                                      className="w-7 h-7 object-contain flex-shrink-0"
-                                    />
-
-                                    <div className="min-w-0">
-                                      <div className="font-bold text-zinc-900 truncate">
-                                        {fila[0]}
-                                      </div>
-                                      <div className="text-[9px] text-zinc-400 font-semibold">
-                                        {fila[1]}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {fila.slice(2).map((valor, idx) => (
-                                  <td
-                                    key={idx}
-                                    className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                      idx === 3
-                                        ? "font-black text-red-700"
-                                        : "text-zinc-600"
-                                    }`}
-                                  >
-                                    {valor}
-                                  </td>
-                                ))}
                               </tr>
-                            ))}
+                            ) : errorRushing ? (
+                              <tr>
+                                <td
+                                  colSpan={11}
+                                  className="px-4 py-8 text-center text-red-600 font-semibold"
+                                >
+                                  {errorRushing}
+                                </td>
+                              </tr>
+                            ) : rushingLeaders.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={11}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  No hay estadísticas disponibles.
+                                </td>
+                              </tr>
+                            ) : (
+                              rushingLeaders.map((jugador) => {
+                                const valores = [
+                                  jugador.POS,
+                                  jugador.GP,
+                                  jugador.ATT,
+                                  jugador.YDS,
+                                  jugador.AVG,
+                                  jugador.YDS_G,
+                                  jugador.LNG,
+                                  jugador.TD,
+                                  jugador.FUM,
+                                ];
+
+                                return (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {valores.map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 3
+                                            ? "font-black text-red-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })
+                            )}
                           </tbody>
                         </table>
                       ) : (
