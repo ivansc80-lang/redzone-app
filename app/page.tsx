@@ -373,7 +373,8 @@ const IconoCategoriaNoticia = ({
 
 export default function Home() {
   const [pestanaActiva, setPestanaActiva] = useState<string>('clasificacion');
-  const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games'>('score');
+  const [subPestanaEquipos, setSubPestanaEquipos] = useState<'score' | 'games' | 'stats' | 'franquicia'>('score');
+  const [tipoStats, setTipoStats] = useState<'jugador' | 'equipo'>('jugador');
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
   const [jornadaActual, setJornadaActual] = useState<number>(1);
@@ -1252,15 +1253,18 @@ export default function Home() {
                 ['stats', 'STATS', '/stats.png'],
                 ['franquicia', 'FRANQUICIA', '/franquicia.png']
               ].map(([id, label, icono]) => {
-                const activo =
-                  (id === 'score' || id === 'games') &&
-                  subPestanaEquipos === id;
+                const activo = subPestanaEquipos === id;
 
                 return (
                   <button
                     key={id}
                     onClick={() => {
-                      if (id === 'score' || id === 'games') {
+                      if (
+                        id === 'score' ||
+                        id === 'games' ||
+                        id === 'stats' ||
+                        id === 'franquicia'
+                      ) {
                         setSubPestanaEquipos(id);
                       }
                     }}
@@ -1295,6 +1299,417 @@ export default function Home() {
             </div>
           </div>
         )}
+
+            {/* STATS_FASE_1_REDZONE */}
+            {pestanaActiva === 'equipos' && subPestanaEquipos === 'stats' && (
+              <section className="-mx-4 md:mx-0">
+                <div className="bg-white text-black rounded-none md:rounded-2xl shadow-2xl overflow-hidden">
+
+                  {/* JUGADOR / EQUIPO */}
+                  <div className="grid grid-cols-2 border-b border-zinc-200">
+                    <button
+                      onClick={() => setTipoStats('jugador')}
+                      className={`relative py-4 md:py-5 font-['Orbitron'] text-sm md:text-base font-black uppercase transition-all ${
+                        tipoStats === 'jugador'
+                          ? 'text-black'
+                          : 'text-zinc-400 hover:text-zinc-600'
+                      }`}
+                    >
+                      JUGADOR
+                      <span
+                        className={`absolute bottom-0 left-4 right-4 h-[3px] ${
+                          tipoStats === 'jugador'
+                            ? 'bg-red-600'
+                            : 'bg-transparent'
+                        }`}
+                      />
+                    </button>
+
+                    <button
+                      onClick={() => setTipoStats('equipo')}
+                      className={`relative py-4 md:py-5 font-['Orbitron'] text-sm md:text-base font-black uppercase transition-all ${
+                        tipoStats === 'equipo'
+                          ? 'text-black'
+                          : 'text-zinc-400 hover:text-zinc-600'
+                      }`}
+                    >
+                      EQUIPO
+                      <span
+                        className={`absolute bottom-0 left-4 right-4 h-[3px] ${
+                          tipoStats === 'equipo'
+                            ? 'bg-red-600'
+                            : 'bg-transparent'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="p-4 md:p-6">
+
+                    {/* TEMPORADA */}
+                    <div className="mb-6">
+                      <select className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none">
+                        <option>2025 Temporada regular</option>
+                      </select>
+                    </div>
+
+                    {tipoStats === 'jugador' ? (
+
+                      /* ================= JUGADORES ================= */
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                        <div>
+                          <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-3">
+                            <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+                            <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
+                              Líderes a la ofensiva
+                            </h3>
+                          </div>
+
+                          {[
+                            {
+                              titulo: 'PASANDO',
+                              valor: 'YDS',
+                              filas: [
+                                ['Matthew Stafford', 'LAR', '4,707'],
+                                ['Jared Goff', 'DET', '4,564'],
+                                ['Dak Prescott', 'DAL', '4,552'],
+                                ['Drake Maye', 'NE', '4,394'],
+                                ['Sam Darnold', 'SEA', '4,048'],
+                              ]
+                            },
+                            {
+                              titulo: 'CORRIENDO',
+                              valor: 'YDS',
+                              filas: [
+                                ['James Cook III', 'BUF', '1,621'],
+                                ['Derrick Henry', 'BAL', '1,595'],
+                                ['Jonathan Taylor', 'IND', '1,585'],
+                                ['Bijan Robinson', 'ATL', '1,478'],
+                                ['DeVon Achane', 'MIA', '1,350'],
+                              ]
+                            },
+                            {
+                              titulo: 'RECIBIENDO',
+                              valor: 'YDS',
+                              filas: [
+                                ['Jaxon Smith-Njigba', 'SEA', '1,793'],
+                                ['Puka Nacua', 'LAR', '1,715'],
+                                ['George Pickens', 'DAL', '1,429'],
+                                ["Ja'Marr Chase", 'CIN', '1,412'],
+                                ['Amon-Ra St. Brown', 'DET', '1,401'],
+                              ]
+                            }
+                          ].map((bloque) => (
+                            <div key={bloque.titulo} className="mb-7">
+                              <div className="flex justify-between items-center bg-red-700 px-3 py-2 rounded-t-md text-[10px] md:text-xs font-black text-white font-['Orbitron']">
+                                <span>{bloque.titulo}</span>
+                                <span>{bloque.valor}</span>
+                              </div>
+
+                              {bloque.filas.map((fila, i) => (
+                                <div
+                                  key={fila[0]}
+                                  className="grid grid-cols-[24px_1fr_auto] items-center gap-2 px-1 py-2.5 odd:bg-zinc-50 border-b border-zinc-100"
+                                >
+                                  <span className="text-xs text-zinc-500">
+                                    {i + 1}
+                                  </span>
+
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img
+                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                      alt={fila[1]}
+                                      className="w-6 h-6 object-contain flex-shrink-0"
+                                    />
+                                    <span className="text-xs md:text-sm font-semibold truncate">
+                                      {fila[0]}
+                                      <span className="ml-1 text-zinc-400 font-normal">
+                                        {fila[1]}
+                                      </span>
+                                    </span>
+                                  </div>
+
+                                  <span className="text-xs md:text-sm text-zinc-600">
+                                    {fila[2]}
+                                  </span>
+                                </div>
+                              ))}
+
+                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors">
+                                LISTA COMPLETA
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2 mb-3">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
+                            <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
+                              Líderes a la defensiva
+                            </h3>
+                          </div>
+
+                          {[
+                            {
+                              titulo: 'TACLEADAS',
+                              valor: 'TOT',
+                              filas: [
+                                ['Jordyn Brooks', 'MIA', '183'],
+                                ['Jack Campbell', 'DET', '176'],
+                                ['Devin White', 'LV', '174'],
+                                ['Cedric Gray', 'TEN', '164'],
+                                ['Bobby Wagner', 'WSH', '162'],
+                              ]
+                            },
+                            {
+                              titulo: 'CAPTURAS DE MARISCAL',
+                              valor: 'SACK',
+                              filas: [
+                                ['Myles Garrett', 'CLE', '23.0'],
+                                ['Brian Burns', 'NYG', '16.5'],
+                                ['Danielle Hunter', 'HOU', '15.0'],
+                                ['Aidan Hutchinson', 'DET', '14.5'],
+                                ['Nik Bonitto', 'DEN', '14.0'],
+                              ]
+                            },
+                            {
+                              titulo: 'INTERCEPCIONES',
+                              valor: 'INT',
+                              filas: [
+                                ['Kevin Byard', 'CHI', '7'],
+                                ['Devin Lloyd', 'JAX', '5'],
+                                ['Jaycee Horn', 'CAR', '5'],
+                                ['Ernest Jones IV', 'SEA', '5'],
+                                ['Antonio Johnson', 'JAX', '5'],
+                              ]
+                            }
+                          ].map((bloque) => (
+                            <div key={bloque.titulo} className="mb-7">
+                              <div className="flex justify-between items-center bg-[#002244] px-3 py-2 rounded-t-md text-[10px] md:text-xs font-black text-white font-['Orbitron']">
+                                <span>{bloque.titulo}</span>
+                                <span>{bloque.valor}</span>
+                              </div>
+
+                              {bloque.filas.map((fila, i) => (
+                                <div
+                                  key={fila[0]}
+                                  className="grid grid-cols-[24px_1fr_auto] items-center gap-2 px-1 py-2.5 odd:bg-zinc-50 border-b border-zinc-100"
+                                >
+                                  <span className="text-xs text-zinc-500">
+                                    {i + 1}
+                                  </span>
+
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img
+                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                      alt={fila[1]}
+                                      className="w-6 h-6 object-contain flex-shrink-0"
+                                    />
+                                    <span className="text-xs md:text-sm font-semibold truncate">
+                                      {fila[0]}
+                                      <span className="ml-1 text-zinc-400 font-normal">
+                                        {fila[1]}
+                                      </span>
+                                    </span>
+                                  </div>
+
+                                  <span className="text-xs md:text-sm text-zinc-600">
+                                    {fila[2]}
+                                  </span>
+                                </div>
+                              ))}
+
+                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors">
+                                LISTA COMPLETA
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                      </div>
+
+                    ) : (
+
+                      /* ================= EQUIPOS ================= */
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                        {/* ================= OFENSIVA EQUIPOS ================= */}
+                        <div>
+                          <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-3">
+                            <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+                            <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
+                              Líderes a la ofensiva
+                            </h3>
+                          </div>
+
+                          {[
+                            {
+                              titulo: 'YARDAS TOTALES',
+                              valor: 'YDS/G',
+                              filas: [
+                                ['Los Angeles Rams', 'LAR', '394.6'],
+                                ['Dallas Cowboys', 'DAL', '391.9'],
+                                ['New England Patriots', 'NE', '379.4'],
+                                ['Buffalo Bills', 'BUF', '376.3'],
+                                ['Detroit Lions', 'DET', '373.2'],
+                              ]
+                            },
+                            {
+                              titulo: 'PASANDO',
+                              valor: 'YDS/G',
+                              filas: [
+                                ['Los Angeles Rams', 'LAR', '268.1'],
+                                ['Dallas Cowboys', 'DAL', '266.3'],
+                                ['Detroit Lions', 'DET', '253.1'],
+                                ['New England Patriots', 'NE', '250.5'],
+                                ['San Francisco 49ers', 'SF', '244.5'],
+                              ]
+                            },
+                            {
+                              titulo: 'CORRIENDO',
+                              valor: 'YDS/G',
+                              filas: [
+                                ['Buffalo Bills', 'BUF', '159.6'],
+                                ['Baltimore Ravens', 'BAL', '156.6'],
+                                ['Chicago Bears', 'CHI', '144.5'],
+                                ['Washington Commanders', 'WSH', '134.7'],
+                                ['New York Giants', 'NYG', '129.1'],
+                              ]
+                            }
+                          ].map((bloque) => (
+                            <div key={bloque.titulo} className="mb-7">
+                              <div className="flex justify-between items-center bg-red-700 px-3 py-2 rounded-t-md text-[10px] md:text-xs font-black text-white font-['Orbitron']">
+                                <span>{bloque.titulo}</span>
+                                <span>{bloque.valor}</span>
+                              </div>
+
+                              {bloque.filas.map((fila, i) => (
+                                <div
+                                  key={fila[1]}
+                                  className="grid grid-cols-[24px_1fr_auto] items-center gap-2 px-1 py-2.5 odd:bg-zinc-50 border-b border-zinc-100"
+                                >
+                                  <span className="text-xs text-zinc-500">
+                                    {i + 1}
+                                  </span>
+
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img
+                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                      alt={fila[0]}
+                                      className="w-7 h-7 object-contain flex-shrink-0"
+                                    />
+
+                                    <span className="text-xs md:text-sm font-semibold truncate">
+                                      {fila[0]}
+                                    </span>
+                                  </div>
+
+                                  <span className="text-xs md:text-sm text-zinc-600">
+                                    {fila[2]}
+                                  </span>
+                                </div>
+                              ))}
+
+                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors">
+                                LISTA COMPLETA
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* ================= DEFENSIVA EQUIPOS ================= */}
+                        <div>
+                          <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2 mb-3">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
+                            <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
+                              Líderes a la defensiva
+                            </h3>
+                          </div>
+
+                          {[
+                            {
+                              titulo: 'YARDAS PERMITIDAS',
+                              valor: 'YDS/G',
+                              filas: [
+                                ['Houston Texans', 'HOU', '277.2'],
+                                ['Denver Broncos', 'DEN', '278.2'],
+                                ['Minnesota Vikings', 'MIN', '282.6'],
+                                ['Cleveland Browns', 'CLE', '283.6'],
+                                ['Los Angeles Chargers', 'LAC', '285.2'],
+                              ]
+                            },
+                            {
+                              titulo: 'CAPTURAS DE MARISCAL',
+                              valor: 'SACK',
+                              filas: [
+                                ['Denver Broncos', 'DEN', '68.0'],
+                                ['Atlanta Falcons', 'ATL', '57.0'],
+                                ['Cleveland Browns', 'CLE', '53.0'],
+                                ['Detroit Lions', 'DET', '49.0'],
+                                ['Minnesota Vikings', 'MIN', '49.0'],
+                              ]
+                            },
+                            {
+                              titulo: 'ENTREGAS',
+                              valor: 'DIFF',
+                              filas: [
+                                ['Chicago Bears', 'CHI', '22'],
+                                ['Houston Texans', 'HOU', '17'],
+                                ['Jacksonville Jaguars', 'JAX', '13'],
+                                ['Pittsburgh Steelers', 'PIT', '12'],
+                                ['Los Angeles Rams', 'LAR', '11'],
+                              ]
+                            }
+                          ].map((bloque) => (
+                            <div key={bloque.titulo} className="mb-7">
+                              <div className="flex justify-between items-center bg-[#002244] px-3 py-2 rounded-t-md text-[10px] md:text-xs font-black text-white font-['Orbitron']">
+                                <span>{bloque.titulo}</span>
+                                <span>{bloque.valor}</span>
+                              </div>
+
+                              {bloque.filas.map((fila, i) => (
+                                <div
+                                  key={fila[1]}
+                                  className="grid grid-cols-[24px_1fr_auto] items-center gap-2 px-1 py-2.5 odd:bg-zinc-50 border-b border-zinc-100"
+                                >
+                                  <span className="text-xs text-zinc-500">
+                                    {i + 1}
+                                  </span>
+
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img
+                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                      alt={fila[0]}
+                                      className="w-7 h-7 object-contain flex-shrink-0"
+                                    />
+
+                                    <span className="text-xs md:text-sm font-semibold truncate">
+                                      {fila[0]}
+                                    </span>
+                                  </div>
+
+                                  <span className="text-xs md:text-sm text-zinc-600">
+                                    {fila[2]}
+                                  </span>
+                                </div>
+                              ))}
+
+                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-blue-700 transition-colors">
+                                LISTA COMPLETA
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+              </section>
+            )}
 
         {pestanaActiva === 'noticias' && (
           <div className="w-full bg-[#002244]">
@@ -1821,7 +2236,7 @@ export default function Home() {
             </section>
           )}
 
-          {pestanaActiva === 'equipos' && (
+          {pestanaActiva === 'equipos' && (subPestanaEquipos === 'score' || subPestanaEquipos === 'games') && (
             <section className="space-y-6">{subPestanaEquipos === 'score' ? <div className="space-y-8">{sincronizandoPosiciones && <div className="flex justify-end"><span className="text-[10px] text-red-200 font-mono animate-pulse">Actualizando datos desde ESPN...</span></div>}<div className="space-y-4"><div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl"><div className="flex items-center gap-3 border-b-2 border-red-600 pb-2"><div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" /><h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">Conferencia Americana (AFC)</h3></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}</div></div></div><div className="space-y-4 pt-4"><div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl"><div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2"><div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" /><h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">Conferencia Nacional (NFC)</h3></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}</div></div></div></div> : (
               <div className="space-y-8">
                 {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
