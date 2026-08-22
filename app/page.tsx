@@ -1596,8 +1596,22 @@ export default function Home() {
                     ? '🔒 PORRA CERRADA'
                     : '🔓 PORRA ABIERTA'}
                 </div><div className="grid grid-cols-1 md:grid-cols-2 gap-3">{datosUsuarioActual.pronosticos.map((p, index, array) => {
-              const isLocalSelected = p.eleccion === '1'; const isVsSelected = p.eleccion === 'X'; const isVisitorSelected = p.eleccion === '2'; const esUltimoEImpar = (array.length % 2 !== 0) && (index === array.length - 1);
-              return <div key={p.id} className={`bg-[#002244] border border-[#002244] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''}`}><button onClick={() => handleSeleccionPronostico(p.id, '1')} className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}><img
+              const isLocalSelected = p.eleccion === '1';
+              const isVsSelected = p.eleccion === 'X';
+              const isVisitorSelected = p.eleccion === '2';
+
+              const seleccionConfirmada =
+                estadoBotonConfirmar === 'confirmado' ||
+                estadoJornadaActual === 'cerrada' ||
+                estadoJornadaActual === 'finalizada';
+
+              const esUltimoEImpar =
+                (array.length % 2 !== 0) && (index === array.length - 1);
+              return <div key={p.id} className={`bg-[#002244] border border-[#002244] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''}`}><button onClick={() => handleSeleccionPronostico(p.id, '1')} className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected
+  ? seleccionConfirmada
+    ? 'bg-emerald-500 text-black border-emerald-400'
+    : 'bg-amber-400 text-black border-amber-300'
+  : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}><img
                   src={p.localLogo}
                   alt={p.local}
                   className={`object-contain flex-shrink-0 ${
@@ -1608,7 +1622,15 @@ export default function Home() {
                 />
                 <span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">
                   {nombreFanEquipo(p.local)}
-                </span></button><button onClick={() => handleSeleccionPronostico(p.id, 'X')} className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${isVsSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'}`}>VS</button><button onClick={() => handleSeleccionPronostico(p.id, '2')} className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isVisitorSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}><span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">
+                </span></button><button onClick={() => handleSeleccionPronostico(p.id, 'X')} className={`w-12 h-full flex items-center justify-center rounded-lg font-bold text-xs font-['Orbitron'] transition-all border ${isVsSelected
+  ? seleccionConfirmada
+    ? 'bg-emerald-500 text-black border-emerald-400'
+    : 'bg-amber-400 text-black border-amber-300'
+  : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-300'}`}>VS</button><button onClick={() => handleSeleccionPronostico(p.id, '2')} className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isVisitorSelected
+  ? seleccionConfirmada
+    ? 'bg-emerald-500 text-black border-emerald-400'
+    : 'bg-amber-400 text-black border-amber-300'
+  : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}><span className="hidden md:inline font-bold text-xs md:text-sm font-['Orbitron'] uppercase text-center">
                   {nombreFanEquipo(p.visitante)}
                 </span>
                 <img
@@ -1975,20 +1997,20 @@ export default function Home() {
                               </div>
 
                               {/* RACHA + HORA / ESTADO */}
-                              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-1 mt-3 mb-3">
+                              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 px-1 mt-3 mb-3 overflow-hidden">
 
-                                <div className="font-mono text-[10px] md:text-[11px] whitespace-nowrap">
+                                <div className="font-mono text-[9px] md:text-[8px] lg:text-[10px] xl:text-[11px] whitespace-nowrap">
                                   <span className="text-zinc-300 mr-1">
                                     RACHA
                                   </span>
                                   {parseRacha(rachaLocal)}
                                 </div>
 
-                                <div className="font-['Orbitron'] font-bold text-[10px] md:text-xs text-white text-center whitespace-nowrap">
+                                <div className="font-['Orbitron'] font-bold text-[10px] md:text-[9px] lg:text-[10px] xl:text-xs text-white text-center whitespace-nowrap">
                                   {estadoCentral}
                                 </div>
 
-                                <div className="font-mono text-[10px] md:text-[11px] whitespace-nowrap text-right">
+                                <div className="font-mono text-[9px] md:text-[8px] lg:text-[10px] xl:text-[11px] whitespace-nowrap text-right">
                                   <span className="text-zinc-300 mr-1">
                                     RACHA
                                   </span>
