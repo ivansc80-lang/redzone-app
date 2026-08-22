@@ -377,6 +377,14 @@ export default function Home() {
   const [tipoStats, setTipoStats] = useState<'jugador' | 'equipo'>('jugador');
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<'pasando' | 'corriendo' | 'recibiendo' | 'devoluciones' | 'pateando' | 'despejes'>('pasando');
   const [categoriaStatsEquipo, setCategoriaStatsEquipo] = useState<'ofensiva' | 'defensiva' | 'especiales' | 'entregas'>('ofensiva');
+  const [subcategoriaStatsEquipo, setSubcategoriaStatsEquipo] = useState<
+    'yardas_totales' |
+    'pasando' |
+    'corriendo' |
+    'yardas_permitidas' |
+    'capturas' |
+    'entregas_def'
+  >('yardas_totales');
   const [categoriaStatsJugador, setCategoriaStatsJugador] = useState<'ofensiva' | 'defensiva' | 'anotando' | 'especiales'>('ofensiva');
   const [vistaStatsCompleta, setVistaStatsCompleta] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -1343,6 +1351,7 @@ export default function Home() {
                   <div className="p-4 md:p-6">
 
                     {/* MENU INTERNO STATS */}
+                    {vistaStatsCompleta && (
                     <div className="mb-5 border-b border-zinc-200">
                       <div className="grid grid-cols-4 gap-1">
                         {(tipoStats === 'jugador'
@@ -1373,7 +1382,17 @@ export default function Home() {
                                   if (id === 'ofensiva') setSubcategoriaStatsJugador('pasando');
                                   if (id === 'especiales') setSubcategoriaStatsJugador('devoluciones');
                                 } else {
-                                  setCategoriaStatsEquipo(id as 'ofensiva' | 'defensiva' | 'especiales' | 'entregas');
+                                  setCategoriaStatsEquipo(
+                                    id as 'ofensiva' | 'defensiva' | 'especiales' | 'entregas'
+                                  );
+
+                                  if (id === 'ofensiva') {
+                                    setSubcategoriaStatsEquipo('yardas_totales');
+                                  }
+
+                                  if (id === 'defensiva') {
+                                    setSubcategoriaStatsEquipo('yardas_permitidas');
+                                  }
                                 }
                               }}
                               className={`relative py-3 px-1 font-['Orbitron'] text-[8px] sm:text-[9px] md:text-xs font-black uppercase transition-all ${
@@ -1393,9 +1412,11 @@ export default function Home() {
                         })}
                       </div>
                     </div>
+                    )}
 
                     {/* SUBMENU OFENSIVA / ESPECIALES DE JUGADOR */}
-                    {tipoStats === 'jugador' &&
+                    {vistaStatsCompleta &&
+                      tipoStats === 'jugador' &&
                       (categoriaStatsJugador === 'ofensiva' ||
                         categoriaStatsJugador === 'especiales') && (
                         <div
@@ -1460,7 +1481,12 @@ export default function Home() {
                           </div>
 
                           <button
-                            onClick={() => setVistaStatsCompleta(false)}
+                            onClick={() => {
+                              setVistaStatsCompleta(false);
+                              setTipoStats('jugador');
+                              setCategoriaStatsJugador('ofensiva');
+                              setSubcategoriaStatsJugador('pasando');
+                            }}
                             className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                           >
                             ← Volver a líderes
@@ -1584,7 +1610,12 @@ export default function Home() {
                           </div>
 
                           <button
-                            onClick={() => setVistaStatsCompleta(false)}
+                            onClick={() => {
+                              setVistaStatsCompleta(false);
+                              setTipoStats('jugador');
+                              setCategoriaStatsJugador('ofensiva');
+                              setSubcategoriaStatsJugador('pasando');
+                            }}
                             className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                           >
                             ← Volver a líderes
@@ -1958,9 +1989,6 @@ export default function Home() {
                               ]
                             }
                               ])
-                            .filter((bloque) =>
-                              bloque.titulo.toLowerCase() === subcategoriaStatsJugador
-                            )
                             .map((bloque) => (
                             <div key={bloque.titulo} className="mb-7">
                               <div className={`flex justify-between items-center px-3 py-2 rounded-t-md text-[10px] md:text-xs font-black text-white font-['Orbitron'] ${
@@ -2003,16 +2031,14 @@ export default function Home() {
 
                               <button
                                 onClick={() => {
-                                  if (
-                                    categoriaStatsJugador === 'ofensiva' &&
-                                    (
-                                      subcategoriaStatsJugador === 'pasando' ||
-                                      subcategoriaStatsJugador === 'corriendo' ||
-                                      subcategoriaStatsJugador === 'recibiendo'
-                                    )
-                                  ) {
-                                    setVistaStatsCompleta(true);
-                                  }
+                                  const destino = bloque.titulo.toLowerCase() as
+                                    | 'pasando'
+                                    | 'corriendo'
+                                    | 'recibiendo';
+
+                                  setCategoriaStatsJugador('ofensiva');
+                                  setSubcategoriaStatsJugador(destino);
+                                  setVistaStatsCompleta(true);
                                 }}
                                 className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors"
                               >
@@ -2112,7 +2138,8 @@ export default function Home() {
 
                         </div>
 
-                        {categoriaStatsJugador === 'defensiva' && (
+                        {/* PORTADA_6_TOP5_REDZONE */}
+                        {!vistaStatsCompleta && (
                           <div>
                             <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2 mb-3">
                               <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
@@ -2204,13 +2231,214 @@ export default function Home() {
 
                       </div>
 
+                    ) : vistaStatsCompleta &&
+                    tipoStats === 'equipo' &&
+                    (
+                      categoriaStatsEquipo === 'ofensiva' ||
+                      categoriaStatsEquipo === 'defensiva'
+                    ) ? (
+
+                      /* ================= DETALLE_EQUIPO_REDZONE ================= */
+                      <div className="w-full">
+
+                        {/* SUBMENÚ ESPECÍFICO DE EQUIPO */}
+                        <div className="mb-5 flex justify-start">
+                          <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
+
+                            {(categoriaStatsEquipo === 'ofensiva'
+                              ? [
+                                  ['yardas_totales', 'YARDAS TOTALES'],
+                                  ['pasando', 'PASANDO'],
+                                  ['corriendo', 'CORRIENDO']
+                                ]
+                              : [
+                                  ['yardas_permitidas', 'YARDAS PERMITIDAS'],
+                                  ['capturas', 'CAPTURAS'],
+                                  ['entregas_def', 'ENTREGAS']
+                                ]
+                            ).map(([id, label]) => (
+                              <button
+                                key={id}
+                                onClick={() =>
+                                  setSubcategoriaStatsEquipo(
+                                    id as
+                                      | 'yardas_totales'
+                                      | 'pasando'
+                                      | 'corriendo'
+                                      | 'yardas_permitidas'
+                                      | 'capturas'
+                                      | 'entregas_def'
+                                  )
+                                }
+                                className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
+                                  subcategoriaStatsEquipo === id
+                                    ? 'bg-white text-red-700 shadow-md'
+                                    : 'text-zinc-600 hover:text-red-700'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* CABECERA */}
+                        <div
+                          className={`flex items-center justify-between gap-3 border-b-2 pb-3 mb-4 ${
+                            categoriaStatsEquipo === 'defensiva'
+                              ? 'border-blue-500'
+                              : 'border-red-600'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                                categoriaStatsEquipo === 'defensiva'
+                                  ? 'bg-blue-500'
+                                  : 'bg-red-600'
+                              }`}
+                            />
+
+                            <h3
+                              className={`text-sm md:text-xl font-black uppercase tracking-wider font-['Orbitron'] italic underline underline-offset-4 truncate ${
+                                categoriaStatsEquipo === 'defensiva'
+                                  ? 'text-blue-600 decoration-blue-600'
+                                  : 'text-red-600 decoration-red-600'
+                              }`}
+                            >
+                              {subcategoriaStatsEquipo === 'yardas_totales'
+                                ? 'Yardas totales'
+                                : subcategoriaStatsEquipo === 'pasando'
+                                ? 'Pasando'
+                                : subcategoriaStatsEquipo === 'corriendo'
+                                ? 'Corriendo'
+                                : subcategoriaStatsEquipo === 'yardas_permitidas'
+                                ? 'Yardas permitidas'
+                                : subcategoriaStatsEquipo === 'capturas'
+                                ? 'Capturas de mariscal'
+                                : 'Entregas'}
+                            </h3>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setVistaStatsCompleta(false);
+                              setTipoStats('equipo');
+                              setCategoriaStatsEquipo('ofensiva');
+                              setSubcategoriaStatsEquipo('yardas_totales');
+                            }}
+                            className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+                          >
+                            ← Volver a líderes
+                          </button>
+                        </div>
+
+                        <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
+                          Desliza para ver todas las estadísticas →
+                        </p>
+
+                        {/* TABLA COMPLETA EQUIPO */}
+                        <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                          <table className="min-w-[1050px] w-full border-collapse text-xs">
+
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+
+                                <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  EQUIPO
+                                </th>
+
+                                {[
+                                  'GP',
+                                  'YDS',
+                                  'YDS/G',
+                                  'PASS',
+                                  'RUSH',
+                                  'PTS',
+                                  'SACK',
+                                  'TAKE',
+                                  'GIVE',
+                                  'DIFF'
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {[
+                                ['Los Angeles Rams', 'LAR', '17', '6,708', '394.6', '4,558', '2,150', '472', '42', '24', '13', '+11'],
+                                ['Dallas Cowboys', 'DAL', '17', '6,662', '391.9', '4,527', '2,135', '455', '38', '27', '19', '+8'],
+                                ['New England Patriots', 'NE', '17', '6,450', '379.4', '4,259', '2,191', '441', '41', '26', '18', '+8'],
+                                ['Buffalo Bills', 'BUF', '17', '6,397', '376.3', '4,012', '2,385', '468', '46', '31', '20', '+11'],
+                                ['Detroit Lions', 'DET', '17', '6,344', '373.2', '4,303', '2,041', '489', '49', '29', '22', '+7'],
+                                ['San Francisco 49ers', 'SF', '17', '6,180', '363.5', '4,156', '2,024', '437', '44', '27', '21', '+6'],
+                                ['Baltimore Ravens', 'BAL', '17', '6,105', '359.1', '3,443', '2,662', '460', '47', '30', '23', '+7'],
+                                ['Philadelphia Eagles', 'PHI', '17', '6,008', '353.4', '3,898', '2,110', '445', '45', '25', '18', '+7'],
+                                ['Green Bay Packers', 'GB', '17', '5,944', '349.6', '3,962', '1,982', '426', '43', '28', '21', '+7'],
+                                ['Kansas City Chiefs', 'KC', '17', '5,881', '345.9', '4,021', '1,860', '419', '41', '24', '19', '+5'],
+                              ].map((fila, i) => (
+                                <tr
+                                  key={fila[1]}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                                >
+
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {i + 1}
+                                  </td>
+
+                                  <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                        alt={fila[0]}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {fila[0]}
+                                        </div>
+
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {fila[1]}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {fila.slice(2).map((valor, idx) => (
+                                    <td
+                                      key={idx}
+                                      className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 text-zinc-600"
+                                    >
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+
+                          </table>
+                        </div>
+                      </div>
+
                     ) : (
 
                       /* ================= EQUIPOS ================= */
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
                         {/* ================= OFENSIVA EQUIPOS ================= */}
-                        <div className={categoriaStatsEquipo === 'ofensiva' ? '' : 'hidden'}>
+                        <div>
                           <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-3">
                             <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
                             <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
@@ -2286,7 +2514,21 @@ export default function Home() {
                                 </div>
                               ))}
 
-                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors">
+                              <button
+                                onClick={() => {
+                                  const destino =
+                                    bloque.titulo === 'YARDAS TOTALES'
+                                      ? 'yardas_totales'
+                                      : bloque.titulo === 'PASANDO'
+                                      ? 'pasando'
+                                      : 'corriendo';
+
+                                  setCategoriaStatsEquipo('ofensiva');
+                                  setSubcategoriaStatsEquipo(destino);
+                                  setVistaStatsCompleta(true);
+                                }}
+                                className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors"
+                              >
                                 LISTA COMPLETA
                               </button>
                             </div>
@@ -2294,7 +2536,7 @@ export default function Home() {
                         </div>
 
                         {/* ================= DEFENSIVA EQUIPOS ================= */}
-                        <div className={categoriaStatsEquipo === 'defensiva' ? '' : 'hidden'}>
+                        <div>
                           <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2 mb-3">
                             <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
                             <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
@@ -2370,7 +2612,21 @@ export default function Home() {
                                 </div>
                               ))}
 
-                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-blue-700 transition-colors">
+                              <button
+                                onClick={() => {
+                                  const destino =
+                                    bloque.titulo === 'YARDAS PERMITIDAS'
+                                      ? 'yardas_permitidas'
+                                      : bloque.titulo === 'CAPTURAS DE MARISCAL'
+                                      ? 'capturas'
+                                      : 'entregas_def';
+
+                                  setCategoriaStatsEquipo('defensiva');
+                                  setSubcategoriaStatsEquipo(destino);
+                                  setVistaStatsCompleta(true);
+                                }}
+                                className="w-full py-3 text-xs font-black text-zinc-800 hover:text-blue-700 transition-colors"
+                              >
                                 LISTA COMPLETA
                               </button>
                             </div>
