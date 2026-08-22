@@ -377,6 +377,12 @@ export default function Home() {
   const [tipoStats, setTipoStats] = useState<'jugador' | 'equipo'>('jugador');
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<'pasando' | 'corriendo' | 'recibiendo' | 'devoluciones' | 'pateando' | 'despejes'>('pasando');
   const [categoriaStatsEquipo, setCategoriaStatsEquipo] = useState<'ofensiva' | 'defensiva' | 'especiales' | 'entregas'>('ofensiva');
+  const [subcategoriaEspecialesEquipo, setSubcategoriaEspecialesEquipo] = useState<
+    'devoluciones' | 'pateando' | 'despejes'
+  >('devoluciones');
+  const [subcategoriaEntregasEquipo, setSubcategoriaEntregasEquipo] = useState<
+    'perdidos' | 'recuperados' | 'diferencial'
+  >('perdidos');
   const [subcategoriaStatsEquipo, setSubcategoriaStatsEquipo] = useState<
     'yardas_totales' |
     'pasando' |
@@ -1407,6 +1413,14 @@ export default function Home() {
 
                                   if (id === 'defensiva') {
                                     setSubcategoriaStatsEquipo('yardas_permitidas');
+                                  }
+
+                                  if (id === 'especiales') {
+                                    setSubcategoriaEspecialesEquipo('devoluciones');
+                                  }
+
+                                  if (id === 'entregas') {
+                                    setSubcategoriaEntregasEquipo('perdidos');
                                   }
                                 }
                               }}
@@ -2666,6 +2680,243 @@ export default function Home() {
 
                     ) : vistaStatsCompleta &&
                     tipoStats === 'equipo' &&
+                    categoriaStatsEquipo === 'especiales' ? (
+
+                      /* ================= DETALLE_ESPECIALES_EQUIPO_NUEVO ================= */
+                      <div className="w-full">
+
+                        <div className="mb-5 flex justify-start">
+                          <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
+                            {[
+                              ['devoluciones', 'DEVOLUCIONES'],
+                              ['pateando', 'PATEANDO'],
+                              ['despejes', 'DESPEJES']
+                            ].map(([id, label]) => (
+                              <button
+                                key={id}
+                                onClick={() =>
+                                  setSubcategoriaEspecialesEquipo(
+                                    id as 'devoluciones' | 'pateando' | 'despejes'
+                                  )
+                                }
+                                className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
+                                  subcategoriaEspecialesEquipo === id
+                                    ? 'bg-white text-blue-700 shadow-md'
+                                    : 'text-zinc-600 hover:text-blue-700'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 border-b-2 border-blue-500 pb-3 mb-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                            <h3 className="text-sm md:text-xl font-black uppercase text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
+                              {subcategoriaEspecialesEquipo === 'pateando'
+                                ? 'Pateando'
+                                : subcategoriaEspecialesEquipo === 'despejes'
+                                ? 'Despejes'
+                                : 'Devoluciones'}
+                            </h3>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setVistaStatsCompleta(false);
+                              setTipoStats('equipo');
+                              setCategoriaStatsEquipo('ofensiva');
+                              setSubcategoriaStatsEquipo('yardas_totales');
+                            }}
+                            className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+                          >
+                            ← Volver a líderes
+                          </button>
+                        </div>
+
+                        <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
+                          Desliza para ver todas las estadísticas →
+                        </p>
+
+                        <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                          <table className="min-w-[900px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+                                <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  EQUIPO
+                                </th>
+                                {['GP', 'ATT', 'YDS', 'AVG', 'LNG', 'TD', 'PTS'].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {[
+                                ['Dallas Cowboys', 'DAL', '17', '51', '1,486', '29.1', '98', '3', '157'],
+                                ['Denver Broncos', 'DEN', '17', '49', '1,421', '29.0', '91', '2', '142'],
+                                ['New Orleans Saints', 'NO', '17', '50', '1,397', '27.9', '87', '2', '136'],
+                                ['Chicago Bears', 'CHI', '17', '48', '1,362', '28.4', '93', '2', '139'],
+                                ['New York Jets', 'NYJ', '17', '47', '1,331', '28.3', '86', '1', '128'],
+                                ['Detroit Lions', 'DET', '17', '46', '1,298', '28.2', '85', '2', '145'],
+                                ['Houston Texans', 'HOU', '17', '45', '1,270', '28.2', '82', '1', '141'],
+                                ['Buffalo Bills', 'BUF', '17', '44', '1,244', '28.3', '80', '1', '134'],
+                                ['Miami Dolphins', 'MIA', '17', '43', '1,218', '28.3', '79', '1', '132'],
+                                ['Philadelphia Eagles', 'PHI', '17', '42', '1,190', '28.3', '77', '1', '130'],
+                              ].map((fila, i) => (
+                                <tr key={fila[1]} className="border-b border-zinc-100 hover:bg-zinc-50">
+                                  <td className="sticky left-0 z-20 bg-white border-r border-zinc-200 px-2 py-3 text-center text-zinc-500">
+                                    {i + 1}
+                                  </td>
+                                  <td className="sticky left-11 z-20 bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                        alt={fila[0]}
+                                        className="w-7 h-7 object-contain"
+                                      />
+                                      <span className="font-bold text-zinc-900 truncate">{fila[0]}</span>
+                                    </div>
+                                  </td>
+                                  {fila.slice(2).map((valor, idx) => (
+                                    <td key={idx} className="px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 text-zinc-600">
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                    ) : vistaStatsCompleta &&
+                    tipoStats === 'equipo' &&
+                    categoriaStatsEquipo === 'entregas' ? (
+
+                      /* ================= DETALLE_ENTREGAS_EQUIPO_NUEVO ================= */
+                      <div className="w-full">
+
+                        <div className="mb-5 flex justify-start">
+                          <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
+                            {[
+                              ['perdidos', 'BALONES PERDIDOS'],
+                              ['recuperados', 'BALONES RECUPERADOS'],
+                              ['diferencial', 'DIFERENCIAL']
+                            ].map(([id, label]) => (
+                              <button
+                                key={id}
+                                onClick={() =>
+                                  setSubcategoriaEntregasEquipo(
+                                    id as 'perdidos' | 'recuperados' | 'diferencial'
+                                  )
+                                }
+                                className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
+                                  subcategoriaEntregasEquipo === id
+                                    ? 'bg-white text-red-700 shadow-md'
+                                    : 'text-zinc-600 hover:text-red-700'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 border-b-2 border-red-600 pb-3 mb-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-3 h-3 bg-red-600 rounded-full" />
+                            <h3 className="text-sm md:text-xl font-black uppercase text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
+                              {subcategoriaEntregasEquipo === 'recuperados'
+                                ? 'Balones recuperados'
+                                : subcategoriaEntregasEquipo === 'diferencial'
+                                ? 'Diferencial'
+                                : 'Balones perdidos'}
+                            </h3>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setVistaStatsCompleta(false);
+                              setTipoStats('equipo');
+                              setCategoriaStatsEquipo('ofensiva');
+                              setSubcategoriaStatsEquipo('yardas_totales');
+                            }}
+                            className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+                          >
+                            ← Volver a líderes
+                          </button>
+                        </div>
+
+                        <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                          <table className="min-w-[760px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+                                <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  EQUIPO
+                                </th>
+                                {['GP', 'GIVE', 'TAKE', 'INT', 'FUM', 'DIFF'].map((col) => (
+                                  <th key={col} className="min-w-[78px] px-3 py-3 text-center border-r border-zinc-200">
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {[
+                                ['Chicago Bears', 'CHI', '17', '12', '34', '19', '15', '+22'],
+                                ['Houston Texans', 'HOU', '17', '14', '31', '17', '14', '+17'],
+                                ['Jacksonville Jaguars', 'JAX', '17', '16', '29', '16', '13', '+13'],
+                                ['Pittsburgh Steelers', 'PIT', '17', '16', '28', '15', '13', '+12'],
+                                ['Los Angeles Rams', 'LAR', '17', '16', '27', '14', '13', '+11'],
+                                ['Buffalo Bills', 'BUF', '17', '20', '31', '17', '14', '+11'],
+                                ['Dallas Cowboys', 'DAL', '17', '19', '27', '15', '12', '+8'],
+                                ['New England Patriots', 'NE', '17', '18', '26', '14', '12', '+8'],
+                                ['Detroit Lions', 'DET', '17', '22', '29', '16', '13', '+7'],
+                                ['Philadelphia Eagles', 'PHI', '17', '18', '25', '14', '11', '+7'],
+                              ].map((fila, i) => (
+                                <tr key={fila[1]} className="border-b border-zinc-100 hover:bg-zinc-50">
+                                  <td className="sticky left-0 z-20 bg-white border-r border-zinc-200 px-2 py-3 text-center text-zinc-500">
+                                    {i + 1}
+                                  </td>
+                                  <td className="sticky left-11 z-20 bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                        alt={fila[0]}
+                                        className="w-7 h-7 object-contain"
+                                      />
+                                      <span className="font-bold text-zinc-900 truncate">{fila[0]}</span>
+                                    </div>
+                                  </td>
+                                  {fila.slice(2).map((valor, idx) => (
+                                    <td key={idx} className="px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 text-zinc-600">
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                    ) : vistaStatsCompleta &&
+                    tipoStats === 'equipo' &&
                     (
                       categoriaStatsEquipo === 'ofensiva' ||
                       categoriaStatsEquipo === 'defensiva'
@@ -3072,7 +3323,7 @@ export default function Home() {
                   </div>
                 
                           {/* ESPECIALES_EQUIPO_REDZONE */}
-                          <div className={categoriaStatsEquipo === 'especiales' ? '' : 'hidden'}>
+                          <div className={categoriaStatsEquipo === 'especiales' && !vistaStatsCompleta ? '' : 'hidden'}>
                             <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2 mb-3">
                               <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
                               <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
@@ -3155,7 +3406,7 @@ export default function Home() {
                           </div>
 
                           {/* ENTREGAS_EQUIPO_REDZONE */}
-                          <div className={categoriaStatsEquipo === 'entregas' ? '' : 'hidden'}>
+                          <div className={categoriaStatsEquipo === 'entregas' && !vistaStatsCompleta ? '' : 'hidden'}>
                             <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-3">
                               <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
                               <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
