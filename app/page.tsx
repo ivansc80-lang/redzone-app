@@ -1217,6 +1217,17 @@ export default function Home() {
     { id: 'perfil', label: 'PERFIL', icon: <img src="/logo_perfil.png" alt="Perfil" className="w-[35px] h-[35px] object-contain" /> },
   ];
 
+  const tituloBarraPrincipal =
+    pestanaActiva === 'clasificacion'
+      ? 'TABLA GENERAL DE POSICIONES'
+      : pestanaActiva === 'pronosticos'
+      ? `PRONÓSTICOS - JORNADA ${jornadaActual}`
+      : pestanaActiva === 'jornada'
+      ? `RESULTADOS JORNADA ${jornadaActual}`
+      : pestanaActiva === 'perfil'
+      ? 'AJUSTES DE PERFIL PRIVADO'
+      : null;
+
   return (
     <div className="min-h-screen bg-[#8b0000] text-white w-full font-sans">
       <link href="https://fonts.googleapis.com/css2?family=Orbitron:ital,wght@0,700;0,900;1,700;1,900&display=swap" rel="stylesheet" />
@@ -1224,8 +1235,121 @@ export default function Home() {
         <header className="w-full bg-[#8b0000] py-3 flex justify-center items-center"><picture className="flex justify-center"><source media="(max-width: 768px)" srcSet="/redzone2_logo.png" /><img src="/redzone1_logo.png" alt="NFL REDZONE" className="h-10 md:h-12 object-contain" /></picture></header>
         {showSearch && <div className={`fixed z-50 p-4 transition-all duration-500 ${searchPosition === 'top' ? 'top-20' : 'bottom-4'} right-4 bg-white text-black rounded-full shadow-xl font-bold font-['Orbitron']`}>🔍</div>}
         <nav className="w-full bg-white border-b py-2 flex justify-center"><div className="w-full md:max-w-xl flex justify-around items-center px-2">{navItems.map((item) => <button key={item.id} onClick={() => setPestanaActiva(item.id)} className="flex flex-col items-center gap-1 px-1 py-1 transition-all relative cursor-pointer"><div className="w-[35px] h-[35px] flex items-center justify-center">{item.icon}</div><span className="text-[9px] font-bold text-red-700 tracking-tight leading-none">{item.label}</span><div className={`h-1 w-7 rounded-full transition-all duration-300 mt-0.5 ${pestanaActiva === item.id ? 'bg-red-700 opacity-100 scale-100' : 'bg-transparent opacity-0 scale-0'}`} /></button>)}</div></nav>
+        {tituloBarraPrincipal && (
+          <div className="w-full bg-[#002244] flex items-center justify-center px-4 py-5 md:py-6">
+            <h1 className="text-white text-base md:text-2xl font-black uppercase tracking-wider font-['Orbitron'] italic text-center">
+              {tituloBarraPrincipal}
+            </h1>
+          </div>
+        )}
+
+        {pestanaActiva === 'equipos' && (
+          <div className="w-full bg-[#002244]">
+            <div className="w-full md:max-w-2xl mx-auto flex items-center justify-around px-3 py-3 md:py-2">
+              {[
+                ['score', 'SCORE', '/score.png'],
+                ['games', 'GAMES', '/games.png'],
+                ['stats', 'STATS', '/stats.png'],
+                ['franquicia', 'FRANQUICIA', '/franquicia.png']
+              ].map(([id, label, icono]) => {
+                const activo =
+                  (id === 'score' || id === 'games') &&
+                  subPestanaEquipos === id;
+
+                return (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      if (id === 'score' || id === 'games') {
+                        setSubPestanaEquipos(id);
+                      }
+                    }}
+                    className={`flex flex-col items-center justify-center gap-1.5 min-w-[68px] md:min-w-[100px] text-white transition-all ${
+                      activo
+                        ? 'opacity-100'
+                        : 'opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={icono}
+                      alt={label}
+                      className={`w-8 h-8 md:w-10 md:h-10 object-contain transition-transform ${
+                        activo ? 'scale-105' : ''
+                      }`}
+                    />
+
+                    <span className="font-['Orbitron'] text-[8px] md:text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
+                      {label}
+                    </span>
+
+                    <span
+                      className={`h-[2px] w-7 rounded-full ${
+                        activo
+                          ? 'bg-white opacity-100'
+                          : 'opacity-0'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {pestanaActiva === 'noticias' && (
+          <div className="w-full bg-[#002244]">
+            <div className="w-full md:max-w-4xl mx-auto flex items-center justify-start md:justify-evenly gap-4 md:gap-6 overflow-x-auto px-3 py-3 md:py-2">
+              {[
+                ['TODAS', '/todas.png'],
+                ['LESIONES', '/lesion.png'],
+                ['SANCIONES', '/sancion.png'],
+                ['FICHAJES', '/fichajes.png'],
+                ['RUMORES', '/rumores.png'],
+                ['PARTIDOS', '/partidos.png'],
+                ['OTROS', '/otros.png']
+              ].map(([filtro, icono]) => {
+                const activo = filtroNoticias === filtro;
+
+                return (
+                  <button
+                    key={filtro}
+                    onClick={() =>
+                      setFiltroNoticias(filtro as 'TODAS' | CategoriaNoticia)
+                    }
+                    className={`shrink-0 min-w-[62px] md:min-w-[82px] flex flex-col items-center justify-center gap-1.5 text-white transition-all ${
+                      activo
+                        ? 'opacity-100'
+                        : 'opacity-80 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={icono}
+                      alt={filtro}
+                      className={`w-8 h-8 md:w-10 md:h-10 object-contain transition-transform ${
+                        activo ? 'scale-105' : ''
+                      }`}
+                    />
+
+                    <span className="font-['Orbitron'] text-[7px] md:text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">
+                      {filtro}
+                    </span>
+
+                    <span
+                      className={`h-[2px] w-7 rounded-full ${
+                        activo
+                          ? 'bg-white opacity-100'
+                          : 'opacity-0'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="p-4 md:p-8 w-full max-w-[1600px] mx-auto">
-          {pestanaActiva === 'clasificacion' && <section className="space-y-4"><h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-2 font-['Orbitron'] italic">Tabla General de Posiciones</h2><div className="space-y-4">{usuarios.map((usr) => <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all relative overflow-hidden`}><img src={usr.logoEquipo} alt={usr.nombreEquipo} className="md:hidden absolute top-2 right-2 w-20 h-20 object-contain opacity-90 drop-shadow-md" /><div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start"><div className="flex items-center gap-3 md:gap-5"><span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span><img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0" /><div className="flex items-center gap-4 md:gap-8"><div className="flex flex-col justify-center w-28 md:w-36 flex-shrink-0"><span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span><span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span></div><div className="hidden md:flex items-center gap-6 ml-4 md:ml-20"><img src={usr.logoEquipo} alt={usr.nombreEquipo} className="h-20 w-20 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" /><span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">{usr.nombreEquipo}</span></div></div></div></div><div className="flex items-center justify-between md:justify-end gap-6 md:gap-12 w-full md:w-auto border-t md:border-t-0 border-white/20 pt-3 md:pt-0"><div className="text-left md:text-right"><p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Puntuación Total</p><p className="text-2xl md:text-4xl font-black text-white leading-none font-['Orbitron'] italic">{usr.puntos} <span className="text-sm md:text-lg font-bold opacity-80">pts</span></p></div><div className="text-left md:text-right"><p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Efectividad</p><p className="text-xl md:text-3xl font-black text-white leading-none font-['Orbitron'] italic">{usr.efectividad}</p></div>{usr.esLider || usr.esColider ? <span className={`text-sm md:text-base px-4 py-2 rounded-xl font-black shadow-lg font-['Orbitron'] italic ${usr.colorBadge}`}>{usr.esColider ? 'Colíder 🏆' : 'Líder 🏆'}</span> : <div className="w-20 hidden md:block"></div>}</div></div>)}</div></section>}
+          {pestanaActiva === 'clasificacion' && <section className="space-y-4"><div className="space-y-4">{usuarios.map((usr) => <div key={usr.id} className={`${usr.colorBg} border-2 ${usr.colorBorder} rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl transition-all relative overflow-hidden`}><img src={usr.logoEquipo} alt={usr.nombreEquipo} className="md:hidden absolute top-2 right-2 w-20 h-20 object-contain opacity-90 drop-shadow-md" /><div className="flex items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-start"><div className="flex items-center gap-3 md:gap-5"><span className="font-black text-white text-2xl md:text-4xl min-w-[35px] font-['Orbitron'] italic">{usr.posicion}</span><img src={usr.avatar} alt={usr.nombre} className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0" /><div className="flex items-center gap-4 md:gap-8"><div className="flex flex-col justify-center w-28 md:w-36 flex-shrink-0"><span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">HEADCOACH</span><span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">{usr.nombre}</span></div><div className="hidden md:flex items-center gap-6 ml-4 md:ml-20"><img src={usr.logoEquipo} alt={usr.nombreEquipo} className="h-20 w-20 md:h-32 md:w-32 object-contain drop-shadow-xl flex-shrink-0" /><span className="text-base md:text-xl font-black text-white uppercase font-['Orbitron'] tracking-wider drop-shadow-md">{usr.nombreEquipo}</span></div></div></div></div><div className="flex items-center justify-between md:justify-end gap-6 md:gap-12 w-full md:w-auto border-t md:border-t-0 border-white/20 pt-3 md:pt-0"><div className="text-left md:text-right"><p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Puntuación Total</p><p className="text-2xl md:text-4xl font-black text-white leading-none font-['Orbitron'] italic">{usr.puntos} <span className="text-sm md:text-lg font-bold opacity-80">pts</span></p></div><div className="text-left md:text-right"><p className="text-xs md:text-sm font-bold text-white/80 uppercase tracking-wider font-['Orbitron']">Efectividad</p><p className="text-xl md:text-3xl font-black text-white leading-none font-['Orbitron'] italic">{usr.efectividad}</p></div>{usr.esLider || usr.esColider ? <span className={`text-sm md:text-base px-4 py-2 rounded-xl font-black shadow-lg font-['Orbitron'] italic ${usr.colorBadge}`}>{usr.esColider ? 'Colíder 🏆' : 'Líder 🏆'}</span> : <div className="w-20 hidden md:block"></div>}</div></div>)}</div></section>}
 
           {pestanaActiva === 'pronosticos' && (
             <section className="space-y-6 max-w-5xl mx-auto">
@@ -1462,13 +1586,18 @@ export default function Home() {
                 </div>
               )}
 
-              <div className={`${desempateActivo || eleccionSuperbowlActiva ? 'hidden' : ''} bg-[#0d0d0d] border border-[#222] rounded-2xl p-3 md:p-6 shadow-2xl`}><div className="bg-white py-3 px-4 rounded-t-xl text-center mb-4">
-              <h1 className="text-lg md:text-xl font-black text-[#d32f2f] tracking-wide uppercase">
-                PORRA - JORNADA {jornadaActual}
-              </h1>
-            </div>{(estadoJornadaActual === 'cerrada' || estadoJornadaActual === 'finalizada') && <div className="mb-4 bg-red-700 border border-red-500 text-white text-center py-3 px-4 rounded-xl font-['Orbitron'] font-black uppercase tracking-widest">🔒 PORRA CERRADA</div>}<div className="grid grid-cols-1 md:grid-cols-2 gap-3">{datosUsuarioActual.pronosticos.map((p, index, array) => {
+              <div className={`${desempateActivo || eleccionSuperbowlActiva ? 'hidden' : ''} bg-white border border-white rounded-2xl p-3 md:p-6 shadow-2xl`}>
+                <div className={`mb-4 text-white text-center py-3 px-4 rounded-xl font-['Orbitron'] font-black uppercase tracking-widest ${
+                  estadoJornadaActual === 'cerrada' || estadoJornadaActual === 'finalizada'
+                    ? 'bg-red-700 border border-red-500'
+                    : 'bg-emerald-600 border border-emerald-400'
+                }`}>
+                  {estadoJornadaActual === 'cerrada' || estadoJornadaActual === 'finalizada'
+                    ? '🔒 PORRA CERRADA'
+                    : '🔓 PORRA ABIERTA'}
+                </div><div className="grid grid-cols-1 md:grid-cols-2 gap-3">{datosUsuarioActual.pronosticos.map((p, index, array) => {
               const isLocalSelected = p.eleccion === '1'; const isVsSelected = p.eleccion === 'X'; const isVisitorSelected = p.eleccion === '2'; const esUltimoEImpar = (array.length % 2 !== 0) && (index === array.length - 1);
-              return <div key={p.id} className={`bg-[#181818] border border-[#2a2a2a] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''}`}><button onClick={() => handleSeleccionPronostico(p.id, '1')} className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}><img
+              return <div key={p.id} className={`bg-[#002244] border border-[#002244] rounded-xl p-2 flex items-center justify-between gap-1.5 h-16 ${esUltimoEImpar ? 'md:col-span-2 md:w-1/2 md:mx-auto' : ''}`}><button onClick={() => handleSeleccionPronostico(p.id, '1')} className={`flex-1 h-full flex items-center justify-center gap-2 px-2 rounded-lg transition-all border ${isLocalSelected ? 'bg-white text-black border-white' : 'bg-[#2a2a2a] hover:bg-[#383838] border-[#3a3a3a] text-gray-200'}`}><img
                   src={p.localLogo}
                   alt={p.local}
                   className={`object-contain flex-shrink-0 ${
@@ -1515,7 +1644,16 @@ export default function Home() {
 
           {pestanaActiva === 'jornada' && (
             <section className="space-y-8 bg-[#8b0000] p-2 md:p-6 rounded-2xl">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-4 py-2 border-y border-red-800 my-2 bg-red-950/40 rounded-lg px-4"><h1 className="text-xl md:text-3xl font-black font-['Orbitron'] italic tracking-widest text-white uppercase">RESULTADOS JORNADA {jornadaActual}</h1>{modoTest && <button onClick={handleValidarJornada} className="bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg uppercase transition-all cursor-pointer">✓ VALIDAR JORNADA (SIMULAR RESULTADOS)</button>}</div>
+              {modoTest && (
+                <div className="flex justify-end py-2">
+                  <button
+                    onClick={handleValidarJornada}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg uppercase transition-all cursor-pointer"
+                  >
+                    ✓ VALIDAR JORNADA (SIMULAR RESULTADOS)
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{usuarios.map((usr) => {
                 const pronosticosUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.pronosticos || [];
                 const confirmadoUsr = pronosticosPorUsuario[jornadaActual]?.[usr.id]?.confirmado || false;
@@ -1662,7 +1800,7 @@ export default function Home() {
           )}
 
           {pestanaActiva === 'equipos' && (
-            <section className="space-y-6"><div className="flex justify-center items-center gap-4 border-b border-red-900/50 pb-4"><button onClick={() => setSubPestanaEquipos('score')} className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 cursor-pointer ${subPestanaEquipos === 'score' ? 'bg-white text-black shadow-lg scale-105' : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'}`}>SCORE</button><button onClick={() => setSubPestanaEquipos('games')} className={`px-8 py-2 font-['Orbitron'] text-xs md:text-sm font-bold uppercase rounded-lg transition-all border border-white/20 cursor-pointer ${subPestanaEquipos === 'games' ? 'bg-white text-black shadow-lg scale-105' : 'bg-[#5c0000] text-white hover:bg-[#7a0000]'}`}>GAMES</button></div>{subPestanaEquipos === 'score' ? <div className="space-y-8">{sincronizandoPosiciones && <div className="flex justify-end"><span className="text-[10px] text-red-200 font-mono animate-pulse">Actualizando datos desde ESPN...</span></div>}<div className="space-y-4"><div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl"><div className="flex items-center gap-3 border-b-2 border-red-600 pb-2"><div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" /><h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">Conferencia Americana (AFC)</h3></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}</div></div></div><div className="space-y-4 pt-4"><div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl"><div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2"><div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" /><h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">Conferencia Nacional (NFC)</h3></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}</div></div></div></div> : (
+            <section className="space-y-6">{subPestanaEquipos === 'score' ? <div className="space-y-8">{sincronizandoPosiciones && <div className="flex justify-end"><span className="text-[10px] text-red-200 font-mono animate-pulse">Actualizando datos desde ESPN...</span></div>}<div className="space-y-4"><div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl"><div className="flex items-center gap-3 border-b-2 border-red-600 pb-2"><div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" /><h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">Conferencia Americana (AFC)</h3></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{divisiones.filter((d) => d.conferencia === 'AFC' || d.nombre.toUpperCase().includes('AFC')).map((div, idx) => renderTablaDivision(div, idx))}</div></div></div><div className="space-y-4 pt-4"><div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl"><div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2"><div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" /><h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">Conferencia Nacional (NFC)</h3></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{divisiones.filter((d) => d.conferencia === 'NFC' || d.nombre.toUpperCase().includes('NFC')).map((div, idx) => renderTablaDivision(div, idx))}</div></div></div></div> : (
               <div className="space-y-8">
                 {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
                   const partidosJornada = jornadasOficiales[jNum] || [];
@@ -1674,8 +1812,9 @@ export default function Home() {
                       key={jNum}
                       className="bg-white border border-white rounded-2xl p-4 md:p-6 shadow-2xl"
                     >
-                      <div className="border-b border-[#7a0000]/40 pb-3 mb-4">
-                        <h3 className="text-base md:text-lg font-['Orbitron'] font-black text-[#7a0000] uppercase tracking-wider">
+                      <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-4">
+                        <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+                        <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
                           JORNADA {jNum}
                         </h3>
                       </div>
@@ -1900,50 +2039,6 @@ export default function Home() {
 
           {pestanaActiva === 'noticias' && (
             <section className="space-y-4">
-              <div className="bg-[#002244] -mt-4">
-                <div className="max-w-7xl mx-auto flex items-start justify-start md:justify-evenly gap-5 md:gap-8 overflow-x-auto px-4 md:px-6 py-4 md:py-5">
-                  {[
-                    ['TODAS', '/todas.png'],
-                    ['LESIONES', '/lesion.png'],
-                    ['SANCIONES', '/sancion.png'],
-                    ['FICHAJES', '/fichajes.png'],
-                    ['RUMORES', '/rumores.png'],
-                    ['PARTIDOS', '/partidos.png'],
-                    ['OTROS', '/otros.png']
-                  ].map(([filtro, icono]) => (
-                    <button
-                      key={filtro}
-                      onClick={() => setFiltroNoticias(filtro as 'TODAS' | CategoriaNoticia)}
-                      className={`group shrink-0 min-w-[62px] md:min-w-[90px] flex flex-col items-center justify-center gap-1.5 md:gap-2 text-white transition-all ${
-                        filtroNoticias === filtro
-                          ? 'opacity-100'
-                          : 'opacity-80 hover:opacity-100'
-                      }`}
-                    >
-                      <img
-                        src={icono}
-                        alt={filtro}
-                        className={`object-contain transition-transform ${
-                          filtroNoticias === filtro ? 'scale-105' : ''
-                        } w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10`}
-                      />
-
-                      <span className="font-['Orbitron'] text-[7px] sm:text-[8px] md:text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">
-                        {filtro}
-                      </span>
-
-                      <span
-                        className={`h-[2px] w-7 rounded-full transition-opacity ${
-                          filtroNoticias === filtro
-                            ? 'bg-white opacity-100'
-                            : 'opacity-0'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {cargandoNoticias ? (
                 <div className="p-8 text-center text-red-200 font-['Orbitron'] animate-pulse">
                   Cargando noticias en castellano...
@@ -2011,9 +2106,7 @@ export default function Home() {
           {pestanaActiva === 'perfil' && (
             <section className="space-y-5 max-w-md mx-auto">
 
-              <h2 className="text-sm md:text-base font-black uppercase tracking-wider text-red-200 border-b border-red-900/50 pb-3 font-['Orbitron'] text-center">
-                AJUSTES DE PERFIL PRIVADO
-              </h2>
+              
 
               {!usuarioLogueado ? (
                 <div className="bg-black/90 border border-red-800 rounded-xl p-6 space-y-4 shadow-xl">
