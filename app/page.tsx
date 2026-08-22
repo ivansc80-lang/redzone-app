@@ -1448,17 +1448,26 @@ export default function Home() {
                     {vistaStatsCompleta &&
                     tipoStats === 'jugador' &&
                     categoriaStatsJugador === 'ofensiva' &&
-                    subcategoriaStatsJugador === 'pasando' ? (
+                    (
+                      subcategoriaStatsJugador === 'pasando' ||
+                      subcategoriaStatsJugador === 'corriendo' ||
+                      subcategoriaStatsJugador === 'recibiendo'
+                    ) ? (
 
-                      /* ================= DETALLE_PASANDO_REDZONE ================= */
+                      /* ================= DETALLE_OFENSIVA_JUGADOR_REDZONE ================= */
                       <div className="w-full">
 
                         {/* CABECERA DETALLE */}
                         <div className="flex items-center justify-between gap-3 border-b-2 border-red-600 pb-3 mb-4">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+
                             <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4 truncate">
-                              Pasando
+                              {subcategoriaStatsJugador === 'recibiendo'
+                                ? 'Recibiendo'
+                                : subcategoriaStatsJugador === 'corriendo'
+                                ? 'Corriendo'
+                                : 'Pasando'}
                             </h3>
                           </div>
 
@@ -1474,100 +1483,269 @@ export default function Home() {
                           Desliza para ver todas las estadísticas →
                         </p>
 
-                        {/* TABLA DETALLADA PASANDO */}
                         <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
-                          <table className="min-w-[1500px] w-full border-collapse text-xs">
 
-                            <thead>
-                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                          {subcategoriaStatsJugador === 'recibiendo' ? (
 
-                                {/* FIJAS */}
-                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
-                                  POS
-                                </th>
+                            /* ================= TABLA RECIBIENDO ================= */
+                            <table className="min-w-[1120px] w-full border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
 
-                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
-                                  NOMBRE
-                                </th>
-
-                                {/* DESPLAZABLES */}
-                                {[
-                                  'POS', 'GP', 'CMP', 'ATT', 'CMP%',
-                                  'YDS', 'AVG', 'YDS/G', 'LNG',
-                                  'TD', 'INT', 'SACK', 'SYL', 'QBR', 'RTG'
-                                ].map((col) => (
-                                  <th
-                                    key={col}
-                                    className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
-                                  >
-                                    {col}
+                                  <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                    POS
                                   </th>
-                                ))}
-                              </tr>
-                            </thead>
 
-                            <tbody>
-                              {[
-                                ['Matthew Stafford', 'LAR', 'QB', '17', '390', '597', '65.3', '4,707', '7.9', '276.9', '88', '46', '8', '24', '168', '72.4', '109.2'],
-                                ['Jared Goff', 'DET', 'QB', '17', '406', '589', '68.9', '4,564', '7.7', '268.5', '73', '37', '12', '28', '181', '68.1', '103.5'],
-                                ['Dak Prescott', 'DAL', 'QB', '17', '421', '626', '67.3', '4,552', '7.3', '267.8', '64', '30', '11', '31', '201', '64.8', '98.7'],
-                                ['Drake Maye', 'NE', 'QB', '17', '371', '543', '68.3', '4,394', '8.1', '258.5', '67', '31', '9', '36', '238', '70.6', '105.1'],
-                                ['Sam Darnold', 'SEA', 'QB', '17', '341', '526', '64.8', '4,048', '7.7', '238.1', '61', '28', '12', '34', '221', '63.9', '96.8'],
-                                ['Josh Allen', 'BUF', 'QB', '17', '338', '520', '65.0', '3,981', '7.7', '234.2', '63', '29', '10', '27', '174', '69.1', '101.4'],
-                                ['Joe Burrow', 'CIN', 'QB', '16', '356', '548', '65.0', '3,944', '7.2', '246.5', '70', '32', '11', '35', '229', '67.2', '99.6'],
-                                ['Patrick Mahomes', 'KC', 'QB', '17', '360', '553', '65.1', '3,928', '7.1', '231.1', '58', '27', '9', '32', '215', '71.0', '101.0'],
-                                ['Brock Purdy', 'SF', 'QB', '16', '329', '493', '66.7', '3,874', '7.9', '242.1', '71', '29', '10', '29', '192', '68.7', '104.2'],
-                                ['Jordan Love', 'GB', 'QB', '17', '337', '516', '65.3', '3,812', '7.4', '224.2', '59', '28', '11', '30', '197', '65.9', '99.1'],
-                              ].map((fila, i) => (
-                                <tr
-                                  key={fila[0]}
-                                  className="border-b border-zinc-100 hover:bg-zinc-50"
-                                >
+                                  <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                    NOMBRE
+                                  </th>
 
-                                  {/* POSICIÓN FIJA */}
-                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                    {i + 1}
-                                  </td>
-
-                                  {/* NOMBRE FIJO */}
-                                  <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <img
-                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                        alt={fila[1]}
-                                        className="w-7 h-7 object-contain flex-shrink-0"
-                                      />
-
-                                      <div className="min-w-0">
-                                        <div className="font-bold text-zinc-900 truncate">
-                                          {fila[0]}
-                                        </div>
-                                        <div className="text-[9px] text-zinc-400 font-semibold">
-                                          {fila[1]}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-
-                                  {/* DATOS DESPLAZABLES */}
-                                  {fila.slice(2).map((valor, idx) => (
-                                    <td
-                                      key={idx}
-                                      className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                        idx === 5
-                                          ? 'font-black text-red-700'
-                                          : 'text-zinc-600'
-                                      }`}
+                                  {[
+                                    'POS', 'GP', 'REC', 'TGT',
+                                    'YDS', 'AVG', 'YDS/G', 'LNG', 'TD', 'FUM'
+                                  ].map((col) => (
+                                    <th
+                                      key={col}
+                                      className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                     >
-                                      {valor}
-                                    </td>
+                                      {col}
+                                    </th>
                                   ))}
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                              </thead>
 
+                              <tbody>
+                                {[
+                                  ['Jaxon Smith-Njigba', 'SEA', 'WR', '17', '119', '168', '1,793', '15.1', '105.5', '72', '10', '1'],
+                                  ['Puka Nacua', 'LAR', 'WR', '17', '129', '174', '1,715', '13.3', '100.9', '65', '10', '1'],
+                                  ["Ja'Marr Chase", 'CIN', 'WR', '17', '117', '171', '1,589', '13.6', '93.5', '70', '12', '1'],
+                                  ['Amon-Ra St. Brown', 'DET', 'WR', '17', '115', '158', '1,478', '12.9', '86.9', '61', '11', '0'],
+                                  ['CeeDee Lamb', 'DAL', 'WR', '17', '108', '157', '1,421', '13.2', '83.6', '58', '9', '1'],
+                                  ['Justin Jefferson', 'MIN', 'WR', '17', '103', '153', '1,389', '13.5', '81.7', '63', '9', '0'],
+                                  ['Drake London', 'ATL', 'WR', '17', '101', '149', '1,342', '13.3', '78.9', '56', '10', '1'],
+                                  ['Nico Collins', 'HOU', 'WR', '16', '96', '141', '1,301', '13.6', '81.3', '67', '8', '0'],
+                                  ['George Pickens', 'DAL', 'WR', '17', '91', '139', '1,268', '13.9', '74.6', '64', '8', '1'],
+                                  ['Trey McBride', 'ARI', 'TE', '17', '112', '154', '1,239', '11.1', '72.9', '44', '8', '1'],
+                                ].map((fila, i) => (
+                                  <tr
+                                    key={fila[0]}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {i + 1}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                          alt={fila[1]}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {fila[0]}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {fila[1]}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {fila.slice(2).map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 4
+                                            ? 'font-black text-red-700'
+                                            : 'text-zinc-600'
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+
+                          ) : subcategoriaStatsJugador === 'corriendo' ? (
+
+                            /* ================= TABLA CORRIENDO ================= */
+                            <table className="min-w-[1050px] w-full border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+
+                                  <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                    POS
+                                  </th>
+
+                                  <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                    NOMBRE
+                                  </th>
+
+                                  {[
+                                    'POS', 'GP', 'ATT', 'YDS',
+                                    'AVG', 'YDS/G', 'LNG', 'TD', 'FUM'
+                                  ].map((col) => (
+                                    <th
+                                      key={col}
+                                      className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                    >
+                                      {col}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+
+                              <tbody>
+                                {[
+                                  ['James Cook III', 'BUF', 'RB', '17', '309', '1,621', '5.2', '95.4', '65', '16', '2'],
+                                  ['Derrick Henry', 'BAL', 'RB', '17', '315', '1,595', '5.1', '93.8', '72', '14', '3'],
+                                  ['Jonathan Taylor', 'IND', 'RB', '17', '326', '1,585', '4.9', '93.2', '68', '15', '2'],
+                                  ['Bijan Robinson', 'ATL', 'RB', '17', '292', '1,478', '5.1', '86.9', '58', '12', '2'],
+                                  ['DeVon Achane', 'MIA', 'RB', '17', '246', '1,350', '5.5', '79.4', '71', '11', '1'],
+                                  ['Saquon Barkley', 'PHI', 'RB', '17', '278', '1,326', '4.8', '78.0', '63', '13', '2'],
+                                  ['Jahmyr Gibbs', 'DET', 'RB', '17', '251', '1,281', '5.1', '75.4', '57', '13', '1'],
+                                  ['Kyren Williams', 'LAR', 'RB', '17', '279', '1,267', '4.5', '74.5', '48', '12', '2'],
+                                  ['Josh Jacobs', 'GB', 'RB', '17', '283', '1,245', '4.4', '73.2', '45', '11', '3'],
+                                  ['Bucky Irving', 'TB', 'RB', '17', '248', '1,208', '4.9', '71.1', '52', '10', '2'],
+                                ].map((fila, i) => (
+                                  <tr
+                                    key={fila[0]}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {i + 1}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                          alt={fila[1]}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {fila[0]}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {fila[1]}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {fila.slice(2).map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 3
+                                            ? 'font-black text-red-700'
+                                            : 'text-zinc-600'
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+
+                          ) : (
+
+                            /* ================= TABLA PASANDO ================= */
+                            <table className="min-w-[1500px] w-full border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+
+                                  <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                    POS
+                                  </th>
+
+                                  <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                    NOMBRE
+                                  </th>
+
+                                  {[
+                                    'POS', 'GP', 'CMP', 'ATT', 'CMP%',
+                                    'YDS', 'AVG', 'YDS/G', 'LNG',
+                                    'TD', 'INT', 'SACK', 'SYL', 'QBR', 'RTG'
+                                  ].map((col) => (
+                                    <th
+                                      key={col}
+                                      className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                    >
+                                      {col}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+
+                              <tbody>
+                                {[
+                                  ['Matthew Stafford', 'LAR', 'QB', '17', '390', '597', '65.3', '4,707', '7.9', '276.9', '88', '46', '8', '24', '168', '72.4', '109.2'],
+                                  ['Jared Goff', 'DET', 'QB', '17', '406', '589', '68.9', '4,564', '7.7', '268.5', '73', '37', '12', '28', '181', '68.1', '103.5'],
+                                  ['Dak Prescott', 'DAL', 'QB', '17', '421', '626', '67.3', '4,552', '7.3', '267.8', '64', '30', '11', '31', '201', '64.8', '98.7'],
+                                  ['Drake Maye', 'NE', 'QB', '17', '371', '543', '68.3', '4,394', '8.1', '258.5', '67', '31', '9', '36', '238', '70.6', '105.1'],
+                                  ['Sam Darnold', 'SEA', 'QB', '17', '341', '526', '64.8', '4,048', '7.7', '238.1', '61', '28', '12', '34', '221', '63.9', '96.8'],
+                                  ['Josh Allen', 'BUF', 'QB', '17', '338', '520', '65.0', '3,981', '7.7', '234.2', '63', '29', '10', '27', '174', '69.1', '101.4'],
+                                  ['Joe Burrow', 'CIN', 'QB', '16', '356', '548', '65.0', '3,944', '7.2', '246.5', '70', '32', '11', '35', '229', '67.2', '99.6'],
+                                  ['Patrick Mahomes', 'KC', 'QB', '17', '360', '553', '65.1', '3,928', '7.1', '231.1', '58', '27', '9', '32', '215', '71.0', '101.0'],
+                                  ['Brock Purdy', 'SF', 'QB', '16', '329', '493', '66.7', '3,874', '7.9', '242.1', '71', '29', '10', '29', '192', '68.7', '104.2'],
+                                  ['Jordan Love', 'GB', 'QB', '17', '337', '516', '65.3', '3,812', '7.4', '224.2', '59', '28', '11', '30', '197', '65.9', '99.1'],
+                                ].map((fila, i) => (
+                                  <tr
+                                    key={fila[0]}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {i + 1}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                          alt={fila[1]}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {fila[0]}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {fila[1]}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {fila.slice(2).map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 5
+                                            ? 'font-black text-red-700'
+                                            : 'text-zinc-600'
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+
+                        </div>
                       </div>
 
                     ) : tipoStats === 'jugador' ? (
@@ -1715,7 +1893,11 @@ export default function Home() {
                                 onClick={() => {
                                   if (
                                     categoriaStatsJugador === 'ofensiva' &&
-                                    subcategoriaStatsJugador === 'pasando'
+                                    (
+                                      subcategoriaStatsJugador === 'pasando' ||
+                                      subcategoriaStatsJugador === 'corriendo' ||
+                                      subcategoriaStatsJugador === 'recibiendo'
+                                    )
                                   ) {
                                     setVistaStatsCompleta(true);
                                   }
