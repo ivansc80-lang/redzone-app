@@ -378,6 +378,7 @@ export default function Home() {
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<'pasando' | 'corriendo' | 'recibiendo' | 'devoluciones' | 'pateando' | 'despejes'>('pasando');
   const [categoriaStatsEquipo, setCategoriaStatsEquipo] = useState<'ofensiva' | 'defensiva' | 'especiales' | 'entregas'>('ofensiva');
   const [categoriaStatsJugador, setCategoriaStatsJugador] = useState<'ofensiva' | 'defensiva' | 'anotando' | 'especiales'>('ofensiva');
+  const [vistaStatsCompleta, setVistaStatsCompleta] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<'top' | 'bottom'>('top');
   const [jornadaActual, setJornadaActual] = useState<number>(1);
@@ -1444,7 +1445,132 @@ export default function Home() {
                       </select>
                     </div>
 
-                    {tipoStats === 'jugador' ? (
+                    {vistaStatsCompleta &&
+                    tipoStats === 'jugador' &&
+                    categoriaStatsJugador === 'ofensiva' &&
+                    subcategoriaStatsJugador === 'pasando' ? (
+
+                      /* ================= DETALLE_PASANDO_REDZONE ================= */
+                      <div className="w-full">
+
+                        {/* CABECERA DETALLE */}
+                        <div className="flex items-center justify-between gap-3 border-b-2 border-red-600 pb-3 mb-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+                            <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4 truncate">
+                              Pasando
+                            </h3>
+                          </div>
+
+                          <button
+                            onClick={() => setVistaStatsCompleta(false)}
+                            className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+                          >
+                            ← Volver a líderes
+                          </button>
+                        </div>
+
+                        <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
+                          Desliza para ver todas las estadísticas →
+                        </p>
+
+                        {/* TABLA DETALLADA PASANDO */}
+                        <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                          <table className="min-w-[1500px] w-full border-collapse text-xs">
+
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+
+                                {/* FIJAS */}
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+
+                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  NOMBRE
+                                </th>
+
+                                {/* DESPLAZABLES */}
+                                {[
+                                  'POS', 'GP', 'CMP', 'ATT', 'CMP%',
+                                  'YDS', 'AVG', 'YDS/G', 'LNG',
+                                  'TD', 'INT', 'SACK', 'SYL', 'QBR', 'RTG'
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {[
+                                ['Matthew Stafford', 'LAR', 'QB', '17', '390', '597', '65.3', '4,707', '7.9', '276.9', '88', '46', '8', '24', '168', '72.4', '109.2'],
+                                ['Jared Goff', 'DET', 'QB', '17', '406', '589', '68.9', '4,564', '7.7', '268.5', '73', '37', '12', '28', '181', '68.1', '103.5'],
+                                ['Dak Prescott', 'DAL', 'QB', '17', '421', '626', '67.3', '4,552', '7.3', '267.8', '64', '30', '11', '31', '201', '64.8', '98.7'],
+                                ['Drake Maye', 'NE', 'QB', '17', '371', '543', '68.3', '4,394', '8.1', '258.5', '67', '31', '9', '36', '238', '70.6', '105.1'],
+                                ['Sam Darnold', 'SEA', 'QB', '17', '341', '526', '64.8', '4,048', '7.7', '238.1', '61', '28', '12', '34', '221', '63.9', '96.8'],
+                                ['Josh Allen', 'BUF', 'QB', '17', '338', '520', '65.0', '3,981', '7.7', '234.2', '63', '29', '10', '27', '174', '69.1', '101.4'],
+                                ['Joe Burrow', 'CIN', 'QB', '16', '356', '548', '65.0', '3,944', '7.2', '246.5', '70', '32', '11', '35', '229', '67.2', '99.6'],
+                                ['Patrick Mahomes', 'KC', 'QB', '17', '360', '553', '65.1', '3,928', '7.1', '231.1', '58', '27', '9', '32', '215', '71.0', '101.0'],
+                                ['Brock Purdy', 'SF', 'QB', '16', '329', '493', '66.7', '3,874', '7.9', '242.1', '71', '29', '10', '29', '192', '68.7', '104.2'],
+                                ['Jordan Love', 'GB', 'QB', '17', '337', '516', '65.3', '3,812', '7.4', '224.2', '59', '28', '11', '30', '197', '65.9', '99.1'],
+                              ].map((fila, i) => (
+                                <tr
+                                  key={fila[0]}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                                >
+
+                                  {/* POSICIÓN FIJA */}
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {i + 1}
+                                  </td>
+
+                                  {/* NOMBRE FIJO */}
+                                  <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                        alt={fila[1]}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {fila[0]}
+                                        </div>
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {fila[1]}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* DATOS DESPLAZABLES */}
+                                  {fila.slice(2).map((valor, idx) => (
+                                    <td
+                                      key={idx}
+                                      className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        idx === 5
+                                          ? 'font-black text-red-700'
+                                          : 'text-zinc-600'
+                                      }`}
+                                    >
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                      </div>
+
+                    ) : tipoStats === 'jugador' ? (
 
                       /* ================= JUGADORES ================= */
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1585,7 +1711,17 @@ export default function Home() {
                                 </div>
                               ))}
 
-                              <button className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors">
+                              <button
+                                onClick={() => {
+                                  if (
+                                    categoriaStatsJugador === 'ofensiva' &&
+                                    subcategoriaStatsJugador === 'pasando'
+                                  ) {
+                                    setVistaStatsCompleta(true);
+                                  }
+                                }}
+                                className="w-full py-3 text-xs font-black text-zinc-800 hover:text-red-700 transition-colors"
+                              >
                                 LISTA COMPLETA
                               </button>
                             </div>
