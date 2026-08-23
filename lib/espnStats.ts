@@ -901,3 +901,386 @@ export async function getInterceptionsTop5(
   const jugadores = await getInterceptionsLeaders(temporada, seasonType);
   return jugadores.slice(0, 5);
 }
+
+// ============================================================
+// ANOTANDO - TOUCHDOWNS
+// ============================================================
+
+export interface EspnScoringTouchdownsLeader {
+  posicion: number;
+  athleteId: string;
+  nombre: string;
+  equipo: string;
+
+  POS: string;
+  GP: string;
+  TD: string;
+  RUSH: string;
+  REC: string;
+  RET: string;
+  PTS: string;
+  PTS_G: string;
+  TWO_PT: string;
+}
+
+function extraerScoringTouchdownsStats(data: any) {
+  const resultado: Record<string, string> = {};
+
+  for (const categoria of data?.splits?.categories ?? []) {
+    const nombreCategoria = categoria?.name;
+
+    for (const stat of categoria?.stats ?? []) {
+      const nombre = stat?.name;
+      const valor = stat?.displayValue ?? "";
+
+      if (nombreCategoria === "general") {
+        if (nombre === "gamesPlayed") {
+          resultado.GP = valor;
+        }
+      }
+
+      if (nombreCategoria === "scoring") {
+        const mapping: Record<string, string> = {
+          totalTouchdowns: "TD",
+          rushingTouchdowns: "RUSH",
+          receivingTouchdowns: "REC",
+          returnTouchdowns: "RET",
+          totalPoints: "PTS",
+          totalPointsPerGame: "PTS_G",
+          totalTwoPointConvs: "TWO_PT",
+        };
+
+        const destino = mapping[nombre];
+
+        if (destino) {
+          resultado[destino] = valor;
+        }
+      }
+    }
+  }
+
+  return resultado;
+}
+
+export async function getScoringTouchdownsLeaders(
+  temporada = 2025,
+  seasonType = 2,
+): Promise<EspnScoringTouchdownsLeader[]> {
+  const leadersUrl =
+    `${ESPN_CORE}/seasons/${temporada}/types/${seasonType}/leaders` +
+    "?lang=en&region=us";
+
+  const leadersData = await getJson(leadersUrl);
+
+  const categoriaTouchdowns = leadersData?.categories?.find(
+    (categoria: any) => categoria?.name === "totalTouchdowns",
+  );
+
+  if (!categoriaTouchdowns) {
+    throw new Error("ESPN no devolvió la categoría totalTouchdowns");
+  }
+
+  const leaders = categoriaTouchdowns.leaders.slice(0, 25);
+
+  const jugadores = await Promise.all(
+    leaders.map(async (leader: any, index: number) => {
+      const athleteRef = https(leader.athlete.$ref);
+      const teamRef = https(leader.team.$ref);
+      const statisticsRef = https(leader.statistics.$ref);
+
+      const [athlete, team, statistics] = await Promise.all([
+        getJson(athleteRef),
+        getJson(teamRef),
+        getJson(statisticsRef),
+      ]);
+
+      const stats = extraerScoringTouchdownsStats(statistics);
+
+      return {
+        posicion: index + 1,
+        athleteId: extraerAthleteId(athleteRef),
+        nombre: athlete?.displayName ?? athlete?.fullName ?? "",
+        equipo: team?.abbreviation ?? "",
+        POS: athlete?.position?.abbreviation ?? "",
+
+        GP: stats.GP ?? "",
+        TD: stats.TD ?? "",
+        RUSH: stats.RUSH ?? "",
+        REC: stats.REC ?? "",
+        RET: stats.RET ?? "",
+        PTS: stats.PTS ?? "",
+        PTS_G: stats.PTS_G ?? "",
+        TWO_PT: stats.TWO_PT ?? "",
+      };
+    }),
+  );
+
+  return jugadores;
+}
+
+export async function getScoringTouchdownsTop5(
+  temporada = 2025,
+  seasonType = 2,
+): Promise<EspnScoringTouchdownsLeader[]> {
+  const jugadores = await getScoringTouchdownsLeaders(temporada, seasonType);
+  return jugadores.slice(0, 5);
+}
+
+// ============================================================
+// ANOTANDO - PUNTOS
+// ============================================================
+
+export interface EspnScoringPointsLeader {
+  posicion: number;
+  athleteId: string;
+  nombre: string;
+  equipo: string;
+
+  POS: string;
+  GP: string;
+  PTS: string;
+  PTS_G: string;
+  TD: string;
+  RUSH: string;
+  REC: string;
+  RET: string;
+  PAT: string;
+  TWO_PT: string;
+}
+
+function extraerScoringPointsStats(data: any) {
+  const resultado: Record<string, string> = {};
+
+  for (const categoria of data?.splits?.categories ?? []) {
+    const nombreCategoria = categoria?.name;
+
+    for (const stat of categoria?.stats ?? []) {
+      const nombre = stat?.name;
+      const valor = stat?.displayValue ?? "";
+
+      if (nombreCategoria === "general") {
+        if (nombre === "gamesPlayed") {
+          resultado.GP = valor;
+        }
+      }
+
+      if (nombreCategoria === "scoring") {
+        const mapping: Record<string, string> = {
+          totalPoints: "PTS",
+          totalPointsPerGame: "PTS_G",
+          totalTouchdowns: "TD",
+          rushingTouchdowns: "RUSH",
+          receivingTouchdowns: "REC",
+          returnTouchdowns: "RET",
+          kickExtraPointsMade: "PAT",
+          totalTwoPointConvs: "TWO_PT",
+        };
+
+        const destino = mapping[nombre];
+
+        if (destino) {
+          resultado[destino] = valor;
+        }
+      }
+    }
+  }
+
+  return resultado;
+}
+
+export async function getScoringPointsLeaders(
+  temporada = 2025,
+  seasonType = 2,
+): Promise<EspnScoringPointsLeader[]> {
+  const leadersUrl =
+    `${ESPN_CORE}/seasons/${temporada}/types/${seasonType}/leaders` +
+    "?lang=en&region=us";
+
+  const leadersData = await getJson(leadersUrl);
+
+  const categoriaPoints = leadersData?.categories?.find(
+    (categoria: any) => categoria?.name === "totalPoints",
+  );
+
+  if (!categoriaPoints) {
+    throw new Error("ESPN no devolvió la categoría totalPoints");
+  }
+
+  const leaders = categoriaPoints.leaders.slice(0, 25);
+
+  const jugadores = await Promise.all(
+    leaders.map(async (leader: any, index: number) => {
+      const athleteRef = https(leader.athlete.$ref);
+      const teamRef = https(leader.team.$ref);
+      const statisticsRef = https(leader.statistics.$ref);
+
+      const [athlete, team, statistics] = await Promise.all([
+        getJson(athleteRef),
+        getJson(teamRef),
+        getJson(statisticsRef),
+      ]);
+
+      const stats = extraerScoringPointsStats(statistics);
+
+      return {
+        posicion: index + 1,
+        athleteId: extraerAthleteId(athleteRef),
+        nombre: athlete?.displayName ?? athlete?.fullName ?? "",
+        equipo: team?.abbreviation ?? "",
+        POS: athlete?.position?.abbreviation ?? "",
+
+        GP: stats.GP ?? "",
+        PTS: stats.PTS ?? "",
+        PTS_G: stats.PTS_G ?? "",
+        TD: stats.TD ?? "",
+        RUSH: stats.RUSH ?? "",
+        REC: stats.REC ?? "",
+        RET: stats.RET ?? "",
+        PAT: stats.PAT ?? "",
+        TWO_PT: stats.TWO_PT ?? "",
+      };
+    }),
+  );
+
+  return jugadores;
+}
+
+export async function getScoringPointsTop5(
+  temporada = 2025,
+  seasonType = 2,
+): Promise<EspnScoringPointsLeader[]> {
+  const jugadores = await getScoringPointsLeaders(temporada, seasonType);
+  return jugadores.slice(0, 5);
+}
+
+// ============================================================
+// ANOTANDO - TD RECEPCIÓN
+// ============================================================
+
+export interface EspnReceivingTouchdownsLeader {
+  posicion: number;
+  athleteId: string;
+  nombre: string;
+  equipo: string;
+
+  POS: string;
+  GP: string;
+  TD: string;
+  REC: string;
+  TGTS: string;
+  YDS: string;
+  YDS_G: string;
+  AVG: string;
+  LNG: string;
+  PTS: string;
+}
+
+function extraerReceivingTouchdownsStats(data: any) {
+  const resultado: Record<string, string> = {};
+
+  for (const categoria of data?.splits?.categories ?? []) {
+    const nombreCategoria = categoria?.name;
+
+    for (const stat of categoria?.stats ?? []) {
+      const nombre = stat?.name;
+      const valor = stat?.displayValue ?? "";
+
+      if (nombreCategoria === "general") {
+        if (nombre === "gamesPlayed") {
+          resultado.GP = valor;
+        }
+      }
+
+      if (nombreCategoria === "receiving") {
+        const mapping: Record<string, string> = {
+          receivingTouchdowns: "TD",
+          receptions: "REC",
+          receivingTargets: "TGTS",
+          receivingYards: "YDS",
+          receivingYardsPerGame: "YDS_G",
+          yardsPerReception: "AVG",
+          longReception: "LNG",
+        };
+
+        const destino = mapping[nombre];
+
+        if (destino) {
+          resultado[destino] = valor;
+        }
+      }
+
+      if (nombreCategoria === "scoring") {
+        if (nombre === "totalPoints") {
+          resultado.PTS = valor;
+        }
+      }
+    }
+  }
+
+  return resultado;
+}
+
+export async function getReceivingTouchdownsLeaders(
+  temporada = 2025,
+  seasonType = 2,
+): Promise<EspnReceivingTouchdownsLeader[]> {
+  const leadersUrl =
+    `${ESPN_CORE}/seasons/${temporada}/types/${seasonType}/leaders` +
+    "?lang=en&region=us";
+
+  const leadersData = await getJson(leadersUrl);
+
+  const categoriaReceivingTouchdowns = leadersData?.categories?.find(
+    (categoria: any) => categoria?.name === "receivingTouchdowns",
+  );
+
+  if (!categoriaReceivingTouchdowns) {
+    throw new Error("ESPN no devolvió la categoría receivingTouchdowns");
+  }
+
+  const leaders = categoriaReceivingTouchdowns.leaders.slice(0, 25);
+
+  const jugadores = await Promise.all(
+    leaders.map(async (leader: any, index: number) => {
+      const athleteRef = https(leader.athlete.$ref);
+      const teamRef = https(leader.team.$ref);
+      const statisticsRef = https(leader.statistics.$ref);
+
+      const [athlete, team, statistics] = await Promise.all([
+        getJson(athleteRef),
+        getJson(teamRef),
+        getJson(statisticsRef),
+      ]);
+
+      const stats = extraerReceivingTouchdownsStats(statistics);
+
+      return {
+        posicion: index + 1,
+        athleteId: extraerAthleteId(athleteRef),
+        nombre: athlete?.displayName ?? athlete?.fullName ?? "",
+        equipo: team?.abbreviation ?? "",
+        POS: athlete?.position?.abbreviation ?? "",
+
+        GP: stats.GP ?? "",
+        TD: stats.TD ?? "",
+        REC: stats.REC ?? "",
+        TGTS: stats.TGTS ?? "",
+        YDS: stats.YDS ?? "",
+        YDS_G: stats.YDS_G ?? "",
+        AVG: stats.AVG ?? "",
+        LNG: stats.LNG ?? "",
+        PTS: stats.PTS ?? "",
+      };
+    }),
+  );
+
+  return jugadores;
+}
+
+export async function getReceivingTouchdownsTop5(
+  temporada = 2025,
+  seasonType = 2,
+): Promise<EspnReceivingTouchdownsLeader[]> {
+  const jugadores = await getReceivingTouchdownsLeaders(temporada, seasonType);
+  return jugadores.slice(0, 5);
+}
