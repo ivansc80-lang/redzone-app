@@ -10,6 +10,9 @@ import type {
   EspnTacklesLeader,
   EspnSacksLeader,
   EspnInterceptionsLeader,
+  EspnScoringTouchdownsLeader,
+  EspnScoringPointsLeader,
+  EspnReceivingTouchdownsLeader,
 } from "@/lib/espnStats";
 
 interface PronosticoPartido {
@@ -843,6 +846,32 @@ export default function Home() {
     null,
   );
 
+  const [scoringTouchdownsLeaders, setScoringTouchdownsLeaders] = useState<
+    EspnScoringTouchdownsLeader[]
+  >([]);
+  const [cargandoScoringTouchdowns, setCargandoScoringTouchdowns] =
+    useState(false);
+  const [errorScoringTouchdowns, setErrorScoringTouchdowns] = useState<
+    string | null
+  >(null);
+
+  const [scoringPointsLeaders, setScoringPointsLeaders] = useState<
+    EspnScoringPointsLeader[]
+  >([]);
+  const [cargandoScoringPoints, setCargandoScoringPoints] = useState(false);
+  const [errorScoringPoints, setErrorScoringPoints] = useState<string | null>(
+    null,
+  );
+
+  const [receivingTouchdownsLeaders, setReceivingTouchdownsLeaders] = useState<
+    EspnReceivingTouchdownsLeader[]
+  >([]);
+  const [cargandoReceivingTouchdowns, setCargandoReceivingTouchdowns] =
+    useState(false);
+  const [errorReceivingTouchdowns, setErrorReceivingTouchdowns] = useState<
+    string | null
+  >(null);
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
@@ -1096,6 +1125,135 @@ export default function Home() {
     }
 
     cargarInterceptionsLeaders();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarScoringTouchdowns() {
+      setCargandoScoringTouchdowns(true);
+      setErrorScoringTouchdowns(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/scoring-touchdowns", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error TOUCHDOWNS: ${response.status}`);
+        }
+
+        const datos: EspnScoringTouchdownsLeader[] = await response.json();
+
+        if (!cancelado) {
+          setScoringTouchdownsLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando TOUCHDOWNS ESPN:", error);
+
+        if (!cancelado) {
+          setErrorScoringTouchdowns(
+            "No se pudieron cargar las estadísticas de ESPN.",
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoScoringTouchdowns(false);
+        }
+      }
+    }
+
+    cargarScoringTouchdowns();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarScoringPoints() {
+      setCargandoScoringPoints(true);
+      setErrorScoringPoints(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/scoring-points", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error PUNTOS: ${response.status}`);
+        }
+
+        const datos: EspnScoringPointsLeader[] = await response.json();
+
+        if (!cancelado) {
+          setScoringPointsLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando PUNTOS ESPN:", error);
+
+        if (!cancelado) {
+          setErrorScoringPoints(
+            "No se pudieron cargar las estadísticas de ESPN.",
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoScoringPoints(false);
+        }
+      }
+    }
+
+    cargarScoringPoints();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarReceivingTouchdowns() {
+      setCargandoReceivingTouchdowns(true);
+      setErrorReceivingTouchdowns(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/receiving-touchdowns", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error TD RECEPCIÓN: ${response.status}`);
+        }
+
+        const datos: EspnReceivingTouchdownsLeader[] = await response.json();
+
+        if (!cancelado) {
+          setReceivingTouchdownsLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando TD RECEPCIÓN ESPN:", error);
+
+        if (!cancelado) {
+          setErrorReceivingTouchdowns(
+            "No se pudieron cargar las estadísticas de ESPN.",
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoReceivingTouchdowns(false);
+        }
+      }
+    }
+
+    cargarReceivingTouchdowns();
 
     return () => {
       cancelado = true;
@@ -3417,192 +3575,310 @@ export default function Home() {
                     </p>
 
                     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
-                      <table className="min-w-[950px] w-full border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                            <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
-                              POS
-                            </th>
+                      {subcategoriaAnotandoJugador === "touchdowns" ? (
+                        /* ================= TABLA TOUCHDOWNS ESPN ================= */
+                        cargandoScoringTouchdowns ? (
+                          <div className="p-6 text-center text-zinc-500 font-semibold">
+                            Cargando estadísticas de ESPN...
+                          </div>
+                        ) : errorScoringTouchdowns ? (
+                          <div className="p-6 text-center text-red-600 font-semibold">
+                            {errorScoringTouchdowns}
+                          </div>
+                        ) : (
+                          <table className="min-w-[1050px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
 
-                            <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
-                              NOMBRE
-                            </th>
+                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  NOMBRE
+                                </th>
 
-                            {[
-                              "POS",
-                              "GP",
-                              "TD",
-                              "PTS",
-                              "REC TD",
-                              "RUSH TD",
-                              "RET TD",
-                            ].map((col) => (
-                              <th
-                                key={col}
-                                className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
-                              >
-                                {col}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
+                                {[
+                                  "POS",
+                                  "GP",
+                                  "TD",
+                                  "RUSH",
+                                  "REC",
+                                  "RET",
+                                  "PTS",
+                                  "PTS/G",
+                                  "2PT",
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
 
-                        <tbody>
-                          {[
-                            [
-                              "Josh Allen",
-                              "BUF",
-                              "QB",
-                              "17",
-                              "15",
-                              "90",
-                              "0",
-                              "15",
-                              "0",
-                            ],
-                            [
-                              "Jalen Hurts",
-                              "PHI",
-                              "QB",
-                              "17",
-                              "14",
-                              "84",
-                              "0",
-                              "14",
-                              "0",
-                            ],
-                            [
-                              "Jahmyr Gibbs",
-                              "DET",
-                              "RB",
-                              "17",
-                              "13",
-                              "78",
-                              "2",
-                              "11",
-                              "0",
-                            ],
-                            [
-                              "Derrick Henry",
-                              "BAL",
-                              "RB",
-                              "17",
-                              "13",
-                              "78",
-                              "0",
-                              "13",
-                              "0",
-                            ],
-                            [
-                              "Saquon Barkley",
-                              "PHI",
-                              "RB",
-                              "17",
-                              "13",
-                              "78",
-                              "1",
-                              "12",
-                              "0",
-                            ],
-                            [
-                              "Ja'Marr Chase",
-                              "CIN",
-                              "WR",
-                              "17",
-                              "12",
-                              "72",
-                              "12",
-                              "0",
-                              "0",
-                            ],
-                            [
-                              "Amon-Ra St. Brown",
-                              "DET",
-                              "WR",
-                              "17",
-                              "12",
-                              "72",
-                              "12",
-                              "0",
-                              "0",
-                            ],
-                            [
-                              "George Pickens",
-                              "DAL",
-                              "WR",
-                              "17",
-                              "11",
-                              "66",
-                              "11",
-                              "0",
-                              "0",
-                            ],
-                            [
-                              "Puka Nacua",
-                              "LAR",
-                              "WR",
-                              "17",
-                              "10",
-                              "60",
-                              "10",
-                              "0",
-                              "0",
-                            ],
-                            [
-                              "Jaxon Smith-Njigba",
-                              "SEA",
-                              "WR",
-                              "17",
-                              "10",
-                              "60",
-                              "10",
-                              "0",
-                              "0",
-                            ],
-                          ].map((fila, i) => (
-                            <tr
-                              key={fila[0]}
-                              className="border-b border-zinc-100 hover:bg-zinc-50"
-                            >
-                              <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                {i + 1}
-                              </td>
-
-                              <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <img
-                                    src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                    alt={fila[1]}
-                                    className="w-7 h-7 object-contain flex-shrink-0"
-                                  />
-
-                                  <div className="min-w-0">
-                                    <div className="font-bold text-zinc-900 truncate">
-                                      {fila[0]}
-                                    </div>
-                                    <div className="text-[9px] text-zinc-400 font-semibold">
-                                      {fila[1]}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-
-                              {fila.slice(2).map((valor, idx) => (
-                                <td
-                                  key={idx}
-                                  className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                    idx === 2 || idx === 3
-                                      ? "font-black text-red-700"
-                                      : "text-zinc-600"
-                                  }`}
+                            <tbody>
+                              {scoringTouchdownsLeaders.map((jugador) => (
+                                <tr
+                                  key={jugador.athleteId}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
                                 >
-                                  {valor}
-                                </td>
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {jugador.posicion}
+                                  </td>
+
+                                  <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                        alt={jugador.equipo}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {jugador.nombre}
+                                        </div>
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {jugador.equipo}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {[
+                                    jugador.POS,
+                                    jugador.GP,
+                                    jugador.TD,
+                                    jugador.RUSH,
+                                    jugador.REC,
+                                    jugador.RET,
+                                    jugador.PTS,
+                                    jugador.PTS_G,
+                                    jugador.TWO_PT,
+                                  ].map((valor, idx) => (
+                                    <td
+                                      key={idx}
+                                      className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        idx === 2
+                                          ? "font-black text-red-700"
+                                          : "text-zinc-600"
+                                      }`}
+                                    >
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
                               ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                            </tbody>
+                          </table>
+                        )
+                      ) : subcategoriaAnotandoJugador === "puntos" ? (
+                        /* ================= TABLA PUNTOS ESPN ================= */
+                        cargandoScoringPoints ? (
+                          <div className="p-6 text-center text-zinc-500 font-semibold">
+                            Cargando estadísticas de ESPN...
+                          </div>
+                        ) : errorScoringPoints ? (
+                          <div className="p-6 text-center text-red-600 font-semibold">
+                            {errorScoringPoints}
+                          </div>
+                        ) : (
+                          <table className="min-w-[1120px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+
+                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  NOMBRE
+                                </th>
+
+                                {[
+                                  "POS",
+                                  "GP",
+                                  "PTS",
+                                  "PTS/G",
+                                  "TD",
+                                  "RUSH",
+                                  "REC",
+                                  "RET",
+                                  "PAT",
+                                  "2PT",
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {scoringPointsLeaders.map((jugador) => (
+                                <tr
+                                  key={jugador.athleteId}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                                >
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {jugador.posicion}
+                                  </td>
+
+                                  <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                        alt={jugador.equipo}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {jugador.nombre}
+                                        </div>
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {jugador.equipo}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {[
+                                    jugador.POS,
+                                    jugador.GP,
+                                    jugador.PTS,
+                                    jugador.PTS_G,
+                                    jugador.TD,
+                                    jugador.RUSH,
+                                    jugador.REC,
+                                    jugador.RET,
+                                    jugador.PAT,
+                                    jugador.TWO_PT,
+                                  ].map((valor, idx) => (
+                                    <td
+                                      key={idx}
+                                      className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        idx === 2 || idx === 3
+                                          ? "font-black text-red-700"
+                                          : "text-zinc-600"
+                                      }`}
+                                    >
+                                      {valor}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )
+                      ) : (
+                        /* ================= TABLA TD RECEPCION ESPN ================= */
+                        <>
+                          {cargandoReceivingTouchdowns ? (
+                            <div className="p-6 text-center text-zinc-500 font-semibold">
+                              Cargando estadísticas de ESPN...
+                            </div>
+                          ) : errorReceivingTouchdowns ? (
+                            <div className="p-6 text-center text-red-600 font-semibold">
+                              {errorReceivingTouchdowns}
+                            </div>
+                          ) : (
+                            <table className="min-w-[1120px] w-full border-collapse text-xs">
+                              <thead>
+                                <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                  <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                    POS
+                                  </th>
+
+                                  <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                    NOMBRE
+                                  </th>
+
+                                  {[
+                                    "POS",
+                                    "GP",
+                                    "TD",
+                                    "REC",
+                                    "TGTS",
+                                    "YDS",
+                                    "YDS/G",
+                                    "AVG",
+                                    "LNG",
+                                    "PTS",
+                                  ].map((col) => (
+                                    <th
+                                      key={col}
+                                      className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                    >
+                                      {col}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+
+                              <tbody>
+                                {receivingTouchdownsLeaders.map((jugador) => (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {[
+                                      jugador.POS,
+                                      jugador.GP,
+                                      jugador.TD,
+                                      jugador.REC,
+                                      jugador.TGTS,
+                                      jugador.YDS,
+                                      jugador.YDS_G,
+                                      jugador.AVG,
+                                      jugador.LNG,
+                                      jugador.PTS,
+                                    ].map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 2
+                                            ? "font-black text-red-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : vistaStatsCompleta &&
