@@ -7297,7 +7297,13 @@ export default function Home() {
           {pestanaActiva === "equipos" &&
             (subPestanaEquipos === "score" ||
               subPestanaEquipos === "games") && (
-              <section className="space-y-6">
+              <section
+                className={
+                  subPestanaEquipos === "games"
+                    ? "space-y-6 bg-[#8b0000] p-2 md:p-6 rounded-2xl"
+                    : "space-y-6"
+                }
+              >
                 {subPestanaEquipos === "score" ? (
                   <div className="space-y-8">
                     {sincronizandoPosiciones && (
@@ -7365,7 +7371,7 @@ export default function Home() {
                             </h3>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 max-lg:landscape:grid-cols-2 lg:grid-cols-4 gap-4">
                             {partidosJornada.map((partido: any) => {
                               const local =
                                 partido.local || partido.equipo_local || "";
@@ -7471,13 +7477,13 @@ export default function Home() {
 
                                 return (
                                   <>
-                                    <span className="text-emerald-400">
+                                    <span className="text-emerald-700 font-semibold">
                                       {match[1]} V
                                     </span>
-                                    <span className="text-zinc-400">
+                                    <span className="text-zinc-700">
                                       {" - "}
                                     </span>
-                                    <span className="text-red-400">
+                                    <span className="text-red-700 font-semibold">
                                       {match[2]} D
                                     </span>
                                   </>
@@ -7487,10 +7493,10 @@ export default function Home() {
                               return (
                                 <div
                                   key={partido.id}
-                                  className="bg-[#181818] border border-[#252525] rounded-xl p-3 shadow-md"
+                                  className="bg-[#A6A6A6] border border-[#8f8f8f] rounded-xl p-3 shadow-md"
                                 >
                                   {/* CAJÓN SUPERIOR DEL PARTIDO */}
-                                  <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg px-3 py-2">
+                                  <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-2 bg-[#292929] border border-[#3a3a3a] rounded-lg px-3 py-2">
                                     <div className="flex items-center gap-2 min-w-0">
                                       <img
                                         src={localLogo}
@@ -7529,18 +7535,18 @@ export default function Home() {
                                   {/* RACHA + HORA / ESTADO */}
                                   <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 px-1 mt-3 mb-3 overflow-hidden">
                                     <div className="font-mono text-[9px] md:text-[8px] lg:text-[10px] xl:text-[11px] whitespace-nowrap">
-                                      <span className="text-zinc-300 mr-1">
+                                      <span className="text-zinc-800 mr-1 font-semibold">
                                         RACHA
                                       </span>
                                       {parseRacha(rachaLocal)}
                                     </div>
 
-                                    <div className="font-['Orbitron'] font-bold text-[10px] md:text-[9px] lg:text-[10px] xl:text-xs text-white text-center whitespace-nowrap">
+                                    <div className="font-['Orbitron'] font-bold text-[10px] md:text-[9px] lg:text-[10px] xl:text-xs text-zinc-950 text-center whitespace-nowrap">
                                       {estadoCentral}
                                     </div>
 
                                     <div className="font-mono text-[9px] md:text-[8px] lg:text-[10px] xl:text-[11px] whitespace-nowrap text-right">
-                                      <span className="text-zinc-300 mr-1">
+                                      <span className="text-zinc-800 mr-1 font-semibold">
                                         RACHA
                                       </span>
                                       {parseRacha(rachaVisitante)}
@@ -7581,10 +7587,10 @@ export default function Home() {
 
                                       const estiloPronostico =
                                         !pronosticoValidado
-                                          ? "bg-[#2a2a2a] border-[#3a3a3a]"
+                                          ? "bg-[#292929] border-[#3a3a3a]"
                                           : pronosticoCorrecto
-                                            ? "bg-[#2a2a2a] border-green-500 ring-2 ring-green-500/70 shadow-[0_0_10px_rgba(34,197,94,0.45)]"
-                                            : "bg-[#2a2a2a] border-red-500 ring-2 ring-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.45)]";
+                                            ? "bg-[#292929] border-green-500 ring-2 ring-green-500/70 shadow-[0_0_10px_rgba(34,197,94,0.45)]"
+                                            : "bg-[#292929] border-red-500 ring-2 ring-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.45)]";
 
                                       return (
                                         <div
