@@ -16,6 +16,7 @@ import type {
 } from "@/lib/espnStats";
 
 import type { EspnSpecialTeamsLeader } from "@/lib/espnSpecialTeams";
+import type { EspnTeamOffenseLeader } from "@/lib/espnTeamOffense";
 
 interface PronosticoPartido {
   id: string;
@@ -893,6 +894,12 @@ export default function Home() {
   const [cargandoPunting, setCargandoPunting] = useState(false);
   const [errorPunting, setErrorPunting] = useState<string | null>(null);
 
+  const [teamOffenseLeaders, setTeamOffenseLeaders] = useState<
+    EspnTeamOffenseLeader[]
+  >([]);
+  const [cargandoTeamOffense, setCargandoTeamOffense] = useState(false);
+  const [errorTeamOffense, setErrorTeamOffense] = useState<string | null>(null);
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
@@ -1352,6 +1359,70 @@ export default function Home() {
       cancelado = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      tipoStats !== "equipo" ||
+      !vistaStatsCompleta ||
+      categoriaStatsEquipo !== "ofensiva"
+    ) {
+      return;
+    }
+
+    let cancelado = false;
+
+    async function cargarTeamOffense() {
+      setCargandoTeamOffense(true);
+      setErrorTeamOffense(null);
+
+      try {
+        const categoria =
+          subcategoriaStatsEquipo === "pasando"
+            ? "pasando"
+            : subcategoriaStatsEquipo === "corriendo"
+              ? "corriendo"
+              : "yardas_totales";
+
+        const response = await fetch(
+          `/api/espn-team-stats/offense?categoria=${categoria}`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const datos: EspnTeamOffenseLeader[] = await response.json();
+
+        if (!cancelado) {
+          setTeamOffenseLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando ofensiva de equipo:", error);
+
+        if (!cancelado) {
+          setErrorTeamOffense(
+            "No se pudieron cargar las estadísticas de ESPN.",
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoTeamOffense(false);
+        }
+      }
+    }
+
+    cargarTeamOffense();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [
+    tipoStats,
+    vistaStatsCompleta,
+    categoriaStatsEquipo,
+    subcategoriaStatsEquipo,
+  ]);
 
   const [nombrePerfil, setNombrePerfil] = useState("");
   const [nombreEquipo, setNombreEquipo] = useState("");
@@ -5553,225 +5624,410 @@ export default function Home() {
                       Desliza para ver todas las estadísticas →
                     </p>
 
-                    {/* TABLA COMPLETA EQUIPO */}
-                    <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
-                      <table className="min-w-[1050px] w-full border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                            <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
-                              POS
-                            </th>
+                    {categoriaStatsEquipo === "ofensiva" ? (
+                      <>
+                        <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
+                          Desliza para ver todas las estadísticas →
+                        </p>
 
-                            <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
-                              EQUIPO
-                            </th>
+                        <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                          <table
+                            className={`w-full border-collapse text-xs ${
+                              subcategoriaStatsEquipo === "yardas_totales"
+                                ? "min-w-[920px]"
+                                : "min-w-[1050px]"
+                            }`}
+                          >
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
 
-                            {[
-                              "GP",
-                              "YDS",
-                              "YDS/G",
-                              "PASS",
-                              "RUSH",
-                              "PTS",
-                              "SACK",
-                              "TAKE",
-                              "GIVE",
-                              "DIFF",
-                            ].map((col) => (
-                              <th
-                                key={col}
-                                className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
-                              >
-                                {col}
+                                <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  EQUIPO
+                                </th>
+
+                                {(subcategoriaStatsEquipo === "yardas_totales"
+                                  ? [
+                                      "GP",
+                                      "YDS",
+                                      "YDS/G",
+                                      "PASS",
+                                      "RUSH",
+                                      "TD",
+                                      "PTS",
+                                    ]
+                                  : subcategoriaStatsEquipo === "pasando"
+                                    ? [
+                                        "GP",
+                                        "ATT",
+                                        "YDS",
+                                        "YDS/G",
+                                        "AVG",
+                                        "LNG",
+                                        "TD",
+                                        "INT",
+                                      ]
+                                    : [
+                                        "GP",
+                                        "ATT",
+                                        "YDS",
+                                        "YDS/G",
+                                        "AVG",
+                                        "LNG",
+                                        "TD",
+                                      ]
+                                ).map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {cargandoTeamOffense ? (
+                                <tr>
+                                  <td
+                                    colSpan={12}
+                                    className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                  >
+                                    Cargando estadísticas desde ESPN...
+                                  </td>
+                                </tr>
+                              ) : errorTeamOffense ? (
+                                <tr>
+                                  <td
+                                    colSpan={12}
+                                    className="px-4 py-8 text-center text-red-600 font-semibold"
+                                  >
+                                    {errorTeamOffense}
+                                  </td>
+                                </tr>
+                              ) : teamOffenseLeaders.length === 0 ? (
+                                <tr>
+                                  <td
+                                    colSpan={12}
+                                    className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                  >
+                                    No hay estadísticas disponibles.
+                                  </td>
+                                </tr>
+                              ) : (
+                                teamOffenseLeaders.map((equipo) => {
+                                  const valores =
+                                    subcategoriaStatsEquipo === "yardas_totales"
+                                      ? [
+                                          equipo.GP,
+                                          equipo.YDS,
+                                          equipo.YDS_G,
+                                          equipo.PASS,
+                                          equipo.RUSH,
+                                          equipo.TD,
+                                          equipo.PTS,
+                                        ]
+                                      : subcategoriaStatsEquipo === "pasando"
+                                        ? [
+                                            equipo.GP,
+                                            equipo.ATT,
+                                            equipo.YDS,
+                                            equipo.YDS_G,
+                                            equipo.AVG,
+                                            equipo.LNG,
+                                            equipo.TD,
+                                            equipo.INT,
+                                          ]
+                                        : [
+                                            equipo.GP,
+                                            equipo.ATT,
+                                            equipo.YDS,
+                                            equipo.YDS_G,
+                                            equipo.AVG,
+                                            equipo.LNG,
+                                            equipo.TD,
+                                          ];
+
+                                  return (
+                                    <tr
+                                      key={equipo.teamId}
+                                      className="border-b border-zinc-100 hover:bg-zinc-50"
+                                    >
+                                      <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                        {equipo.posicion}
+                                      </td>
+
+                                      <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                        <div className="flex items-center gap-2">
+                                          <img
+                                            src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
+                                            alt={equipo.nombre}
+                                            className="w-7 h-7 object-contain flex-shrink-0"
+                                          />
+
+                                          <div className="min-w-0">
+                                            <div className="font-bold text-zinc-900 truncate">
+                                              {equipo.nombre}
+                                            </div>
+
+                                            <div className="text-[9px] text-zinc-400 font-semibold">
+                                              {equipo.equipo}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </td>
+
+                                      {valores.map((valor, idx) => (
+                                        <td
+                                          key={idx}
+                                          className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                            (subcategoriaStatsEquipo ===
+                                              "yardas_totales" &&
+                                              idx === 1) ||
+                                            (subcategoriaStatsEquipo ===
+                                              "pasando" &&
+                                              idx === 2) ||
+                                            (subcategoriaStatsEquipo ===
+                                              "corriendo" &&
+                                              idx === 2)
+                                              ? "font-black text-red-700"
+                                              : "text-zinc-600"
+                                          }`}
+                                        >
+                                          {valor || "-"}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                        <table className="min-w-[1050px] w-full border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                POS
                               </th>
-                            ))}
-                          </tr>
-                        </thead>
 
-                        <tbody>
-                          {[
-                            [
-                              "Los Angeles Rams",
-                              "LAR",
-                              "17",
-                              "6,708",
-                              "394.6",
-                              "4,558",
-                              "2,150",
-                              "472",
-                              "42",
-                              "24",
-                              "13",
-                              "+11",
-                            ],
-                            [
-                              "Dallas Cowboys",
-                              "DAL",
-                              "17",
-                              "6,662",
-                              "391.9",
-                              "4,527",
-                              "2,135",
-                              "455",
-                              "38",
-                              "27",
-                              "19",
-                              "+8",
-                            ],
-                            [
-                              "New England Patriots",
-                              "NE",
-                              "17",
-                              "6,450",
-                              "379.4",
-                              "4,259",
-                              "2,191",
-                              "441",
-                              "41",
-                              "26",
-                              "18",
-                              "+8",
-                            ],
-                            [
-                              "Buffalo Bills",
-                              "BUF",
-                              "17",
-                              "6,397",
-                              "376.3",
-                              "4,012",
-                              "2,385",
-                              "468",
-                              "46",
-                              "31",
-                              "20",
-                              "+11",
-                            ],
-                            [
-                              "Detroit Lions",
-                              "DET",
-                              "17",
-                              "6,344",
-                              "373.2",
-                              "4,303",
-                              "2,041",
-                              "489",
-                              "49",
-                              "29",
-                              "22",
-                              "+7",
-                            ],
-                            [
-                              "San Francisco 49ers",
-                              "SF",
-                              "17",
-                              "6,180",
-                              "363.5",
-                              "4,156",
-                              "2,024",
-                              "437",
-                              "44",
-                              "27",
-                              "21",
-                              "+6",
-                            ],
-                            [
-                              "Baltimore Ravens",
-                              "BAL",
-                              "17",
-                              "6,105",
-                              "359.1",
-                              "3,443",
-                              "2,662",
-                              "460",
-                              "47",
-                              "30",
-                              "23",
-                              "+7",
-                            ],
-                            [
-                              "Philadelphia Eagles",
-                              "PHI",
-                              "17",
-                              "6,008",
-                              "353.4",
-                              "3,898",
-                              "2,110",
-                              "445",
-                              "45",
-                              "25",
-                              "18",
-                              "+7",
-                            ],
-                            [
-                              "Green Bay Packers",
-                              "GB",
-                              "17",
-                              "5,944",
-                              "349.6",
-                              "3,962",
-                              "1,982",
-                              "426",
-                              "43",
-                              "28",
-                              "21",
-                              "+7",
-                            ],
-                            [
-                              "Kansas City Chiefs",
-                              "KC",
-                              "17",
-                              "5,881",
-                              "345.9",
-                              "4,021",
-                              "1,860",
-                              "419",
-                              "41",
-                              "24",
-                              "19",
-                              "+5",
-                            ],
-                          ].map((fila, i) => (
-                            <tr
-                              key={fila[1]}
-                              className="border-b border-zinc-100 hover:bg-zinc-50"
-                            >
-                              <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                {i + 1}
-                              </td>
+                              <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                EQUIPO
+                              </th>
 
-                              <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                    alt={fila[0]}
-                                    className="w-7 h-7 object-contain flex-shrink-0"
-                                  />
-
-                                  <div className="min-w-0">
-                                    <div className="font-bold text-zinc-900 truncate">
-                                      {fila[0]}
-                                    </div>
-
-                                    <div className="text-[9px] text-zinc-400 font-semibold">
-                                      {fila[1]}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-
-                              {fila.slice(2).map((valor, idx) => (
-                                <td
-                                  key={idx}
-                                  className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 text-zinc-600"
+                              {[
+                                "GP",
+                                "YDS",
+                                "YDS/G",
+                                "PASS",
+                                "RUSH",
+                                "PTS",
+                                "SACK",
+                                "TAKE",
+                                "GIVE",
+                                "DIFF",
+                              ].map((col) => (
+                                <th
+                                  key={col}
+                                  className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
-                                  {valor}
-                                </td>
+                                  {col}
+                                </th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+
+                          <tbody>
+                            {[
+                              [
+                                "Los Angeles Rams",
+                                "LAR",
+                                "17",
+                                "6,708",
+                                "394.6",
+                                "4,558",
+                                "2,150",
+                                "472",
+                                "42",
+                                "24",
+                                "13",
+                                "+11",
+                              ],
+                              [
+                                "Dallas Cowboys",
+                                "DAL",
+                                "17",
+                                "6,662",
+                                "391.9",
+                                "4,527",
+                                "2,135",
+                                "455",
+                                "38",
+                                "27",
+                                "19",
+                                "+8",
+                              ],
+                              [
+                                "New England Patriots",
+                                "NE",
+                                "17",
+                                "6,450",
+                                "379.4",
+                                "4,259",
+                                "2,191",
+                                "441",
+                                "41",
+                                "26",
+                                "18",
+                                "+8",
+                              ],
+                              [
+                                "Buffalo Bills",
+                                "BUF",
+                                "17",
+                                "6,397",
+                                "376.3",
+                                "4,012",
+                                "2,385",
+                                "468",
+                                "46",
+                                "31",
+                                "20",
+                                "+11",
+                              ],
+                              [
+                                "Detroit Lions",
+                                "DET",
+                                "17",
+                                "6,344",
+                                "373.2",
+                                "4,303",
+                                "2,041",
+                                "489",
+                                "49",
+                                "29",
+                                "22",
+                                "+7",
+                              ],
+                              [
+                                "San Francisco 49ers",
+                                "SF",
+                                "17",
+                                "6,180",
+                                "363.5",
+                                "4,156",
+                                "2,024",
+                                "437",
+                                "44",
+                                "27",
+                                "21",
+                                "+6",
+                              ],
+                              [
+                                "Baltimore Ravens",
+                                "BAL",
+                                "17",
+                                "6,105",
+                                "359.1",
+                                "3,443",
+                                "2,662",
+                                "460",
+                                "47",
+                                "30",
+                                "23",
+                                "+7",
+                              ],
+                              [
+                                "Philadelphia Eagles",
+                                "PHI",
+                                "17",
+                                "6,008",
+                                "353.4",
+                                "3,898",
+                                "2,110",
+                                "445",
+                                "45",
+                                "25",
+                                "18",
+                                "+7",
+                              ],
+                              [
+                                "Green Bay Packers",
+                                "GB",
+                                "17",
+                                "5,944",
+                                "349.6",
+                                "3,962",
+                                "1,982",
+                                "426",
+                                "43",
+                                "28",
+                                "21",
+                                "+7",
+                              ],
+                              [
+                                "Kansas City Chiefs",
+                                "KC",
+                                "17",
+                                "5,881",
+                                "345.9",
+                                "4,021",
+                                "1,860",
+                                "419",
+                                "41",
+                                "24",
+                                "19",
+                                "+5",
+                              ],
+                            ].map((fila, i) => (
+                              <tr
+                                key={fila[1]}
+                                className="border-b border-zinc-100 hover:bg-zinc-50"
+                              >
+                                <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                  {i + 1}
+                                </td>
+
+                                <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
+                                      alt={fila[0]}
+                                      className="w-7 h-7 object-contain flex-shrink-0"
+                                    />
+
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-zinc-900 truncate">
+                                        {fila[0]}
+                                      </div>
+
+                                      <div className="text-[9px] text-zinc-400 font-semibold">
+                                        {fila[1]}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {fila.slice(2).map((valor, idx) => (
+                                  <td
+                                    key={idx}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 text-zinc-600"
+                                  >
+                                    {valor}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* ================= EQUIPOS ================= */
