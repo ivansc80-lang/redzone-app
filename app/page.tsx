@@ -2799,6 +2799,190 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* ================= MENU_4_NIVEL_EQUIPO_GLOBAL ================= */}
+                {tipoStats === "equipo" && vistaStatsCompleta && (
+                  <div className="mb-5 flex w-full items-center gap-2 xl:block">
+                    <div className="grid min-w-0 flex-1 grid-cols-1 xl:grid-cols-4 xl:gap-8">
+                      {/* OFENSIVA */}
+                      <div
+                        className={
+                          categoriaStatsEquipo === "ofensiva"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["yardas_totales", "YARDAS TOTALES"],
+                            ["pasando", "PASANDO"],
+                            ["corriendo", "CORRIENDO"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsEquipo === "ofensiva" &&
+                              subcategoriaStatsEquipo === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsEquipo("ofensiva");
+                                  setSubcategoriaStatsEquipo(
+                                    id as
+                                      | "yardas_totales"
+                                      | "pasando"
+                                      | "corriendo",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* DEFENSIVA */}
+                      <div
+                        className={
+                          categoriaStatsEquipo === "defensiva"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["yardas_permitidas", "YARDAS PERMITIDAS"],
+                            ["capturas", "CAPTURAS"],
+                            ["entregas_def", "ENTREGAS"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsEquipo === "defensiva" &&
+                              subcategoriaStatsEquipo === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsEquipo("defensiva");
+                                  setSubcategoriaStatsEquipo(
+                                    id as
+                                      | "yardas_permitidas"
+                                      | "capturas"
+                                      | "entregas_def",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* EQUIPOS ESPECIALES */}
+                      <div
+                        className={
+                          categoriaStatsEquipo === "especiales"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["devoluciones", "DEVOLUCIONES"],
+                            ["pateando", "PATEANDO"],
+                            ["despejes", "DESPEJES"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsEquipo === "especiales" &&
+                              subcategoriaEspecialesEquipo === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsEquipo("especiales");
+                                  setSubcategoriaEspecialesEquipo(
+                                    id as
+                                      "devoluciones" | "pateando" | "despejes",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* ENTREGAS */}
+                      <div
+                        className={
+                          categoriaStatsEquipo === "entregas"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["perdidos", "BALONES PERDIDOS"],
+                            ["recuperados", "BALONES RECUPERADOS"],
+                            ["diferencial", "DIFERENCIAL"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsEquipo === "entregas" &&
+                              subcategoriaEntregasEquipo === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsEquipo("entregas");
+                                  setSubcategoriaEntregasEquipo(
+                                    id as
+                                      | "perdidos"
+                                      | "recuperados"
+                                      | "diferencial",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* TEMPORADA MÓVIL EQUIPO */}
+                    <div className="shrink-0 xl:hidden">
+                      <select className="bg-white border border-zinc-300 rounded-full px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 outline-none">
+                        <option>2025</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {/* SUBMENU OFENSIVA / ESPECIALES DE JUGADOR */}
                 {/* ================= MENU_4_NIVEL_JUGADOR_GLOBAL ================= */}
                 {tipoStats === "jugador" && vistaStatsCompleta && (
@@ -4914,32 +5098,6 @@ export default function Home() {
                   categoriaStatsEquipo === "especiales" ? (
                   /* ================= DETALLE_ESPECIALES_EQUIPO_NUEVO ================= */
                   <div className="w-full">
-                    <div className="mb-5 flex justify-start">
-                      <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
-                        {[
-                          ["devoluciones", "DEVOLUCIONES"],
-                          ["pateando", "PATEANDO"],
-                          ["despejes", "DESPEJES"],
-                        ].map(([id, label]) => (
-                          <button
-                            key={id}
-                            onClick={() =>
-                              setSubcategoriaEspecialesEquipo(
-                                id as "devoluciones" | "pateando" | "despejes",
-                              )
-                            }
-                            className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
-                              subcategoriaEspecialesEquipo === id
-                                ? "bg-white text-blue-700 shadow-md"
-                                : "text-zinc-600 hover:text-blue-700"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     <div className="flex items-center justify-between gap-3 border-b-2 border-blue-500 pb-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-3 h-3 bg-blue-500 rounded-full" />
@@ -5149,33 +5307,6 @@ export default function Home() {
                   categoriaStatsEquipo === "entregas" ? (
                   /* ================= DETALLE_ENTREGAS_EQUIPO_NUEVO ================= */
                   <div className="w-full">
-                    <div className="mb-5 flex justify-start">
-                      <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
-                        {[
-                          ["perdidos", "BALONES PERDIDOS"],
-                          ["recuperados", "BALONES RECUPERADOS"],
-                          ["diferencial", "DIFERENCIAL"],
-                        ].map(([id, label]) => (
-                          <button
-                            key={id}
-                            onClick={() =>
-                              setSubcategoriaEntregasEquipo(
-                                id as
-                                  "perdidos" | "recuperados" | "diferencial",
-                              )
-                            }
-                            className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
-                              subcategoriaEntregasEquipo === id
-                                ? "bg-white text-red-700 shadow-md"
-                                : "text-zinc-600 hover:text-red-700"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     <div className="flex items-center justify-between gap-3 border-b-2 border-red-600 pb-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-3 h-3 bg-red-600 rounded-full" />
@@ -5366,46 +5497,6 @@ export default function Home() {
                     categoriaStatsEquipo === "defensiva") ? (
                   /* ================= DETALLE_EQUIPO_REDZONE ================= */
                   <div className="w-full">
-                    {/* SUBMENÚ ESPECÍFICO DE EQUIPO */}
-                    <div className="mb-5 flex justify-start">
-                      <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
-                        {(categoriaStatsEquipo === "ofensiva"
-                          ? [
-                              ["yardas_totales", "YARDAS TOTALES"],
-                              ["pasando", "PASANDO"],
-                              ["corriendo", "CORRIENDO"],
-                            ]
-                          : [
-                              ["yardas_permitidas", "YARDAS PERMITIDAS"],
-                              ["capturas", "CAPTURAS"],
-                              ["entregas_def", "ENTREGAS"],
-                            ]
-                        ).map(([id, label]) => (
-                          <button
-                            key={id}
-                            onClick={() =>
-                              setSubcategoriaStatsEquipo(
-                                id as
-                                  | "yardas_totales"
-                                  | "pasando"
-                                  | "corriendo"
-                                  | "yardas_permitidas"
-                                  | "capturas"
-                                  | "entregas_def",
-                              )
-                            }
-                            className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
-                              subcategoriaStatsEquipo === id
-                                ? "bg-white text-red-700 shadow-md"
-                                : "text-zinc-600 hover:text-red-700"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     {/* CABECERA */}
                     <div
                       className={`flex items-center justify-between gap-3 border-b-2 pb-3 mb-4 ${
