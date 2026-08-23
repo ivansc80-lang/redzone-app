@@ -6,6 +6,51 @@ const ESPN_HEADERS = {
   Accept: "application/json",
 };
 
+const NFL_DIVISION_MAP: Record<
+  string,
+  { conferencia: "AFC" | "NFC"; division: string }
+> = {
+  BUF: { conferencia: "AFC", division: "EAST" },
+  MIA: { conferencia: "AFC", division: "EAST" },
+  NE: { conferencia: "AFC", division: "EAST" },
+  NYJ: { conferencia: "AFC", division: "EAST" },
+
+  BAL: { conferencia: "AFC", division: "NORTH" },
+  CIN: { conferencia: "AFC", division: "NORTH" },
+  CLE: { conferencia: "AFC", division: "NORTH" },
+  PIT: { conferencia: "AFC", division: "NORTH" },
+
+  HOU: { conferencia: "AFC", division: "SOUTH" },
+  IND: { conferencia: "AFC", division: "SOUTH" },
+  JAX: { conferencia: "AFC", division: "SOUTH" },
+  TEN: { conferencia: "AFC", division: "SOUTH" },
+
+  DEN: { conferencia: "AFC", division: "WEST" },
+  KC: { conferencia: "AFC", division: "WEST" },
+  LV: { conferencia: "AFC", division: "WEST" },
+  LAC: { conferencia: "AFC", division: "WEST" },
+
+  DAL: { conferencia: "NFC", division: "EAST" },
+  NYG: { conferencia: "NFC", division: "EAST" },
+  PHI: { conferencia: "NFC", division: "EAST" },
+  WSH: { conferencia: "NFC", division: "EAST" },
+
+  CHI: { conferencia: "NFC", division: "NORTH" },
+  DET: { conferencia: "NFC", division: "NORTH" },
+  GB: { conferencia: "NFC", division: "NORTH" },
+  MIN: { conferencia: "NFC", division: "NORTH" },
+
+  ATL: { conferencia: "NFC", division: "SOUTH" },
+  CAR: { conferencia: "NFC", division: "SOUTH" },
+  NO: { conferencia: "NFC", division: "SOUTH" },
+  TB: { conferencia: "NFC", division: "SOUTH" },
+
+  ARI: { conferencia: "NFC", division: "WEST" },
+  LAR: { conferencia: "NFC", division: "WEST" },
+  SF: { conferencia: "NFC", division: "WEST" },
+  SEA: { conferencia: "NFC", division: "WEST" },
+};
+
 export interface EspnStandingTeam {
   teamId: string;
   nombre: string;
@@ -70,43 +115,13 @@ async function getRecordSplits(
   };
 }
 
-function inferConferenceAndDivision(team: any) {
-  const groups = team?.groups ?? team?.group ?? [];
+function inferConferenceAndDivision(abbreviation: string) {
+  const info = NFL_DIVISION_MAP[String(abbreviation).toUpperCase()];
 
-  const textos: string[] = [];
-
-  const collect = (obj: any) => {
-    if (!obj) return;
-    if (Array.isArray(obj)) {
-      obj.forEach(collect);
-      return;
-    }
-    if (typeof obj === "object") {
-      for (const value of Object.values(obj)) collect(value);
-      return;
-    }
-    if (typeof obj === "string") textos.push(obj);
+  return {
+    conferencia: info?.conferencia ?? "",
+    division: info?.division ?? "",
   };
-
-  collect(groups);
-
-  const joined = textos.join(" ").toUpperCase();
-
-  const conferencia: "AFC" | "NFC" | "" = joined.includes("AFC")
-    ? "AFC"
-    : joined.includes("NFC")
-      ? "NFC"
-      : "";
-
-  let division = "";
-  for (const nombre of ["EAST", "NORTH", "SOUTH", "WEST"]) {
-    if (joined.includes(nombre)) {
-      division = nombre;
-      break;
-    }
-  }
-
-  return { conferencia, division };
 }
 
 export async function getEspnStandings(
@@ -135,7 +150,9 @@ export async function getEspnStandings(
         ? await getRecordSplits(teamId, season, seasonType)
         : { LOCAL: "", VIS: "" };
 
-      const agrupacion = inferConferenceAndDivision(team);
+      const agrupacion = inferConferenceAndDivision(
+        String(team?.abbreviation ?? ""),
+      );
 
       return {
         teamId,

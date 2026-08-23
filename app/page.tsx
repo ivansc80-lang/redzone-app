@@ -20,6 +20,7 @@ import type { EspnTeamOffenseLeader } from "@/lib/espnTeamOffense";
 import type { EspnTeamDefenseLeader } from "@/lib/espnTeamDefense";
 import type { EspnTeamSpecialTeamsLeader } from "@/lib/espnTeamSpecialTeams";
 import type { EspnTeamTurnoversLeader } from "@/lib/espnTeamTurnovers";
+import type { EspnStandingTeam } from "@/lib/espnStandings";
 
 interface PronosticoPartido {
   id: string;
@@ -78,6 +79,10 @@ interface EquipoPosicion {
   derrotas: number;
   empates: number;
   pct: string;
+  local?: string;
+  visitante?: string;
+  puntosFavor?: string;
+  puntosContra?: string;
 }
 
 interface Division {
@@ -1747,6 +1752,12 @@ export default function Home() {
     "TODAS" | CategoriaNoticia
   >("TODAS");
   const [cargandoNoticias, setCargandoNoticias] = useState<boolean>(false);
+  const [standingsEspn, setStandingsEspn] = useState<EspnStandingTeam[]>([]);
+  const [cargandoStandingsEspn, setCargandoStandingsEspn] = useState(false);
+  const [errorStandingsEspn, setErrorStandingsEspn] = useState<string | null>(
+    null,
+  );
+
   const [divisiones, setDivisiones] = useState<Division[]>(DIVISIONES_BASE);
   const [sincronizandoPosiciones, setSincronizandoPosiciones] =
     useState<boolean>(false);
@@ -2670,61 +2681,212 @@ export default function Home() {
     );
   };
 
+  useEffect(() => {
+    if (pestanaActiva !== "equipos" || subPestanaEquipos !== "score") {
+      return;
+    }
+
+    let cancelado = false;
+
+    async function cargarStandingsEspn() {
+      setCargandoStandingsEspn(true);
+      setErrorStandingsEspn(null);
+
+      try {
+        const response = await fetch(
+          "/api/espn-standings?season=2025&seasontype=2",
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data: EspnStandingTeam[] = await response.json();
+
+        if (!cancelado) {
+          setStandingsEspn(data);
+        }
+      } catch (error) {
+        console.error("Error cargando SCORE desde ESPN:", error);
+
+        if (!cancelado) {
+          setErrorStandingsEspn(
+            "No se pudieron cargar las posiciones desde ESPN.",
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoStandingsEspn(false);
+        }
+      }
+    }
+
+    cargarStandingsEspn();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [pestanaActiva, subPestanaEquipos]);
+
+  const divisionesScoreEspn: Division[] = [
+    ["AFC", "EAST", "AFC Este"],
+    ["AFC", "NORTH", "AFC Norte"],
+    ["AFC", "SOUTH", "AFC Sur"],
+    ["AFC", "WEST", "AFC Oeste"],
+    ["NFC", "EAST", "NFC Este"],
+    ["NFC", "NORTH", "NFC Norte"],
+    ["NFC", "SOUTH", "NFC Sur"],
+    ["NFC", "WEST", "NFC Oeste"],
+  ].map(([conferencia, division, nombre]) => ({
+    nombre,
+    conferencia: conferencia as "AFC" | "NFC",
+    equipos: standingsEspn
+      .filter(
+        (equipo) =>
+          equipo.conferencia === conferencia && equipo.division === division,
+      )
+      .sort((a, b) => {
+        const pctA = Number(a.PCT || 0);
+        const pctB = Number(b.PCT || 0);
+
+        if (pctB !== pctA) return pctB - pctA;
+
+        return Number(b.G || 0) - Number(a.G || 0);
+      })
+      .map((equipo) => ({
+        id: equipo.teamId,
+        nombre: equipo.nombre,
+        abrev: equipo.equipo,
+        logo: equipo.logo,
+        victorias: Number(equipo.G || 0),
+        derrotas: Number(equipo.P || 0),
+        empates: Number(equipo.E || 0),
+        pct: equipo.PCT,
+        local: equipo.LOCAL,
+        visitante: equipo.VIS,
+        puntosFavor: equipo.PA,
+        puntosContra: equipo.PC,
+      })),
+  }));
+
   const renderTablaDivision = (div: Division, idx: number) => {
     const esAfc = div.conferencia === "AFC";
-    const headerBgClass = esAfc
-      ? "bg-red-700 border-red-800"
-      : "bg-blue-700 border-blue-800";
+
     return (
-      <div
-        key={idx}
-        className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-lg"
-      >
+      <div key={idx} className="w-full overflow-hidden bg-white">
+        {/* CABECERA DE DIVISIÓN */}
         <div
-          className={`${headerBgClass} px-4 py-2.5 border-b font-['Orbitron'] text-sm md:text-base font-bold uppercase tracking-wider text-white`}
+          className={`px-4 py-2 font-['Orbitron'] text-sm md:text-base font-black uppercase tracking-wider text-white ${
+            esAfc ? "bg-red-700" : "bg-blue-700"
+          }`}
         >
           {div.nombre}
         </div>
-        <div className="w-full">
-          <table className="w-full table-fixed text-left font-sans">
-            <thead className="bg-zinc-900/80 text-zinc-400 uppercase font-mono text-[10px] md:text-sm">
+
+        {/* TABLA */}
+        <div className="w-full overflow-x-auto overscroll-x-contain">
+          <table className="w-full min-w-[500px] lg:min-w-0 table-fixed border-collapse text-left">
+            <thead className="bg-white text-zinc-800 uppercase font-mono text-[10px] md:text-[11px] border-b border-zinc-200">
               <tr>
-                <th className="py-2.5 px-2 w-[48%]">EQUIPO</th>
-                <th className="py-2.5 px-1 w-[12%] text-center">G</th>
-                <th className="py-2.5 px-1 w-[12%] text-center">P</th>
-                <th className="py-2.5 px-1 w-[12%] text-center">E</th>
-                <th className="py-2.5 px-2 w-[16%] text-right">%</th>
+                <th className="w-[40%] lg:w-[45%] py-2 px-2 font-black">
+                  EQUIPO
+                </th>
+
+                <th className="w-[6%] lg:w-[7%] py-2 px-0.5 text-center font-black">
+                  G
+                </th>
+
+                <th className="w-[6%] lg:w-[7%] py-2 px-0.5 text-center font-black">
+                  P
+                </th>
+
+                <th className="w-[6%] lg:w-[7%] py-2 px-0.5 text-center font-black">
+                  E
+                </th>
+
+                <th className="w-[10%] lg:w-[12%] py-2 px-0.5 text-center font-black bg-blue-50">
+                  PCT
+                </th>
+
+                <th className="w-[9%] py-2 px-0.5 text-center font-black">
+                  LOCAL
+                </th>
+
+                <th className="w-[8%] py-2 px-0.5 text-center font-black">
+                  VIS
+                </th>
+
+                <th className="w-[8%] py-2 px-0.5 text-center font-black">
+                  PA
+                </th>
+
+                <th className="w-[8%] py-2 px-0.5 text-center font-black">
+                  PC
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 text-xs md:text-base">
-              {div.equipos.map((eq) => (
+
+            <tbody className="text-[11px] md:text-sm text-zinc-800">
+              {div.equipos.map((eq, equipoIdx) => (
                 <tr
                   key={eq.id}
-                  className="hover:bg-zinc-900/50 transition-colors"
+                  className={`border-b border-zinc-100 transition-colors hover:bg-zinc-100 ${
+                    equipoIdx % 2 === 0 ? "bg-white" : "bg-zinc-50"
+                  }`}
                 >
-                  <td className="py-3 px-2 flex items-center gap-2 font-['Orbitron'] font-bold text-white truncate">
-                    <img
-                      src={eq.logo}
-                      alt={eq.nombre}
-                      className={`object-contain flex-shrink-0 ${eq.abrev === "NYJ" ? "scale-125 filter brightness-200" : ""}`}
-                      style={{
-                        width: eq.abrev === "NYJ" ? "32px" : "24px",
-                        height: eq.abrev === "NYJ" ? "32px" : "24px",
-                      }}
-                    />
-                    <span className="truncate">{eq.nombre}</span>
+                  <td className="py-2.5 px-2">
+                    <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
+                      <img
+                        src={eq.logo}
+                        alt={eq.nombre}
+                        className={`object-contain flex-shrink-0 ${
+                          eq.abrev === "NYJ"
+                            ? "scale-110 brightness-125 saturate-125"
+                            : ""
+                        }`}
+                        style={{
+                          width: "22px",
+                          height: "22px",
+                        }}
+                      />
+
+                      <span className="min-w-0 truncate font-sans font-semibold text-zinc-900">
+                        {eq.nombre}
+                      </span>
+                    </div>
                   </td>
-                  <td className="py-3 px-1 text-center font-mono font-bold text-emerald-400 text-sm md:text-lg">
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
                     {eq.victorias}
                   </td>
-                  <td className="py-3 px-1 text-center font-mono font-bold text-red-400 text-sm md:text-lg">
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
                     {eq.derrotas}
                   </td>
-                  <td className="py-3 px-1 text-center font-mono font-bold text-zinc-300 text-sm md:text-lg">
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
                     {eq.empates}
                   </td>
-                  <td className="py-3 px-2 text-right font-mono font-extrabold text-amber-400 text-xs md:text-lg truncate">
+
+                  <td className="py-2.5 px-0.5 text-center font-mono font-bold text-zinc-800 bg-blue-50/80 whitespace-nowrap">
                     {eq.pct}
+                  </td>
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
+                    {eq.local || "-"}
+                  </td>
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
+                    {eq.visitante || "-"}
+                  </td>
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
+                    {eq.puntosFavor || "-"}
+                  </td>
+
+                  <td className="py-2.5 px-0.5 text-center font-mono text-zinc-700 whitespace-nowrap">
+                    {eq.puntosContra || "-"}
                   </td>
                 </tr>
               ))}
@@ -7305,24 +7467,32 @@ export default function Home() {
                 }
               >
                 {subPestanaEquipos === "score" ? (
-                  <div className="space-y-8">
+                  <div className="bg-white rounded-2xl p-3 md:p-5 shadow-xl">
                     {sincronizandoPosiciones && (
-                      <div className="flex justify-end">
-                        <span className="text-[10px] text-red-200 font-mono animate-pulse">
+                      <div className="flex justify-end mb-2">
+                        <span className="text-[10px] text-red-500 font-mono animate-pulse">
                           Actualizando datos desde ESPN...
                         </span>
                       </div>
                     )}
-                    <div className="space-y-4">
-                      <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
-                        <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2">
-                          <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-                          <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
-                            Conferencia Americana (AFC)
+
+                    {/*
+                      PC: AFC izquierda / NFC derecha
+                      Móvil: AFC arriba / NFC debajo
+                    */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+                      {/* ================= AFC ================= */}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-2">
+                          <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+
+                          <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
+                            CONFERENCIA AMERICANA (AFC)
                           </h3>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {divisiones
+
+                        <div className="space-y-1">
+                          {divisionesScoreEspn
                             .filter(
                               (d) =>
                                 d.conferencia === "AFC" ||
@@ -7331,17 +7501,19 @@ export default function Home() {
                             .map((div, idx) => renderTablaDivision(div, idx))}
                         </div>
                       </div>
-                    </div>
-                    <div className="space-y-4 pt-4">
-                      <div className="border border-white bg-white p-4 rounded-xl space-y-4 shadow-xl">
-                        <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
-                          <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
-                            Conferencia Nacional (NFC)
+
+                      {/* ================= NFC ================= */}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-2 mb-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
+
+                          <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4">
+                            CONFERENCIA NACIONAL (NFC)
                           </h3>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {divisiones
+
+                        <div className="space-y-1">
+                          {divisionesScoreEspn
                             .filter(
                               (d) =>
                                 d.conferencia === "NFC" ||
