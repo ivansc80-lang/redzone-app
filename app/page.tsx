@@ -3644,14 +3644,14 @@ export default function Home() {
                       {subcategoriaStatsDefensivaJugador ===
                       "intercepciones" ? (
                         /* ================= TABLA INTERCEPCIONES ESPN ================= */
-                        <table className="min-w-[1280px] w-full border-collapse text-[10px] xl:text-xs">
+                        <table className="min-w-[1280px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-zinc-100 border-r border-zinc-300 px-1 py-1.5 xl:px-2 xl:py-3 text-center">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                                 POS
                               </th>
 
-                              <th className="sticky left-9 xl:left-11 z-30 min-w-[145px] xl:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3 text-left">
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                                 NOMBRE
                               </th>
 
@@ -3672,7 +3672,7 @@ export default function Home() {
                               ].map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
                                   {col}
                                 </th>
@@ -3731,24 +3731,24 @@ export default function Home() {
                                     key={jugador.athleteId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-white border-r border-zinc-200 px-1 py-1.5 xl:px-2 xl:py-3 text-center font-semibold text-zinc-500">
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
                                       {jugador.posicion}
                                     </td>
 
-                                    <td className="sticky left-9 xl:left-11 z-20 min-w-[145px] xl:min-w-[220px] bg-white border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3">
-                                      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
                                           alt={jugador.equipo}
-                                          className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                          className="w-7 h-7 object-contain flex-shrink-0"
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-[10px] xl:text-xs text-zinc-900 truncate">
+                                          <div className="font-bold text-zinc-900 truncate">
                                             {jugador.nombre}
                                           </div>
 
-                                          <div className="text-[8px] md:text-[7px] xl:text-[9px] text-zinc-400 font-semibold">
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
                                         </div>
@@ -3758,7 +3758,7 @@ export default function Home() {
                                     {valores.map((valor, idx) => (
                                       <td
                                         key={idx}
-                                        className={`min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
                                           idx === 2
                                             ? "font-black text-blue-700"
                                             : "text-zinc-600"
@@ -3775,14 +3775,14 @@ export default function Home() {
                         </table>
                       ) : subcategoriaStatsDefensivaJugador === "capturas" ? (
                         /* ================= TABLA CAPTURAS ESPN ================= */
-                        <table className="min-w-[1200px] w-full border-collapse text-[10px] xl:text-xs">
+                        <table className="min-w-[1200px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-zinc-100 border-r border-zinc-300 px-1 py-1.5 xl:px-2 xl:py-3 text-center">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                                 POS
                               </th>
 
-                              <th className="sticky left-9 xl:left-11 z-30 min-w-[145px] xl:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3 text-left">
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                                 NOMBRE
                               </th>
 
@@ -3802,7 +3802,7 @@ export default function Home() {
                               ].map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
                                   {col}
                                 </th>
@@ -3860,24 +3860,24 @@ export default function Home() {
                                     key={jugador.athleteId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-white border-r border-zinc-200 px-1 py-1.5 xl:px-2 xl:py-3 text-center font-semibold text-zinc-500">
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
                                       {jugador.posicion}
                                     </td>
 
-                                    <td className="sticky left-9 xl:left-11 z-20 min-w-[145px] xl:min-w-[220px] bg-white border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3">
-                                      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
                                           alt={jugador.equipo}
-                                          className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                          className="w-7 h-7 object-contain flex-shrink-0"
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-[10px] xl:text-xs text-zinc-900 truncate">
+                                          <div className="font-bold text-zinc-900 truncate">
                                             {jugador.nombre}
                                           </div>
 
-                                          <div className="text-[8px] md:text-[7px] xl:text-[9px] text-zinc-400 font-semibold">
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
                                         </div>
@@ -3887,7 +3887,7 @@ export default function Home() {
                                     {valores.map((valor, idx) => (
                                       <td
                                         key={idx}
-                                        className={`min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
                                           idx === 2
                                             ? "font-black text-blue-700"
                                             : "text-zinc-600"
@@ -3903,14 +3903,14 @@ export default function Home() {
                           </tbody>
                         </table>
                       ) : (
-                        <table className="min-w-[1350px] w-full border-collapse text-[10px] xl:text-xs">
+                        <table className="min-w-[1350px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-zinc-100 border-r border-zinc-300 px-1 py-1.5 xl:px-2 xl:py-3 text-center">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                                 POS
                               </th>
 
-                              <th className="sticky left-9 xl:left-11 z-30 min-w-[145px] xl:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3 text-left">
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                                 NOMBRE
                               </th>
 
@@ -3932,7 +3932,7 @@ export default function Home() {
                               ].map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
                                   {col}
                                 </th>
@@ -3992,24 +3992,24 @@ export default function Home() {
                                     key={jugador.athleteId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-white border-r border-zinc-200 px-1 py-1.5 xl:px-2 xl:py-3 text-center font-semibold text-zinc-500">
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
                                       {jugador.posicion}
                                     </td>
 
-                                    <td className="sticky left-9 xl:left-11 z-20 min-w-[145px] xl:min-w-[220px] bg-white border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3">
-                                      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
                                           alt={jugador.equipo}
-                                          className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                          className="w-7 h-7 object-contain flex-shrink-0"
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-[10px] xl:text-xs text-zinc-900 truncate">
+                                          <div className="font-bold text-zinc-900 truncate">
                                             {jugador.nombre}
                                           </div>
 
-                                          <div className="text-[8px] md:text-[7px] xl:text-[9px] text-zinc-400 font-semibold">
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
                                         </div>
@@ -4019,7 +4019,7 @@ export default function Home() {
                                     {valores.map((valor, idx) => (
                                       <td
                                         key={idx}
-                                        className={`min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
                                           idx === 4 || idx === 5 || idx === 8
                                             ? "font-black text-blue-700"
                                             : "text-zinc-600"
@@ -4079,14 +4079,14 @@ export default function Home() {
                     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
                       {subcategoriaStatsJugador === "recibiendo" ? (
                         /* ================= TABLA RECIBIENDO ================= */
-                        <table className="min-w-[1120px] w-full border-collapse text-[10px] xl:text-xs">
+                        <table className="min-w-[1120px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-zinc-100 border-r border-zinc-300 px-1 py-1.5 xl:px-2 xl:py-3 text-center">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                                 POS
                               </th>
 
-                              <th className="sticky left-9 xl:left-11 z-30 min-w-[145px] xl:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3 text-left">
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                                 NOMBRE
                               </th>
 
@@ -4104,7 +4104,7 @@ export default function Home() {
                               ].map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
                                   {col}
                                 </th>
@@ -4160,24 +4160,24 @@ export default function Home() {
                                     key={jugador.athleteId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-white border-r border-zinc-200 px-1 py-1.5 xl:px-2 xl:py-3 text-center font-semibold text-zinc-500">
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
                                       {jugador.posicion}
                                     </td>
 
-                                    <td className="sticky left-9 xl:left-11 z-20 min-w-[145px] xl:min-w-[220px] bg-white border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3">
-                                      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
                                           alt={jugador.equipo}
-                                          className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                          className="w-7 h-7 object-contain flex-shrink-0"
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-[10px] xl:text-xs text-zinc-900 truncate">
+                                          <div className="font-bold text-zinc-900 truncate">
                                             {jugador.nombre}
                                           </div>
 
-                                          <div className="text-[8px] md:text-[7px] xl:text-[9px] text-zinc-400 font-semibold">
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
                                         </div>
@@ -4187,7 +4187,7 @@ export default function Home() {
                                     {valores.map((valor, idx) => (
                                       <td
                                         key={idx}
-                                        className={`min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
                                           idx === 4
                                             ? "font-black text-red-700"
                                             : "text-zinc-600"
@@ -4204,14 +4204,14 @@ export default function Home() {
                         </table>
                       ) : subcategoriaStatsJugador === "corriendo" ? (
                         /* ================= TABLA CORRIENDO ================= */
-                        <table className="min-w-[1050px] w-full border-collapse text-[10px] xl:text-xs">
+                        <table className="min-w-[1050px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-zinc-100 border-r border-zinc-300 px-1 py-1.5 xl:px-2 xl:py-3 text-center">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                                 POS
                               </th>
 
-                              <th className="sticky left-9 xl:left-11 z-30 min-w-[145px] xl:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3 text-left">
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                                 NOMBRE
                               </th>
 
@@ -4228,7 +4228,7 @@ export default function Home() {
                               ].map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
                                   {col}
                                 </th>
@@ -4283,24 +4283,24 @@ export default function Home() {
                                     key={jugador.athleteId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-white border-r border-zinc-200 px-1 py-1.5 xl:px-2 xl:py-3 text-center font-semibold text-zinc-500">
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
                                       {jugador.posicion}
                                     </td>
 
-                                    <td className="sticky left-9 xl:left-11 z-20 min-w-[145px] xl:min-w-[220px] bg-white border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3">
-                                      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
                                           alt={jugador.equipo}
-                                          className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                          className="w-7 h-7 object-contain flex-shrink-0"
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-[10px] xl:text-xs text-zinc-900 truncate">
+                                          <div className="font-bold text-zinc-900 truncate">
                                             {jugador.nombre}
                                           </div>
 
-                                          <div className="text-[8px] md:text-[7px] xl:text-[9px] text-zinc-400 font-semibold">
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
                                         </div>
@@ -4310,7 +4310,7 @@ export default function Home() {
                                     {valores.map((valor, idx) => (
                                       <td
                                         key={idx}
-                                        className={`min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
                                           idx === 3
                                             ? "font-black text-red-700"
                                             : "text-zinc-600"
@@ -4327,14 +4327,14 @@ export default function Home() {
                         </table>
                       ) : (
                         /* ================= TABLA PASANDO ================= */
-                        <table className="min-w-[1500px] w-full border-collapse text-[10px] xl:text-xs">
+                        <table className="min-w-[1500px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-zinc-100 border-r border-zinc-300 px-1 py-1.5 xl:px-2 xl:py-3 text-center">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                                 POS
                               </th>
 
-                              <th className="sticky left-9 xl:left-11 z-30 min-w-[145px] xl:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3 text-left">
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                                 NOMBRE
                               </th>
 
@@ -4357,7 +4357,7 @@ export default function Home() {
                               ].map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
                                   {col}
                                 </th>
@@ -4418,24 +4418,24 @@ export default function Home() {
                                     key={jugador.athleteId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-9 min-w-9 xl:w-11 xl:min-w-11 bg-white border-r border-zinc-200 px-1 py-1.5 xl:px-2 xl:py-3 text-center font-semibold text-zinc-500">
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
                                       {jugador.posicion}
                                     </td>
 
-                                    <td className="sticky left-9 xl:left-11 z-20 min-w-[145px] xl:min-w-[220px] bg-white border-r-2 border-zinc-300 px-1.5 py-1.5 xl:px-3 xl:py-3">
-                                      <div className="flex items-center gap-1.5 xl:gap-2 min-w-0">
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
                                           alt={jugador.equipo}
-                                          className="w-5 h-5 xl:w-7 xl:h-7 object-contain flex-shrink-0"
+                                          className="w-7 h-7 object-contain flex-shrink-0"
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-[10px] xl:text-xs text-zinc-900 truncate">
+                                          <div className="font-bold text-zinc-900 truncate">
                                             {jugador.nombre}
                                           </div>
 
-                                          <div className="text-[8px] md:text-[7px] xl:text-[9px] text-zinc-400 font-semibold">
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
                                         </div>
@@ -4445,7 +4445,7 @@ export default function Home() {
                                     {valores.map((valor, idx) => (
                                       <td
                                         key={idx}
-                                        className={`min-w-[58px] px-1.5 py-2 md:min-w-[72px] md:px-3 md:py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
                                           idx === 5
                                             ? "font-black text-red-700"
                                             : "text-zinc-600"
