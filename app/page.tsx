@@ -19,6 +19,7 @@ import type { EspnSpecialTeamsLeader } from "@/lib/espnSpecialTeams";
 import type { EspnTeamOffenseLeader } from "@/lib/espnTeamOffense";
 import type { EspnTeamDefenseLeader } from "@/lib/espnTeamDefense";
 import type { EspnTeamSpecialTeamsLeader } from "@/lib/espnTeamSpecialTeams";
+import type { EspnTeamTurnoversLeader } from "@/lib/espnTeamTurnovers";
 
 interface PronosticoPartido {
   id: string;
@@ -896,6 +897,14 @@ export default function Home() {
   const [cargandoPunting, setCargandoPunting] = useState(false);
   const [errorPunting, setErrorPunting] = useState<string | null>(null);
 
+  const [teamTurnoversLeaders, setTeamTurnoversLeaders] = useState<
+    EspnTeamTurnoversLeader[]
+  >([]);
+  const [cargandoTeamTurnovers, setCargandoTeamTurnovers] = useState(false);
+  const [errorTeamTurnovers, setErrorTeamTurnovers] = useState<string | null>(
+    null,
+  );
+
   const [teamSpecialTeamsLeaders, setTeamSpecialTeamsLeaders] = useState<
     EspnTeamSpecialTeamsLeader[]
   >([]);
@@ -1376,6 +1385,70 @@ export default function Home() {
       cancelado = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      tipoStats !== "equipo" ||
+      !vistaStatsCompleta ||
+      categoriaStatsEquipo !== "entregas"
+    ) {
+      return;
+    }
+
+    let cancelado = false;
+
+    async function cargarTeamTurnovers() {
+      setCargandoTeamTurnovers(true);
+      setErrorTeamTurnovers(null);
+
+      try {
+        const categoria =
+          subcategoriaEntregasEquipo === "recuperados"
+            ? "recuperados"
+            : subcategoriaEntregasEquipo === "diferencial"
+              ? "diferencial"
+              : "perdidos";
+
+        const response = await fetch(
+          `/api/espn-team-stats/turnovers?categoria=${categoria}`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const datos: EspnTeamTurnoversLeader[] = await response.json();
+
+        if (!cancelado) {
+          setTeamTurnoversLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando entregas ESPN por equipo:", error);
+
+        if (!cancelado) {
+          setErrorTeamTurnovers(
+            "No se pudieron cargar las estadísticas de ESPN.",
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoTeamTurnovers(false);
+        }
+      }
+    }
+
+    cargarTeamTurnovers();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [
+    tipoStats,
+    vistaStatsCompleta,
+    categoriaStatsEquipo,
+    subcategoriaEntregasEquipo,
+  ]);
 
   useEffect(() => {
     if (
@@ -5575,154 +5648,127 @@ export default function Home() {
                             <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
                               POS
                             </th>
+
                             <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
                               EQUIPO
                             </th>
-                            {["GP", "GIVE", "TAKE", "INT", "FUM", "DIFF"].map(
-                              (col) => (
-                                <th
-                                  key={col}
-                                  className="min-w-[78px] px-3 py-3 text-center border-r border-zinc-200"
-                                >
-                                  {col}
-                                </th>
-                              ),
-                            )}
+
+                            {(subcategoriaEntregasEquipo === "perdidos"
+                              ? ["GP", "GIVE", "TAKE", "DIFF"]
+                              : subcategoriaEntregasEquipo === "recuperados"
+                                ? ["GP", "TAKE", "GIVE", "DIFF"]
+                                : ["GP", "TAKE", "GIVE", "DIFF"]
+                            ).map((col) => (
+                              <th
+                                key={col}
+                                className="min-w-[90px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                              >
+                                {col}
+                              </th>
+                            ))}
                           </tr>
                         </thead>
 
                         <tbody>
-                          {[
-                            [
-                              "Chicago Bears",
-                              "CHI",
-                              "17",
-                              "12",
-                              "34",
-                              "19",
-                              "15",
-                              "+22",
-                            ],
-                            [
-                              "Houston Texans",
-                              "HOU",
-                              "17",
-                              "14",
-                              "31",
-                              "17",
-                              "14",
-                              "+17",
-                            ],
-                            [
-                              "Jacksonville Jaguars",
-                              "JAX",
-                              "17",
-                              "16",
-                              "29",
-                              "16",
-                              "13",
-                              "+13",
-                            ],
-                            [
-                              "Pittsburgh Steelers",
-                              "PIT",
-                              "17",
-                              "16",
-                              "28",
-                              "15",
-                              "13",
-                              "+12",
-                            ],
-                            [
-                              "Los Angeles Rams",
-                              "LAR",
-                              "17",
-                              "16",
-                              "27",
-                              "14",
-                              "13",
-                              "+11",
-                            ],
-                            [
-                              "Buffalo Bills",
-                              "BUF",
-                              "17",
-                              "20",
-                              "31",
-                              "17",
-                              "14",
-                              "+11",
-                            ],
-                            [
-                              "Dallas Cowboys",
-                              "DAL",
-                              "17",
-                              "19",
-                              "27",
-                              "15",
-                              "12",
-                              "+8",
-                            ],
-                            [
-                              "New England Patriots",
-                              "NE",
-                              "17",
-                              "18",
-                              "26",
-                              "14",
-                              "12",
-                              "+8",
-                            ],
-                            [
-                              "Detroit Lions",
-                              "DET",
-                              "17",
-                              "22",
-                              "29",
-                              "16",
-                              "13",
-                              "+7",
-                            ],
-                            [
-                              "Philadelphia Eagles",
-                              "PHI",
-                              "17",
-                              "18",
-                              "25",
-                              "14",
-                              "11",
-                              "+7",
-                            ],
-                          ].map((fila, i) => (
-                            <tr
-                              key={fila[1]}
-                              className="border-b border-zinc-100 hover:bg-zinc-50"
-                            >
-                              <td className="sticky left-0 z-20 bg-white border-r border-zinc-200 px-2 py-3 text-center text-zinc-500">
-                                {i + 1}
+                          {cargandoTeamTurnovers ? (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                              >
+                                Cargando estadísticas desde ESPN...
                               </td>
-                              <td className="sticky left-11 z-20 bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                    alt={fila[0]}
-                                    className="w-7 h-7 object-contain"
-                                  />
-                                  <span className="font-bold text-zinc-900 truncate">
-                                    {fila[0]}
-                                  </span>
-                                </div>
-                              </td>
-                              {fila.slice(2).map((valor, idx) => (
-                                <td
-                                  key={idx}
-                                  className="px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 text-zinc-600"
-                                >
-                                  {valor}
-                                </td>
-                              ))}
                             </tr>
-                          ))}
+                          ) : errorTeamTurnovers ? (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className="px-4 py-8 text-center text-red-600 font-semibold"
+                              >
+                                {errorTeamTurnovers}
+                              </td>
+                            </tr>
+                          ) : teamTurnoversLeaders.length === 0 ? (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                              >
+                                No hay estadísticas disponibles.
+                              </td>
+                            </tr>
+                          ) : (
+                            teamTurnoversLeaders.map((equipo) => {
+                              const valores =
+                                subcategoriaEntregasEquipo === "perdidos"
+                                  ? [
+                                      equipo.GP,
+                                      equipo.GIVE,
+                                      equipo.TAKE,
+                                      equipo.DIFF,
+                                    ]
+                                  : [
+                                      equipo.GP,
+                                      equipo.TAKE,
+                                      equipo.GIVE,
+                                      equipo.DIFF,
+                                    ];
+
+                              return (
+                                <tr
+                                  key={equipo.teamId}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                                >
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {equipo.posicion}
+                                  </td>
+
+                                  <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
+                                        alt={equipo.nombre}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {equipo.nombre}
+                                        </div>
+
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {equipo.equipo}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {valores.map((valor, idx) => {
+                                    const destacado =
+                                      subcategoriaEntregasEquipo === "perdidos"
+                                        ? idx === 1
+                                        : subcategoriaEntregasEquipo ===
+                                            "recuperados"
+                                          ? idx === 1
+                                          : idx === 3;
+
+                                    return (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[90px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          destacado
+                                            ? "font-black text-red-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor || "-"}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })
+                          )}
                         </tbody>
                       </table>
                     </div>
