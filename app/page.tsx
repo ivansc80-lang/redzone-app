@@ -15,6 +15,8 @@ import type {
   EspnReceivingTouchdownsLeader,
 } from "@/lib/espnStats";
 
+import type { EspnSpecialTeamsLeader } from "@/lib/espnSpecialTeams";
+
 interface PronosticoPartido {
   id: string;
   local: string;
@@ -872,6 +874,25 @@ export default function Home() {
     string | null
   >(null);
 
+  // ESPN STATS - EQUIPOS ESPECIALES
+  const [returningLeaders, setReturningLeaders] = useState<
+    EspnSpecialTeamsLeader[]
+  >([]);
+  const [cargandoReturning, setCargandoReturning] = useState(false);
+  const [errorReturning, setErrorReturning] = useState<string | null>(null);
+
+  const [kickingLeaders, setKickingLeaders] = useState<
+    EspnSpecialTeamsLeader[]
+  >([]);
+  const [cargandoKicking, setCargandoKicking] = useState(false);
+  const [errorKicking, setErrorKicking] = useState<string | null>(null);
+
+  const [puntingLeaders, setPuntingLeaders] = useState<
+    EspnSpecialTeamsLeader[]
+  >([]);
+  const [cargandoPunting, setCargandoPunting] = useState(false);
+  const [errorPunting, setErrorPunting] = useState<string | null>(null);
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
@@ -1254,6 +1275,78 @@ export default function Home() {
     }
 
     cargarReceivingTouchdowns();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarEspeciales() {
+      setCargandoReturning(true);
+      setCargandoKicking(true);
+      setCargandoPunting(true);
+
+      setErrorReturning(null);
+      setErrorKicking(null);
+      setErrorPunting(null);
+
+      const cargar = async (
+        url: string,
+        setDatos: (datos: EspnSpecialTeamsLeader[]) => void,
+        setError: (error: string | null) => void,
+        setCargando: (valor: boolean) => void,
+      ) => {
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const datos: EspnSpecialTeamsLeader[] = await response.json();
+
+          if (!cancelado) {
+            setDatos(datos);
+          }
+        } catch (error) {
+          console.error(`Error cargando ${url}:`, error);
+
+          if (!cancelado) {
+            setError("No se pudieron cargar las estadísticas de ESPN.");
+          }
+        } finally {
+          if (!cancelado) {
+            setCargando(false);
+          }
+        }
+      };
+
+      await Promise.all([
+        cargar(
+          "/api/espn-stats/returning",
+          setReturningLeaders,
+          setErrorReturning,
+          setCargandoReturning,
+        ),
+        cargar(
+          "/api/espn-stats/kicking",
+          setKickingLeaders,
+          setErrorKicking,
+          setCargandoKicking,
+        ),
+        cargar(
+          "/api/espn-stats/punting",
+          setPuntingLeaders,
+          setErrorPunting,
+          setCargandoPunting,
+        ),
+      ]);
+    }
+
+    cargarEspeciales();
 
     return () => {
       cancelado = true;
@@ -2899,7 +2992,6 @@ export default function Home() {
                 categoriaStatsJugador === "especiales" ? (
                   /* ================= DETALLE_ESPECIALES_JUGADOR_REDZONE ================= */
                   <div className="w-full">
-                    {/* CABECERA */}
                     <div className="flex items-center justify-between gap-3 border-b-2 border-blue-500 pb-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
@@ -2931,416 +3023,241 @@ export default function Home() {
                     </p>
 
                     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
+                      {/* =====================================================
+                          PATEANDO
+                      ===================================================== */}
                       {subcategoriaStatsJugador === "pateando" ? (
-                        /* ================= TABLA PATEANDO ================= */
-                        <table className="min-w-[1050px] w-full border-collapse text-xs">
-                          <thead>
-                            <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
-                                POS
-                              </th>
-
-                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
-                                NOMBRE
-                              </th>
-
-                              {[
-                                "POS",
-                                "GP",
-                                "FGM",
-                                "FGA",
-                                "FG%",
-                                "LNG",
-                                "XPM",
-                                "XPA",
-                                "PTS",
-                              ].map((col) => (
-                                <th
-                                  key={col}
-                                  className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
-                                >
-                                  {col}
+                        cargandoKicking ? (
+                          <div className="p-6 text-center text-zinc-500 font-semibold">
+                            Cargando estadísticas de ESPN...
+                          </div>
+                        ) : errorKicking ? (
+                          <div className="p-6 text-center text-red-600 font-semibold">
+                            {errorKicking}
+                          </div>
+                        ) : (
+                          <table className="min-w-[1450px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
                                 </th>
-                              ))}
-                            </tr>
-                          </thead>
 
-                          <tbody>
-                            {[
-                              [
-                                "Brandon Aubrey",
-                                "DAL",
-                                "K",
-                                "17",
-                                "41",
-                                "46",
-                                "89.1",
-                                "65",
-                                "34",
-                                "35",
-                                "157",
-                              ],
-                              [
-                                "Chris Boswell",
-                                "PIT",
-                                "K",
-                                "17",
-                                "40",
-                                "44",
-                                "90.9",
-                                "58",
-                                "29",
-                                "30",
-                                "149",
-                              ],
-                              [
-                                "Cameron Dicker",
-                                "LAC",
-                                "K",
-                                "17",
-                                "39",
-                                "43",
-                                "90.7",
-                                "59",
-                                "28",
-                                "29",
-                                "145",
-                              ],
-                              [
-                                "Ka'imi Fairbairn",
-                                "HOU",
-                                "K",
-                                "17",
-                                "38",
-                                "42",
-                                "90.5",
-                                "61",
-                                "27",
-                                "28",
-                                "141",
-                              ],
-                              [
-                                "Jake Bates",
-                                "DET",
-                                "K",
-                                "17",
-                                "36",
-                                "40",
-                                "90.0",
-                                "58",
-                                "30",
-                                "31",
-                                "138",
-                              ],
-                              [
-                                "Harrison Butker",
-                                "KC",
-                                "K",
-                                "17",
-                                "35",
-                                "40",
-                                "87.5",
-                                "57",
-                                "31",
-                                "32",
-                                "136",
-                              ],
-                              [
-                                "Jake Elliott",
-                                "PHI",
-                                "K",
-                                "17",
-                                "34",
-                                "39",
-                                "87.2",
-                                "56",
-                                "30",
-                                "31",
-                                "132",
-                              ],
-                              [
-                                "Tyler Bass",
-                                "BUF",
-                                "K",
-                                "17",
-                                "33",
-                                "38",
-                                "86.8",
-                                "55",
-                                "31",
-                                "32",
-                                "130",
-                              ],
-                              [
-                                "Jason Sanders",
-                                "MIA",
-                                "K",
-                                "17",
-                                "34",
-                                "40",
-                                "85.0",
-                                "57",
-                                "27",
-                                "28",
-                                "129",
-                              ],
-                              [
-                                "Younghoe Koo",
-                                "ATL",
-                                "K",
-                                "17",
-                                "32",
-                                "38",
-                                "84.2",
-                                "58",
-                                "30",
-                                "31",
-                                "126",
-                              ],
-                            ].map((fila, i) => (
-                              <tr
-                                key={fila[0]}
-                                className="border-b border-zinc-100 hover:bg-zinc-50"
-                              >
-                                <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                  {i + 1}
-                                </td>
+                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  NOMBRE
+                                </th>
 
-                                <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <img
-                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                      alt={fila[1]}
-                                      className="w-7 h-7 object-contain flex-shrink-0"
-                                    />
-                                    <div className="min-w-0">
-                                      <div className="font-bold text-zinc-900 truncate">
-                                        {fila[0]}
-                                      </div>
-                                      <div className="text-[9px] text-zinc-400 font-semibold">
-                                        {fila[1]}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {fila.slice(2).map((valor, idx) => (
-                                  <td
-                                    key={idx}
-                                    className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                      idx === 8
-                                        ? "font-black text-blue-700"
-                                        : "text-zinc-600"
-                                    }`}
+                                {[
+                                  "POS",
+                                  "FGM",
+                                  "FGA",
+                                  "FG%",
+                                  "LNG",
+                                  "1-19",
+                                  "20-29",
+                                  "30-39",
+                                  "40-49",
+                                  "50+",
+                                  "XPM",
+                                  "XPA",
+                                  "XP%",
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                   >
-                                    {valor}
-                                  </td>
+                                    {col}
+                                  </th>
                                 ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      ) : subcategoriaStatsJugador === "despejes" ? (
-                        /* ================= TABLA DESPEJES ================= */
-                        <table className="min-w-[980px] w-full border-collapse text-xs">
-                          <thead>
-                            <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
-                                POS
-                              </th>
+                            </thead>
 
-                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
-                                NOMBRE
-                              </th>
+                            <tbody>
+                              {kickingLeaders.map((jugador) => {
+                                const t = jugador.totals;
 
-                              {[
-                                "POS",
-                                "GP",
-                                "PUNTS",
-                                "YDS",
-                                "AVG",
-                                "LNG",
-                                "TB",
-                                "IN20",
-                              ].map((col) => (
-                                <th
-                                  key={col}
-                                  className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
-                                >
-                                  {col}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
+                                const valores = [
+                                  jugador.POS,
+                                  t[0],
+                                  t[1],
+                                  t[2],
+                                  t[3],
+                                  t[4],
+                                  t[5],
+                                  t[6],
+                                  t[7],
+                                  t[8],
+                                  t[14],
+                                  t[15],
+                                  t[16],
+                                ];
 
-                          <tbody>
-                            {[
-                              [
-                                "A.J. Cole",
-                                "LV",
-                                "P",
-                                "17",
-                                "72",
-                                "3,658",
-                                "50.8",
-                                "72",
-                                "5",
-                                "31",
-                              ],
-                              [
-                                "Ryan Stonehouse",
-                                "TEN",
-                                "P",
-                                "17",
-                                "74",
-                                "3,722",
-                                "50.3",
-                                "71",
-                                "6",
-                                "30",
-                              ],
-                              [
-                                "Jack Fox",
-                                "DET",
-                                "P",
-                                "17",
-                                "68",
-                                "3,386",
-                                "49.8",
-                                "67",
-                                "4",
-                                "32",
-                              ],
-                              [
-                                "Tress Way",
-                                "WSH",
-                                "P",
-                                "17",
-                                "70",
-                                "3,465",
-                                "49.5",
-                                "66",
-                                "5",
-                                "29",
-                              ],
-                              [
-                                "Tommy Townsend",
-                                "HOU",
-                                "P",
-                                "17",
-                                "69",
-                                "3,388",
-                                "49.1",
-                                "65",
-                                "4",
-                                "30",
-                              ],
-                              [
-                                "Logan Cooke",
-                                "JAX",
-                                "P",
-                                "17",
-                                "71",
-                                "3,472",
-                                "48.9",
-                                "63",
-                                "6",
-                                "28",
-                              ],
-                              [
-                                "Johnny Hekker",
-                                "CAR",
-                                "P",
-                                "17",
-                                "73",
-                                "3,548",
-                                "48.6",
-                                "64",
-                                "5",
-                                "29",
-                              ],
-                              [
-                                "Thomas Morstead",
-                                "NYJ",
-                                "P",
-                                "17",
-                                "75",
-                                "3,638",
-                                "48.5",
-                                "62",
-                                "7",
-                                "27",
-                              ],
-                              [
-                                "Jamie Gillan",
-                                "NYG",
-                                "P",
-                                "17",
-                                "74",
-                                "3,574",
-                                "48.3",
-                                "61",
-                                "6",
-                                "27",
-                              ],
-                              [
-                                "Bryan Anger",
-                                "DAL",
-                                "P",
-                                "17",
-                                "67",
-                                "3,229",
-                                "48.2",
-                                "63",
-                                "4",
-                                "28",
-                              ],
-                            ].map((fila, i) => (
-                              <tr
-                                key={fila[0]}
-                                className="border-b border-zinc-100 hover:bg-zinc-50"
-                              >
-                                <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                  {i + 1}
-                                </td>
-
-                                <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <img
-                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                      alt={fila[1]}
-                                      className="w-7 h-7 object-contain flex-shrink-0"
-                                    />
-                                    <div className="min-w-0">
-                                      <div className="font-bold text-zinc-900 truncate">
-                                        {fila[0]}
-                                      </div>
-                                      <div className="text-[9px] text-zinc-400 font-semibold">
-                                        {fila[1]}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {fila.slice(2).map((valor, idx) => (
-                                  <td
-                                    key={idx}
-                                    className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                      idx === 4
-                                        ? "font-black text-blue-700"
-                                        : "text-zinc-600"
-                                    }`}
+                                return (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    {valor}
-                                  </td>
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {valores.map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 1
+                                            ? "font-black text-blue-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor ?? "-"}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )
+                      ) : /* =====================================================
+                          DESPEJES
+                      ===================================================== */
+                      subcategoriaStatsJugador === "despejes" ? (
+                        cargandoPunting ? (
+                          <div className="p-6 text-center text-zinc-500 font-semibold">
+                            Cargando estadísticas de ESPN...
+                          </div>
+                        ) : errorPunting ? (
+                          <div className="p-6 text-center text-red-600 font-semibold">
+                            {errorPunting}
+                          </div>
+                        ) : (
+                          <table className="min-w-[1250px] w-full border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                  POS
+                                </th>
+
+                                <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                  NOMBRE
+                                </th>
+
+                                {[
+                                  "POS",
+                                  "PUNTS",
+                                  "YDS",
+                                  "LNG",
+                                  "AVG",
+                                  "NET",
+                                  "PBLK",
+                                  "IN20",
+                                  "TB",
+                                  "FC",
+                                ].map((col) => (
+                                  <th
+                                    key={col}
+                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  >
+                                    {col}
+                                  </th>
                                 ))}
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+
+                            <tbody>
+                              {puntingLeaders.map((jugador) => {
+                                const t = jugador.totals;
+
+                                const valores = [
+                                  jugador.POS,
+                                  t[0],
+                                  t[1],
+                                  t[2],
+                                  t[3],
+                                  t[4],
+                                  t[5],
+                                  t[6],
+                                  t[7],
+                                  t[8],
+                                ];
+
+                                return (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {valores.map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 2
+                                            ? "font-black text-blue-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor ?? "-"}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )
+                      ) : /* =====================================================
+                          DEVOLUCIONES
+                      ===================================================== */
+                      cargandoReturning ? (
+                        <div className="p-6 text-center text-zinc-500 font-semibold">
+                          Cargando estadísticas de ESPN...
+                        </div>
+                      ) : errorReturning ? (
+                        <div className="p-6 text-center text-red-600 font-semibold">
+                          {errorReturning}
+                        </div>
                       ) : (
-                        /* ================= TABLA DEVOLUCIONES ================= */
-                        <table className="min-w-[1050px] w-full border-collapse text-xs">
+                        <table className="min-w-[1450px] w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
                               <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
@@ -3353,12 +3270,16 @@ export default function Home() {
 
                               {[
                                 "POS",
-                                "GP",
-                                "RET",
-                                "YDS",
-                                "AVG",
-                                "LNG",
-                                "TD",
+                                "KR",
+                                "KR YDS",
+                                "KR AVG",
+                                "KR LNG",
+                                "KR TD",
+                                "PR",
+                                "PR YDS",
+                                "PR AVG",
+                                "PR LNG",
+                                "PR TD",
                                 "FC",
                               ].map((col) => (
                                 <th
@@ -3372,168 +3293,66 @@ export default function Home() {
                           </thead>
 
                           <tbody>
-                            {[
-                              [
-                                "KaVontae Turpin",
-                                "DAL",
-                                "WR",
-                                "17",
-                                "32",
-                                "812",
-                                "25.4",
-                                "98",
-                                "2",
-                                "0",
-                              ],
-                              [
-                                "Rashid Shaheed",
-                                "NO",
-                                "WR",
-                                "17",
-                                "30",
-                                "776",
-                                "25.9",
-                                "87",
-                                "2",
-                                "0",
-                              ],
-                              [
-                                "Marvin Mims Jr.",
-                                "DEN",
-                                "WR",
-                                "17",
-                                "29",
-                                "741",
-                                "25.6",
-                                "91",
-                                "2",
-                                "0",
-                              ],
-                              [
-                                "Xavier Gipson",
-                                "NYJ",
-                                "WR",
-                                "17",
-                                "30",
-                                "705",
-                                "23.5",
-                                "76",
-                                "1",
-                                "0",
-                              ],
-                              [
-                                "DeAndre Carter",
-                                "CHI",
-                                "WR",
-                                "17",
-                                "28",
-                                "688",
-                                "24.6",
-                                "79",
-                                "1",
-                                "0",
-                              ],
-                              [
-                                "Ray-Ray McCloud",
-                                "ATL",
-                                "WR",
-                                "17",
-                                "27",
-                                "654",
-                                "24.2",
-                                "72",
-                                "1",
-                                "0",
-                              ],
-                              [
-                                "Braxton Berrios",
-                                "MIA",
-                                "WR",
-                                "17",
-                                "26",
-                                "626",
-                                "24.1",
-                                "68",
-                                "1",
-                                "0",
-                              ],
-                              [
-                                "Devin Duvernay",
-                                "JAX",
-                                "WR",
-                                "17",
-                                "25",
-                                "604",
-                                "24.2",
-                                "71",
-                                "1",
-                                "0",
-                              ],
-                              [
-                                "Charlie Jones",
-                                "CIN",
-                                "WR",
-                                "17",
-                                "24",
-                                "581",
-                                "24.2",
-                                "70",
-                                "1",
-                                "0",
-                              ],
-                              [
-                                "Velus Jones Jr.",
-                                "TEN",
-                                "WR",
-                                "17",
-                                "25",
-                                "572",
-                                "22.9",
-                                "67",
-                                "1",
-                                "0",
-                              ],
-                            ].map((fila, i) => (
-                              <tr
-                                key={fila[0]}
-                                className="border-b border-zinc-100 hover:bg-zinc-50"
-                              >
-                                <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                  {i + 1}
-                                </td>
+                            {returningLeaders.map((jugador) => {
+                              const t = jugador.totals;
 
-                                <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <img
-                                      src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                      alt={fila[1]}
-                                      className="w-7 h-7 object-contain flex-shrink-0"
-                                    />
-                                    <div className="min-w-0">
-                                      <div className="font-bold text-zinc-900 truncate">
-                                        {fila[0]}
-                                      </div>
-                                      <div className="text-[9px] text-zinc-400 font-semibold">
-                                        {fila[1]}
+                              const valores = [
+                                jugador.POS,
+                                t[0],
+                                t[1],
+                                t[2],
+                                t[3],
+                                t[4],
+                                t[5],
+                                t[6],
+                                t[7],
+                                t[8],
+                                t[9],
+                                t[10],
+                              ];
+
+                              return (
+                                <tr
+                                  key={jugador.athleteId}
+                                  className="border-b border-zinc-100 hover:bg-zinc-50"
+                                >
+                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    {jugador.posicion}
+                                  </td>
+
+                                  <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <img
+                                        src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                        alt={jugador.equipo}
+                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                      />
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-zinc-900 truncate">
+                                          {jugador.nombre}
+                                        </div>
+                                        <div className="text-[9px] text-zinc-400 font-semibold">
+                                          {jugador.equipo}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                </td>
-
-                                {fila.slice(2).map((valor, idx) => (
-                                  <td
-                                    key={idx}
-                                    className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                      idx === 3
-                                        ? "font-black text-blue-700"
-                                        : "text-zinc-600"
-                                    }`}
-                                  >
-                                    {valor}
                                   </td>
-                                ))}
-                              </tr>
-                            ))}
+
+                                  {valores.map((valor, idx) => (
+                                    <td
+                                      key={idx}
+                                      className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        idx === 2
+                                          ? "font-black text-blue-700"
+                                          : "text-zinc-600"
+                                      }`}
+                                    >
+                                      {valor ?? "-"}
+                                    </td>
+                                  ))}
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       )}
