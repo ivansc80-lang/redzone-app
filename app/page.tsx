@@ -7,6 +7,8 @@ import type {
   EspnPassingLeader,
   EspnRushingLeader,
   EspnReceivingLeader,
+  EspnTacklesLeader,
+  EspnSacksLeader,
 } from "@/lib/espnStats";
 
 interface PronosticoPartido {
@@ -799,6 +801,12 @@ export default function Home() {
   const [categoriaStatsJugador, setCategoriaStatsJugador] = useState<
     "ofensiva" | "defensiva" | "anotando" | "especiales"
   >("ofensiva");
+
+  const [
+    subcategoriaStatsDefensivaJugador,
+    setSubcategoriaStatsDefensivaJugador,
+  ] = useState<"tacleadas" | "capturas" | "intercepciones">("tacleadas");
+
   const [subcategoriaAnotandoJugador, setSubcategoriaAnotandoJugador] =
     useState<"touchdowns" | "puntos" | "td_recepcion">("touchdowns");
   const [vistaStatsCompleta, setVistaStatsCompleta] = useState(false);
@@ -817,6 +825,14 @@ export default function Home() {
   >([]);
   const [cargandoReceiving, setCargandoReceiving] = useState(false);
   const [errorReceiving, setErrorReceiving] = useState<string | null>(null);
+
+  const [tacklesLeaders, setTacklesLeaders] = useState<EspnTacklesLeader[]>([]);
+  const [cargandoTackles, setCargandoTackles] = useState(false);
+  const [errorTackles, setErrorTackles] = useState<string | null>(null);
+
+  const [sacksLeaders, setSacksLeaders] = useState<EspnSacksLeader[]>([]);
+  const [cargandoSacks, setCargandoSacks] = useState(false);
+  const [errorSacks, setErrorSacks] = useState<string | null>(null);
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
@@ -943,6 +959,88 @@ export default function Home() {
     }
 
     cargarReceivingLeaders();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarTacklesLeaders() {
+      setCargandoTackles(true);
+      setErrorTackles(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/tackles", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error cargando TACLEADAS: ${response.status}`);
+        }
+
+        const datos: EspnTacklesLeader[] = await response.json();
+
+        if (!cancelado) {
+          setTacklesLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando líderes de TACLEADAS desde ESPN:", error);
+
+        if (!cancelado) {
+          setErrorTackles("No se pudieron cargar las estadísticas de ESPN.");
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoTackles(false);
+        }
+      }
+    }
+
+    cargarTacklesLeaders();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarSacksLeaders() {
+      setCargandoSacks(true);
+      setErrorSacks(null);
+
+      try {
+        const response = await fetch("/api/espn-stats/sacks", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error cargando CAPTURAS: ${response.status}`);
+        }
+
+        const datos: EspnSacksLeader[] = await response.json();
+
+        if (!cancelado) {
+          setSacksLeaders(datos);
+        }
+      } catch (error) {
+        console.error("Error cargando líderes de CAPTURAS desde ESPN:", error);
+
+        if (!cancelado) {
+          setErrorSacks("No se pudieron cargar las estadísticas de ESPN.");
+        }
+      } finally {
+        if (!cancelado) {
+          setCargandoSacks(false);
+        }
+      }
+    }
+
+    cargarSacksLeaders();
 
     return () => {
       cancelado = true;
@@ -2396,58 +2494,188 @@ export default function Home() {
                 )}
 
                 {/* SUBMENU OFENSIVA / ESPECIALES DE JUGADOR */}
-                {vistaStatsCompleta &&
-                  tipoStats === "jugador" &&
-                  (categoriaStatsJugador === "ofensiva" ||
-                    categoriaStatsJugador === "especiales") && (
-                    <div
-                      className={`mb-5 flex ${
-                        categoriaStatsJugador === "especiales"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
-                        {(categoriaStatsJugador === "ofensiva"
-                          ? [
-                              ["pasando", "PASANDO"],
-                              ["corriendo", "CORRIENDO"],
-                              ["recibiendo", "RECIBIENDO"],
-                            ]
-                          : [
-                              ["devoluciones", "DEVOLUCIONES"],
-                              ["pateando", "PATEANDO"],
-                              ["despejes", "DESPEJES"],
-                            ]
-                        ).map(([id, label]) => (
-                          <button
-                            key={id}
-                            onClick={() =>
-                              setSubcategoriaStatsJugador(
-                                id as
-                                  | "pasando"
-                                  | "corriendo"
-                                  | "recibiendo"
-                                  | "devoluciones"
-                                  | "pateando"
-                                  | "despejes",
-                              )
-                            }
-                            className={`px-4 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
-                              subcategoriaStatsJugador === id
-                                ? "bg-white text-red-700 shadow-md"
-                                : "text-zinc-600 hover:text-red-700"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
+                {/* ================= MENU_4_NIVEL_JUGADOR_GLOBAL ================= */}
+                {tipoStats === "jugador" && vistaStatsCompleta && (
+                  <div className="mb-5 flex w-full items-center gap-2 xl:block">
+                    <div className="grid min-w-0 flex-1 grid-cols-1 xl:grid-cols-4 xl:gap-8">
+                      {/* OFENSIVA */}
+                      <div
+                        className={
+                          categoriaStatsJugador === "ofensiva"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["pasando", "PASANDO"],
+                            ["corriendo", "CORRIENDO"],
+                            ["recibiendo", "RECIBIENDO"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsJugador === "ofensiva" &&
+                              subcategoriaStatsJugador === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsJugador("ofensiva");
+                                  setSubcategoriaStatsJugador(
+                                    id as
+                                      "pasando" | "corriendo" | "recibiendo",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* DEFENSIVA */}
+                      <div
+                        className={
+                          categoriaStatsJugador === "defensiva"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["tacleadas", "TACLEADAS"],
+                            ["capturas", "CAPTURAS"],
+                            ["intercepciones", "INTERCEPCIONES"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsJugador === "defensiva" &&
+                              subcategoriaStatsDefensivaJugador === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsJugador("defensiva");
+                                  setSubcategoriaStatsDefensivaJugador(
+                                    id as
+                                      | "tacleadas"
+                                      | "capturas"
+                                      | "intercepciones",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* ANOTANDO */}
+                      <div
+                        className={
+                          categoriaStatsJugador === "anotando"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["touchdowns", "TOUCHDOWNS"],
+                            ["puntos", "PUNTOS"],
+                            ["td_recepcion", "TD RECEPCIÓN"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsJugador === "anotando" &&
+                              subcategoriaAnotandoJugador === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsJugador("anotando");
+                                  setSubcategoriaAnotandoJugador(
+                                    id as
+                                      "touchdowns" | "puntos" | "td_recepcion",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* EQUIPOS ESPECIALES */}
+                      <div
+                        className={
+                          categoriaStatsJugador === "especiales"
+                            ? "flex min-w-0 items-center justify-start xl:justify-center"
+                            : "hidden xl:flex xl:items-center xl:justify-center"
+                        }
+                      >
+                        <div className="inline-flex max-w-full gap-1 rounded-full bg-zinc-100 p-1">
+                          {[
+                            ["devoluciones", "DEVOLUCIONES"],
+                            ["pateando", "PATEANDO"],
+                            ["despejes", "DESPEJES"],
+                          ].map(([id, label]) => {
+                            const activo =
+                              categoriaStatsJugador === "especiales" &&
+                              subcategoriaStatsJugador === id;
+
+                            return (
+                              <button
+                                key={id}
+                                onClick={() => {
+                                  setCategoriaStatsJugador("especiales");
+                                  setSubcategoriaStatsJugador(
+                                    id as
+                                      "devoluciones" | "pateando" | "despejes",
+                                  );
+                                }}
+                                className={`rounded-full px-2 py-1.5 font-['Orbitron'] text-[6px] font-black transition-all sm:px-2.5 sm:text-[7px] xl:px-4 xl:py-2 xl:text-[9px] ${
+                                  activo
+                                    ? "bg-red-700 text-white shadow-md"
+                                    : "bg-white text-zinc-700 hover:text-red-700"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                  )}
 
-                {/* TEMPORADA */}
-                <div className="mb-6">
+                    {/* TEMPORADA MÓVIL */}
+                    <div className="shrink-0 xl:hidden">
+                      <select className="bg-white border border-zinc-300 rounded-full px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 outline-none">
+                        <option>2025</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* TEMPORADA ESCRITORIO */}
+                <div className="mb-6 hidden xl:block">
                   <select className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none">
                     <option>2025 Temporada regular</option>
                   </select>
@@ -3103,32 +3331,6 @@ export default function Home() {
                   categoriaStatsJugador === "anotando" ? (
                   /* ================= DETALLE_ANOTANDO_JUGADOR_REDZONE ================= */
                   <div className="w-full">
-                    <div className="mb-5 flex justify-start">
-                      <div className="inline-flex bg-zinc-100 rounded-full p-1 gap-1">
-                        {[
-                          ["touchdowns", "TOUCHDOWNS"],
-                          ["puntos", "PUNTOS"],
-                          ["td_recepcion", "TD RECEPCIÓN"],
-                        ].map(([id, label]) => (
-                          <button
-                            key={id}
-                            onClick={() =>
-                              setSubcategoriaAnotandoJugador(
-                                id as "touchdowns" | "puntos" | "td_recepcion",
-                              )
-                            }
-                            className={`px-3 py-2 rounded-full font-['Orbitron'] text-[8px] sm:text-[9px] md:text-[10px] font-black transition-all ${
-                              subcategoriaAnotandoJugador === id
-                                ? "bg-white text-red-700 shadow-md"
-                                : "text-zinc-600 hover:text-red-700"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
                     <div className="flex items-center justify-between gap-3 border-b-2 border-red-600 pb-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
@@ -3357,7 +3559,12 @@ export default function Home() {
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
                         <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-600 underline-offset-4 truncate">
-                          Defensiva
+                          {subcategoriaStatsDefensivaJugador === "capturas"
+                            ? "Capturas de mariscal"
+                            : subcategoriaStatsDefensivaJugador ===
+                                "intercepciones"
+                              ? "Intercepciones"
+                              : "Tacleadas"}
                         </h3>
                       </div>
 
@@ -3379,269 +3586,268 @@ export default function Home() {
                     </p>
 
                     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
-                      <table className="min-w-[1350px] w-full border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                            <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
-                              POS
-                            </th>
-
-                            <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
-                              NOMBRE
-                            </th>
-
-                            {[
-                              "POS",
-                              "GP",
-                              "SOLO",
-                              "AST",
-                              "TOT",
-                              "SACK",
-                              "TFL",
-                              "PD",
-                              "INT",
-                              "YDS",
-                              "LNG",
-                              "TD",
-                              "FF",
-                              "FR",
-                            ].map((col) => (
-                              <th
-                                key={col}
-                                className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
-                              >
-                                {col}
+                      {subcategoriaStatsDefensivaJugador === "capturas" ? (
+                        /* ================= TABLA CAPTURAS ESPN ================= */
+                        <table className="min-w-[1200px] w-full border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                POS
                               </th>
-                            ))}
-                          </tr>
-                        </thead>
 
-                        <tbody>
-                          {[
-                            [
-                              "Jordyn Brooks",
-                              "MIA",
-                              "LB",
-                              "17",
-                              "108",
-                              "75",
-                              "183",
-                              "3.0",
-                              "9",
-                              "6",
-                              "1",
-                              "12",
-                              "12",
-                              "0",
-                              "2",
-                              "1",
-                            ],
-                            [
-                              "Jack Campbell",
-                              "DET",
-                              "LB",
-                              "17",
-                              "101",
-                              "75",
-                              "176",
-                              "2.5",
-                              "8",
-                              "5",
-                              "1",
-                              "7",
-                              "7",
-                              "0",
-                              "1",
-                              "1",
-                            ],
-                            [
-                              "Devin White",
-                              "LV",
-                              "LB",
-                              "17",
-                              "105",
-                              "69",
-                              "174",
-                              "4.0",
-                              "11",
-                              "4",
-                              "1",
-                              "15",
-                              "15",
-                              "0",
-                              "2",
-                              "2",
-                            ],
-                            [
-                              "Cedric Gray",
-                              "TEN",
-                              "LB",
-                              "17",
-                              "94",
-                              "70",
-                              "164",
-                              "2.0",
-                              "7",
-                              "5",
-                              "2",
-                              "21",
-                              "16",
-                              "0",
-                              "1",
-                              "1",
-                            ],
-                            [
-                              "Bobby Wagner",
-                              "WSH",
-                              "LB",
-                              "17",
-                              "96",
-                              "66",
-                              "162",
-                              "3.5",
-                              "10",
-                              "4",
-                              "1",
-                              "8",
-                              "8",
-                              "0",
-                              "2",
-                              "1",
-                            ],
-                            [
-                              "Myles Garrett",
-                              "CLE",
-                              "DE",
-                              "17",
-                              "48",
-                              "23",
-                              "71",
-                              "23.0",
-                              "28",
-                              "5",
-                              "0",
-                              "0",
-                              "0",
-                              "0",
-                              "4",
-                              "2",
-                            ],
-                            [
-                              "Brian Burns",
-                              "NYG",
-                              "OLB",
-                              "17",
-                              "51",
-                              "27",
-                              "78",
-                              "16.5",
-                              "21",
-                              "6",
-                              "1",
-                              "11",
-                              "11",
-                              "0",
-                              "3",
-                              "1",
-                            ],
-                            [
-                              "Danielle Hunter",
-                              "HOU",
-                              "DE",
-                              "17",
-                              "47",
-                              "29",
-                              "76",
-                              "15.0",
-                              "19",
-                              "4",
-                              "0",
-                              "0",
-                              "0",
-                              "0",
-                              "2",
-                              "2",
-                            ],
-                            [
-                              "Kevin Byard",
-                              "CHI",
-                              "S",
-                              "17",
-                              "71",
-                              "39",
-                              "110",
-                              "1.0",
-                              "4",
-                              "12",
-                              "7",
-                              "96",
-                              "41",
-                              "1",
-                              "1",
-                              "1",
-                            ],
-                            [
-                              "Devin Lloyd",
-                              "JAX",
-                              "LB",
-                              "17",
-                              "82",
-                              "46",
-                              "128",
-                              "2.0",
-                              "8",
-                              "9",
-                              "5",
-                              "67",
-                              "32",
-                              "1",
-                              "2",
-                              "1",
-                            ],
-                          ].map((fila, i) => (
-                            <tr
-                              key={fila[0]}
-                              className="border-b border-zinc-100 hover:bg-zinc-50"
-                            >
-                              <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
-                                {i + 1}
-                              </td>
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                NOMBRE
+                              </th>
 
-                              <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <img
-                                    src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
-                                    alt={fila[1]}
-                                    className="w-7 h-7 object-contain flex-shrink-0"
-                                  />
-
-                                  <div className="min-w-0">
-                                    <div className="font-bold text-zinc-900 truncate">
-                                      {fila[0]}
-                                    </div>
-                                    <div className="text-[9px] text-zinc-400 font-semibold">
-                                      {fila[1]}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-
-                              {fila.slice(2).map((valor, idx) => (
-                                <td
-                                  key={idx}
-                                  className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
-                                    idx === 4 || idx === 5 || idx === 8
-                                      ? "font-black text-blue-700"
-                                      : "text-zinc-600"
-                                  }`}
+                              {[
+                                "POS",
+                                "GP",
+                                "SACK",
+                                "SCKYDS",
+                                "QBH",
+                                "TFL",
+                                "SOLO",
+                                "AST",
+                                "TOT",
+                                "FF",
+                                "FR",
+                                "PD",
+                              ].map((col) => (
+                                <th
+                                  key={col}
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
                                 >
-                                  {valor}
-                                </td>
+                                  {col}
+                                </th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+
+                          <tbody>
+                            {cargandoSacks ? (
+                              <tr>
+                                <td
+                                  colSpan={14}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  Cargando estadísticas desde ESPN...
+                                </td>
+                              </tr>
+                            ) : errorSacks ? (
+                              <tr>
+                                <td
+                                  colSpan={14}
+                                  className="px-4 py-8 text-center text-red-600 font-semibold"
+                                >
+                                  {errorSacks}
+                                </td>
+                              </tr>
+                            ) : sacksLeaders.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={14}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  No hay estadísticas disponibles.
+                                </td>
+                              </tr>
+                            ) : (
+                              sacksLeaders.map((jugador) => {
+                                const valores = [
+                                  jugador.POS,
+                                  jugador.GP,
+                                  jugador.SACK,
+                                  jugador.SCKYDS,
+                                  jugador.QBH,
+                                  jugador.TFL,
+                                  jugador.SOLO,
+                                  jugador.AST,
+                                  jugador.TOT,
+                                  jugador.FF,
+                                  jugador.FR,
+                                  jugador.PD,
+                                ];
+
+                                return (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {valores.map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 2
+                                            ? "font-black text-blue-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <table className="min-w-[1350px] w-full border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
+                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                POS
+                              </th>
+
+                              <th className="sticky left-11 z-30 min-w-[168px] md:min-w-[220px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                NOMBRE
+                              </th>
+
+                              {[
+                                "POS",
+                                "GP",
+                                "SOLO",
+                                "AST",
+                                "TOT",
+                                "SACK",
+                                "TFL",
+                                "PD",
+                                "INT",
+                                "YDS",
+                                "LNG",
+                                "TD",
+                                "FF",
+                                "FR",
+                              ].map((col) => (
+                                <th
+                                  key={col}
+                                  className="min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                >
+                                  {col}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {cargandoTackles ? (
+                              <tr>
+                                <td
+                                  colSpan={16}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  Cargando estadísticas desde ESPN...
+                                </td>
+                              </tr>
+                            ) : errorTackles ? (
+                              <tr>
+                                <td
+                                  colSpan={16}
+                                  className="px-4 py-8 text-center text-red-600 font-semibold"
+                                >
+                                  {errorTackles}
+                                </td>
+                              </tr>
+                            ) : tacklesLeaders.length === 0 ? (
+                              <tr>
+                                <td
+                                  colSpan={16}
+                                  className="px-4 py-8 text-center text-zinc-500 font-semibold"
+                                >
+                                  No hay estadísticas disponibles.
+                                </td>
+                              </tr>
+                            ) : (
+                              tacklesLeaders.map((jugador) => {
+                                const valores = [
+                                  jugador.POS,
+                                  jugador.GP,
+                                  jugador.SOLO,
+                                  jugador.AST,
+                                  jugador.TOT,
+                                  jugador.SACK,
+                                  jugador.TFL,
+                                  jugador.PD,
+                                  jugador.INT,
+                                  jugador.YDS_INT,
+                                  jugador.LNG_INT,
+                                  jugador.TD_INT,
+                                  jugador.FF,
+                                  jugador.FR,
+                                ];
+
+                                return (
+                                  <tr
+                                    key={jugador.athleteId}
+                                    className="border-b border-zinc-100 hover:bg-zinc-50"
+                                  >
+                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      {jugador.posicion}
+                                    </td>
+
+                                    <td className="sticky left-11 z-20 min-w-[168px] md:min-w-[220px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <img
+                                          src={`https://a.espncdn.com/i/teamlogos/nfl/500/${jugador.equipo.toLowerCase()}.png`}
+                                          alt={jugador.equipo}
+                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                        />
+
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-zinc-900 truncate">
+                                            {jugador.nombre}
+                                          </div>
+
+                                          <div className="text-[9px] text-zinc-400 font-semibold">
+                                            {jugador.equipo}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {valores.map((valor, idx) => (
+                                      <td
+                                        key={idx}
+                                        className={`min-w-[72px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          idx === 4 || idx === 5 || idx === 8
+                                            ? "font-black text-blue-700"
+                                            : "text-zinc-600"
+                                        }`}
+                                      >
+                                        {valor}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </div>
                 ) : vistaStatsCompleta &&
@@ -4400,7 +4606,18 @@ export default function Home() {
                             ))}
 
                             <button
-                              onClick={() => setVistaStatsCompleta(true)}
+                              onClick={() => {
+                                const destino =
+                                  bloque.titulo === "TACLEADAS"
+                                    ? "tacleadas"
+                                    : bloque.titulo === "CAPTURAS DE MARISCAL"
+                                      ? "capturas"
+                                      : "intercepciones";
+
+                                setSubcategoriaStatsDefensivaJugador(destino);
+                                setCategoriaStatsJugador("defensiva");
+                                setVistaStatsCompleta(true);
+                              }}
                               className="w-full py-3 text-xs font-black text-zinc-800 hover:text-blue-700 transition-colors"
                             >
                               LISTA COMPLETA
