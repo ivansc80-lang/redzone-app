@@ -796,8 +796,9 @@ export default function Home() {
   >("score");
   const [tipoStats, setTipoStats] = useState<"jugador" | "equipo">("jugador");
   const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState<string | null>(null);
-  const [franquiciaSeccionInicial, setFranquiciaSeccionInicial] = useState<"home" | "plantilla">("home");
-  const [franquiciaRosterTabInicial, setFranquiciaRosterTabInicial] = useState<"ofensiva" | "defensiva" | "especiales" | "lesionados">("ofensiva");
+  const [franquiciaSeccionActual, setFranquiciaSeccionActual] = useState<"home" | "plantilla">("home");
+  const [franquiciaRosterTabActual, setFranquiciaRosterTabActual] = useState<"ofensiva" | "defensiva" | "especiales" | "lesionados">("ofensiva");
+  const [navegacionInicialLista, setNavegacionInicialLista] = useState(false);
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<
     | "pasando"
     | "corriendo"
@@ -838,30 +839,27 @@ export default function Home() {
   const restaurandoHistorialRef = useRef(false);
   const ultimoEstadoNavegacionRef = useRef<string | null>(null);
 
-  // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN
-  // antes del primer pintado visible, evitando el destello de RANKING.
+  // RESTAURA EL ESTADO DE NAVEGACIÓN ANTES DE MOSTRAR REDZONE.
   useLayoutEffect(() => {
     try {
-      const raw = sessionStorage.getItem("redzoneExternalReturn");
-      if (!raw) return;
-
-      const saved = JSON.parse(raw);
-      if (saved?.pestanaActiva === "equipos") {
-        setPestanaActiva("equipos");
-        setSubPestanaEquipos("franquicia");
-        setFranquiciaSeleccionada(saved.franquiciaSeleccionada ?? null);
-        setFranquiciaSeccionInicial(saved.franchiseSection === "plantilla" ? "plantilla" : "home");
-        setFranquiciaRosterTabInicial(
-          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(saved.rosterTab)
-            ? saved.rosterTab
+      const nav = window.history.state?.redzoneNav;
+      if (nav) {
+        setPestanaActiva(nav.pestanaActiva ?? "clasificacion");
+        setSubPestanaEquipos(nav.subPestanaEquipos ?? "score");
+        setTipoStats(nav.tipoStats ?? "jugador");
+        setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
+        setFranquiciaSeccionActual(nav.franquiciaSeccionActual === "plantilla" ? "plantilla" : "home");
+        setFranquiciaRosterTabActual(
+          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(nav.franquiciaRosterTabActual)
+            ? nav.franquiciaRosterTabActual
             : "ofensiva",
         );
       }
-
-      sessionStorage.removeItem("redzoneExternalReturn");
     } catch (error) {
-      console.error("No se pudo restaurar la vuelta desde ESPN:", error);
+      console.error("No se pudo restaurar la navegación:", error);
+    } finally {
       sessionStorage.removeItem("redzoneExternalReturn");
+      setNavegacionInicialLista(true);
     }
   }, []);
 
@@ -874,6 +872,8 @@ export default function Home() {
       subPestanaEquipos,
       tipoStats,
       franquiciaSeleccionada,
+      franquiciaSeccionActual,
+      franquiciaRosterTabActual,
       categoriaStatsJugador,
       subcategoriaStatsJugador,
       subcategoriaStatsDefensivaJugador,
@@ -917,6 +917,8 @@ export default function Home() {
     subPestanaEquipos,
     tipoStats,
     franquiciaSeleccionada,
+    franquiciaSeccionActual,
+    franquiciaRosterTabActual,
     categoriaStatsJugador,
     subcategoriaStatsJugador,
     subcategoriaStatsDefensivaJugador,
@@ -940,6 +942,12 @@ export default function Home() {
       setSubPestanaEquipos(nav.subPestanaEquipos);
       setTipoStats(nav.tipoStats);
       setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
+      setFranquiciaSeccionActual(nav.franquiciaSeccionActual === "plantilla" ? "plantilla" : "home");
+      setFranquiciaRosterTabActual(
+        ["ofensiva", "defensiva", "especiales", "lesionados"].includes(nav.franquiciaRosterTabActual)
+          ? nav.franquiciaRosterTabActual
+          : "ofensiva",
+      );
       setCategoriaStatsJugador(nav.categoriaStatsJugador);
       setSubcategoriaStatsJugador(nav.subcategoriaStatsJugador);
       setSubcategoriaStatsDefensivaJugador(
@@ -3261,8 +3269,10 @@ export default function Home() {
             <FranchiseHome
               teamId={franquiciaSeleccionada}
               onBack={() => window.history.back()}
-              initialSection={franquiciaSeccionInicial}
-              initialRosterTab={franquiciaRosterTabInicial}
+              section={franquiciaSeccionActual}
+              onSectionChange={setFranquiciaSeccionActual}
+              rosterTab={franquiciaRosterTabActual}
+              onRosterTabChange={setFranquiciaRosterTabActual}
             />
           )
         )}
@@ -8113,7 +8123,11 @@ export default function Home() {
                                             ? "bg-[#292929] border-green-500 ring-2 ring-green-500/70 shadow-[0_0_10px_rgba(34,197,94,0.45)]"
                                             : "bg-[#292929] border-red-500 ring-2 ring-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.45)]";
 
-                                      return (
+                                      if (!navegacionInicialLista) {
+    return <div className="min-h-screen bg-[#9e0101]" />;
+  }
+
+  return (
                                         <div
                                           key={usr.id}
                                           className={`border rounded-lg px-1 py-2 flex flex-col items-center justify-center transition-all ${estiloPronostico}`}
