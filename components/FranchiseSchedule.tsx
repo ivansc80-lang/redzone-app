@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPartidosPorJornada, type PartidoTemporada } from "@/lib/queries";
+import { getPartidosTemporadaRegularCompleta, type PartidoTemporada } from "@/lib/queries";
 import type {
   EspnTeamDefenseSummary,
   EspnTeamOffenseSummary,
@@ -38,10 +38,8 @@ export default function FranchiseSchedule({ teamId }: Props) {
 
     async function cargar() {
       setCargando(true);
-      const [jornadas, offenseRes, defenseRes, turnoversRes] = await Promise.all([
-        Promise.all(
-          Array.from({ length: 18 }, (_, i) => getPartidosPorJornada(i + 1)),
-        ),
+      const [temporadaRegular, offenseRes, defenseRes, turnoversRes] = await Promise.all([
+        getPartidosTemporadaRegularCompleta(),
         fetch("/api/espn-team-stats/summary/offense", { cache: "no-store" }),
         fetch("/api/espn-team-stats/summary/defense", { cache: "no-store" }),
         fetch("/api/espn-team-stats/summary/turnovers", { cache: "no-store" }),
@@ -53,8 +51,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
         turnoversRes.ok ? turnoversRes.json() : Promise.resolve([]),
       ]);
 
-      const delEquipo = jornadas
-        .flat()
+      const delEquipo = temporadaRegular
         .filter(
           (p) =>
             p.equipo_local.toUpperCase() === teamId.toUpperCase() ||
