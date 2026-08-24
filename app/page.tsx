@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getPartidosPorJornada } from "@/lib/queries";
 import TeamOffenseSummary from "@/components/TeamOffenseSummary";
@@ -838,8 +838,9 @@ export default function Home() {
   const restaurandoHistorialRef = useRef(false);
   const ultimoEstadoNavegacionRef = useRef<string | null>(null);
 
-  // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN.
-  useEffect(() => {
+  // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN
+  // antes del primer pintado visible, evitando el destello de RANKING.
+  useLayoutEffect(() => {
     try {
       const raw = sessionStorage.getItem("redzoneExternalReturn");
       if (!raw) return;

@@ -16,6 +16,17 @@ type Athlete = {
   college?: { name?: string };
   headshot?: { href?: string };
   status?: { name?: string; type?: string };
+  salary?: number | { amount?: number; value?: number };
+  contract?: {
+    salary?: number;
+    baseSalary?: number;
+    totalSalary?: number;
+  };
+  contracts?: Array<{
+    salary?: number;
+    baseSalary?: number;
+    totalSalary?: number;
+  }>;
 };
 type Group = { position?: string; items?: Athlete[] };
 type RosterResponse = {
@@ -26,6 +37,71 @@ type RosterResponse = {
 const OFFENSE = new Set(["QB","RB","FB","WR","TE","OT","T","OG","G","C","OL"]);
 const DEFENSE = new Set(["DE","DT","NT","DL","LB","ILB","OLB","CB","DB","S","FS","SS"]);
 const SPECIAL = new Set(["K","P","PK","LS","KR","PR"]);
+
+const OFFENSE_ORDER = ["QB","RB","WR","TE","C","G","OT"];
+const DEFENSE_ORDER = ["DE","DT","LB","CB","S"];
+
+function normalizedPosition(a: Athlete) {
+  const p=(a.position?.abbreviation || "").toUpperCase();
+
+  if (p === "FB") return "RB";
+  if (p === "OG") return "G";
+  if (p === "T" || p === "OL") return "OT";
+
+  if (p === "NT" || p === "DL") return "DT";
+  if (p === "ILB" || p === "OLB") return "LB";
+  if (p === "DB") return "CB";
+  if (p === "FS" || p === "SS") return "S";
+
+  return p;
+}
+
+function salaryValue(a: Athlete) {
+  const direct =
+    typeof a.salary === "number"
+      ? a.salary
+      : a.salary?.amount ?? a.salary?.value;
+
+  const contract =
+    a.contract?.baseSalary ??
+    a.contract?.salary ??
+    a.contract?.totalSalary;
+
+  const contracts = (a.contracts || [])
+    .map((item) => item.baseSalary ?? item.salary ?? item.totalSalary)
+    .filter((value): value is number => typeof value === "number");
+
+  const value = direct ?? contract ?? (contracts.length ? Math.max(...contracts) : undefined);
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function playerName(a: Athlete) {
+  return a.displayName || a.fullName || "Jugador";
+}
+
+function sortRoster(a: Athlete, b: Athlete, tab: Tab) {
+  const order = tab === "ofensiva" ? OFFENSE_ORDER : DEFENSE_ORDER;
+  const posA = normalizedPosition(a);
+  const posB = normalizedPosition(b);
+  const rankA = order.indexOf(posA);
+  const rankB = order.indexOf(posB);
+  const safeRankA = rankA === -1 ? order.length : rankA;
+  const safeRankB = rankB === -1 ? order.length : rankB;
+
+  if (safeRankA !== safeRankB) return safeRankA - safeRankB;
+
+  const salaryA = salaryValue(a);
+  const salaryB = salaryValue(b);
+
+  if (salaryA !== null && salaryB !== null && salaryA !== salaryB) {
+    return salaryB - salaryA;
+  }
+
+  if (salaryA !== null && salaryB === null) return -1;
+  if (salaryA === null && salaryB !== null) return 1;
+
+  return playerName(a).localeCompare(playerName(b), "es", { sensitivity: "base" });
+}
 
 function feetInches(inches?: number) {
   if (!inches) return "—";
@@ -70,7 +146,14 @@ export default function FranchiseRoster({
   const players=useMemo(()=> (data?.athletes || []).flatMap(g=>g.items || []),[data]);
   const shown=useMemo(()=>{
     if(tab==="lesionados") return players.filter(isInjured);
-    return players.filter(a=>!isInjured(a) && category(a)===tab);
+
+    const filtered = players.filter(a=>!isInjured(a) && category(a)===tab);
+
+    if(tab==="ofensiva" || tab==="defensiva") {
+      return [...filtered].sort((a,b)=>sortRoster(a,b,tab));
+    }
+
+    return filtered;
   },[players,tab]);
   const coach=data?.coach?.[0];
   const coachName=coach ? [coach.firstName,coach.lastName].filter(Boolean).join(" ") : "";
@@ -85,8 +168,8 @@ export default function FranchiseRoster({
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <h3 className="font-['Orbitron'] text-3xl font-black uppercase text-black md:text-4xl">Plantilla</h3>
-        {coachName && <div className="font-['Orbitron'] text-xs font-black uppercase text-[#002244] md:text-sm">Head coach: {coachName}</div>}
+        <h3 className="font-['Orbitron'] text-3xl font-black uppercase text-red-700 md:text-4xl">Plantilla</h3>
+        {coachName && <div className="font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">Head coach: {coachName}</div>}
       </div>
 
       <div className="mb-4 flex overflow-x-auto border-b border-zinc-200">
