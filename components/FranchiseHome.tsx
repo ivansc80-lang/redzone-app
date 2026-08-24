@@ -1,5 +1,7 @@
 "use client";
 
+import FranchiseTeamStatsSummary from "@/components/FranchiseTeamStatsSummary";
+
 type Props = {
   teamId: string;
   onBack: () => void;
@@ -188,10 +190,7 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
             </div>
           </div>
 
-          <div className="mt-8 border-t border-zinc-200 pt-6">
-            <div className="font-['Orbitron'] text-xs font-black uppercase text-zinc-400">Próximo bloque</div>
-            <div className="mt-1 text-sm font-bold text-[#002244]">Resumen estadístico del equipo</div>
-          </div>
+          <FranchiseTeamStatsSummary teamId={teamId} />
         </div>
       </div>
     </section>
