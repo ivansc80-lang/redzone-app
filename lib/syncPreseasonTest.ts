@@ -1,6 +1,6 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 
-const PRESEASON_TEST_END = new Date('2026-08-25T12:00:00.000Z');
+const PRESEASON_TEST_END = new Date('2026-08-31T12:00:00.000Z');
 const PRESEASON_WEEK = 3;
 const PICK_CLOSE_MINUTES = 30;
 
