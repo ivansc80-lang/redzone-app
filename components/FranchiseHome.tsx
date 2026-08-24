@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import FranchiseTeamStatsSummary from "@/components/FranchiseTeamStatsSummary";
 import FranchiseSchedule from "@/components/FranchiseSchedule";
 import FranchiseRoster from "@/components/FranchiseRoster";
@@ -65,7 +66,7 @@ export default function FranchiseHome({
   initialSection = "home",
   initialRosterTab = "ofensiva",
 }: Props) {
-  const [section, setSection] = require("react").useState<"home" | "plantilla">(initialSection);
+  const [section, setSection] = useState<"home" | "plantilla">(initialSection);
   const esKansasCity = teamId === "KC";
   const franchise = FRANCHISE_META[teamId] ?? {
     nombre: teamId,
