@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getPartidosPorJornada } from "@/lib/queries";
 import TeamOffenseSummary from "@/components/TeamOffenseSummary";
@@ -832,6 +832,101 @@ export default function Home() {
     useState<"touchdowns" | "puntos" | "td_recepcion">("touchdowns");
   const [vistaStatsCompleta, setVistaStatsCompleta] = useState(false);
   const [vistaResumenEquipo, setVistaResumenEquipo] = useState(false);
+  const restaurandoHistorialRef = useRef(false);
+  const ultimoEstadoNavegacionRef = useRef<string | null>(null);
+
+  // HISTORIAL DE NAVEGACIÓN INTERNA REDZONE
+  // Permite que Atrás del navegador, botón lateral del ratón y gesto Atrás
+  // del móvil restauren exactamente el menú/vista anterior sin recargar la app.
+  useEffect(() => {
+    const estadoNavegacion = {
+      pestanaActiva,
+      subPestanaEquipos,
+      tipoStats,
+      franquiciaSeleccionada,
+      categoriaStatsJugador,
+      subcategoriaStatsJugador,
+      subcategoriaStatsDefensivaJugador,
+      subcategoriaAnotandoJugador,
+      categoriaStatsEquipo,
+      subcategoriaStatsEquipo,
+      subcategoriaEspecialesEquipo,
+      subcategoriaEntregasEquipo,
+      vistaStatsCompleta,
+      vistaResumenEquipo,
+    };
+
+    const serializado = JSON.stringify(estadoNavegacion);
+
+    if (ultimoEstadoNavegacionRef.current === null) {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), redzoneNav: estadoNavegacion },
+        "",
+        window.location.href,
+      );
+      ultimoEstadoNavegacionRef.current = serializado;
+      return;
+    }
+
+    if (restaurandoHistorialRef.current) {
+      restaurandoHistorialRef.current = false;
+      ultimoEstadoNavegacionRef.current = serializado;
+      return;
+    }
+
+    if (ultimoEstadoNavegacionRef.current !== serializado) {
+      window.history.pushState(
+        { ...(window.history.state ?? {}), redzoneNav: estadoNavegacion },
+        "",
+        window.location.href,
+      );
+      ultimoEstadoNavegacionRef.current = serializado;
+    }
+  }, [
+    pestanaActiva,
+    subPestanaEquipos,
+    tipoStats,
+    franquiciaSeleccionada,
+    categoriaStatsJugador,
+    subcategoriaStatsJugador,
+    subcategoriaStatsDefensivaJugador,
+    subcategoriaAnotandoJugador,
+    categoriaStatsEquipo,
+    subcategoriaStatsEquipo,
+    subcategoriaEspecialesEquipo,
+    subcategoriaEntregasEquipo,
+    vistaStatsCompleta,
+    vistaResumenEquipo,
+  ]);
+
+  useEffect(() => {
+    const manejarAtras = (event: PopStateEvent) => {
+      const nav = event.state?.redzoneNav;
+      if (!nav) return;
+
+      restaurandoHistorialRef.current = true;
+
+      setPestanaActiva(nav.pestanaActiva);
+      setSubPestanaEquipos(nav.subPestanaEquipos);
+      setTipoStats(nav.tipoStats);
+      setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
+      setCategoriaStatsJugador(nav.categoriaStatsJugador);
+      setSubcategoriaStatsJugador(nav.subcategoriaStatsJugador);
+      setSubcategoriaStatsDefensivaJugador(
+        nav.subcategoriaStatsDefensivaJugador,
+      );
+      setSubcategoriaAnotandoJugador(nav.subcategoriaAnotandoJugador);
+      setCategoriaStatsEquipo(nav.categoriaStatsEquipo);
+      setSubcategoriaStatsEquipo(nav.subcategoriaStatsEquipo);
+      setSubcategoriaEspecialesEquipo(nav.subcategoriaEspecialesEquipo);
+      setSubcategoriaEntregasEquipo(nav.subcategoriaEntregasEquipo);
+      setVistaStatsCompleta(nav.vistaStatsCompleta);
+      setVistaResumenEquipo(nav.vistaResumenEquipo);
+    };
+
+    window.addEventListener("popstate", manejarAtras);
+    return () => window.removeEventListener("popstate", manejarAtras);
+  }, []);
 
   // ESPN STATS - PASANDO
   const [passingLeaders, setPassingLeaders] = useState<EspnPassingLeader[]>([]);
@@ -3137,7 +3232,7 @@ export default function Home() {
               <div className="bg-white text-black rounded-none md:rounded-2xl shadow-2xl p-6 md:p-10">
                 <button
                   type="button"
-                  onClick={() => setFranquiciaSeleccionada(null)}
+                  onClick={() => window.history.back()}
                   className="mb-6 rounded-lg border border-red-700 px-4 py-2 font-['Orbitron'] text-[10px] font-black uppercase text-red-700 hover:bg-red-50"
                 >
                   ← Volver a franquicias
