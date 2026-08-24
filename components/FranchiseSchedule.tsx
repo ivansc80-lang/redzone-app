@@ -335,8 +335,8 @@ export default function FranchiseSchedule({ teamId }: Props) {
                       </div>
 
                       <div className="whitespace-nowrap text-center">
-                        <span className="font-black uppercase text-zinc-400">Recuperadas</span>
-                        <span className="ml-2 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</span>
+                        <span className="font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</span>
+                        <span className="ml-2 font-black uppercase text-zinc-400">Recuperadas</span>
                       </div>
 
                       <div className="flex min-w-0 items-center justify-end gap-2">
@@ -354,13 +354,13 @@ export default function FranchiseSchedule({ teamId }: Props) {
                       </div>
 
                       <div className="whitespace-nowrap text-center">
-                        <span className="font-black uppercase text-zinc-400">Recuperadas</span>
-                        <span className="ml-2 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</span>
+                        <span className="font-black uppercase text-zinc-400">Perdidas</span>
+                        <span className="ml-2 font-black text-red-700">{resumenComparacion.visitante.entregas?.GIVE ?? "-"}</span>
                       </div>
 
                       <div className="whitespace-nowrap text-center">
-                        <span className="font-black uppercase text-zinc-400">Perdidas</span>
-                        <span className="ml-2 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</span>
+                        <span className="font-black text-[#002244]">{resumenComparacion.local.entregas?.TAKE ?? "-"}</span>
+                        <span className="ml-2 font-black uppercase text-zinc-400">Recuperadas</span>
                       </div>
 
                       <div className="flex min-w-0 items-center justify-end gap-2">
