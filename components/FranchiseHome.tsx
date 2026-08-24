@@ -140,13 +140,10 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
             </div>
 
             <div>
-              <div className="mb-3 flex items-center gap-2 border-b-2 border-red-700 pb-2">
-                <div className="flex h-8 w-8 flex-shrink-0 items-end justify-center gap-[2px] rounded-full bg-red-700 px-2 pb-2">
-                  <span className="h-2 w-1 bg-white" />
-                  <span className="h-3 w-1 bg-white" />
-                  <span className="h-4 w-1 bg-white" />
-                </div>
-                <h3 className="font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">Clasificación AFC Oeste</h3>
+              <div className="mb-3 border-b-2 border-red-700 pb-2">
+                <h3 className="font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">
+                  AFC Oeste
+                </h3>
               </div>
 
               <div className="w-full overflow-x-auto">
