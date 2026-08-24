@@ -279,7 +279,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
                   },
                 ].map((bloque) => (
                   <div key={bloque.titulo} className="flex min-h-0 flex-col rounded-xl border border-zinc-200">
-                    <div className="border-b border-zinc-200 bg-zinc-50 px-3 py-2 font-['Orbitron'] text-[9px] font-black uppercase text-[#002244]">
+                    <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-3 font-['Orbitron'] text-[11px] font-black uppercase text-[#002244] md:text-xs">
                       {bloque.titulo}
                     </div>
                     <div className="grid flex-1 grid-cols-[1fr_minmax(72px,auto)_48px_minmax(72px,auto)_48px] content-evenly gap-x-5 gap-y-4 px-5 py-5 text-[12px] md:text-[13px]">
@@ -318,7 +318,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
               </div>
 
               <div className="border-t border-zinc-200 p-5">
-                <div className="mb-3 font-['Orbitron'] text-[10px] font-black uppercase text-red-700">
+                <div className="mb-4 font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">
                   Entregas
                 </div>
 
