@@ -3082,7 +3082,7 @@ export default function Home() {
                 ["score", "SCORE", "/score.png"],
                 ["games", "GAMES", "/games.png"],
                 ["stats", "STATS", "/stats.png"],
-                ["franquicia", "FRANQUICIA", "/franquicia.png"],
+                ["franquicia", "FRANQUICIAS", "/franquicia.png"],
               ].map(([id, label, icono]) => {
                 const activo = subPestanaEquipos === id;
 
