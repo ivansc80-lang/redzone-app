@@ -118,7 +118,7 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
                 </h3>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div className="rounded-xl bg-zinc-50 p-4">
                   <div className="flex items-baseline gap-4">
                     <div className="font-['Orbitron'] text-3xl font-black text-red-700">4</div>
