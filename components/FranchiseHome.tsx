@@ -7,6 +7,8 @@ import FranchiseRoster from "@/components/FranchiseRoster";
 type Props = {
   teamId: string;
   onBack: () => void;
+  initialSection?: "home" | "plantilla";
+  initialRosterTab?: "ofensiva" | "defensiva" | "especiales" | "lesionados";
 };
 
 const AFC_WEST = [
@@ -22,8 +24,13 @@ const INFO_KC = [
   ["Ciudad", "Kansas City, Missouri"],
 ];
 
-export default function FranchiseHome({ teamId, onBack }: Props) {
-  const [section, setSection] = require("react").useState<"home" | "plantilla">("home");
+export default function FranchiseHome({
+  teamId,
+  onBack,
+  initialSection = "home",
+  initialRosterTab = "ofensiva",
+}: Props) {
+  const [section, setSection] = require("react").useState<"home" | "plantilla">(initialSection);
   const esKansasCity = teamId === "KC";
 
   if (!esKansasCity) {
@@ -99,7 +106,7 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
           </div>
 
           {section === "plantilla" ? (
-            <FranchiseRoster teamId={teamId} />
+            <FranchiseRoster teamId={teamId} initialTab={initialRosterTab} />
           ) : (
           <>
           <div className="grid gap-8 lg:grid-cols-2">
