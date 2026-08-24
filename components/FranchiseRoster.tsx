@@ -128,12 +128,13 @@ function isInjured(a: Athlete) {
 
 export default function FranchiseRoster({
   teamId,
-  initialTab = "ofensiva",
+  tab,
+  onTabChange,
 }: {
   teamId: string;
-  initialTab?: Tab;
+  tab: Tab;
+  onTabChange: (tab: Tab) => void;
 }) {
-  const [tab,setTab]=useState<Tab>(initialTab);
   const [data,setData]=useState<RosterResponse | null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -181,7 +182,7 @@ export default function FranchiseRoster({
 
       <div className="mb-4 flex overflow-x-auto border-b border-zinc-200">
         {tabs.map(t=>(
-          <button key={t.id} type="button" onClick={()=>setTab(t.id)}
+          <button key={t.id} type="button" onClick={()=>onTabChange(t.id)}
             className={`whitespace-nowrap border-b-2 px-4 py-3 text-xs font-black uppercase md:text-sm ${tab===t.id ? "border-red-700 text-red-700" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}>
             {t.label}
           </button>
@@ -214,15 +215,21 @@ export default function FranchiseRoster({
                       <a
                         href={profile}
                         onClick={() => {
-                          sessionStorage.setItem(
-                            "redzoneExternalReturn",
-                            JSON.stringify({
-                              pestanaActiva: "equipos",
-                              subPestanaEquipos: "franquicia",
-                              franquiciaSeleccionada: teamId,
-                              franchiseSection: "plantilla",
-                              rosterTab: tab,
-                            }),
+                          const current = window.history.state?.redzoneNav ?? {};
+                          window.history.replaceState(
+                            {
+                              ...(window.history.state ?? {}),
+                              redzoneNav: {
+                                ...current,
+                                pestanaActiva: "equipos",
+                                subPestanaEquipos: "franquicia",
+                                franquiciaSeleccionada: teamId,
+                                franquiciaSeccionActual: "plantilla",
+                                franquiciaRosterTabActual: tab,
+                              },
+                            },
+                            "",
+                            window.location.href,
                           );
                         }}
                         className="inline-flex items-center gap-3 font-bold text-[#002244] hover:text-red-700 hover:underline"
