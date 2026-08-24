@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getPartidosPorJornada } from "@/lib/queries";
+import TeamOffenseSummary from "@/components/TeamOffenseSummary";
 import type {
   EspnPassingLeader,
   EspnRushingLeader,
@@ -825,6 +826,7 @@ export default function Home() {
   const [subcategoriaAnotandoJugador, setSubcategoriaAnotandoJugador] =
     useState<"touchdowns" | "puntos" | "td_recepcion">("touchdowns");
   const [vistaStatsCompleta, setVistaStatsCompleta] = useState(false);
+  const [vistaResumenEquipo, setVistaResumenEquipo] = useState(false);
 
   // ESPN STATS - PASANDO
   const [passingLeaders, setPassingLeaders] = useState<EspnPassingLeader[]>([]);
@@ -3210,9 +3212,7 @@ export default function Home() {
                                     | "entregas",
                                 );
 
-                                if (id === "ofensiva") {
-                                  setSubcategoriaStatsEquipo("yardas_totales");
-                                }
+                                setVistaResumenEquipo(id === "ofensiva");
 
                                 if (id === "defensiva") {
                                   setSubcategoriaStatsEquipo(
@@ -3277,6 +3277,7 @@ export default function Home() {
                                 key={id}
                                 onClick={() => {
                                   setCategoriaStatsEquipo("ofensiva");
+                                  setVistaResumenEquipo(false);
                                   setSubcategoriaStatsEquipo(
                                     id as
                                       | "yardas_totales"
@@ -3623,6 +3624,11 @@ export default function Home() {
                 </div>
 
                 {vistaStatsCompleta &&
+                tipoStats === "equipo" &&
+                vistaResumenEquipo &&
+                categoriaStatsEquipo === "ofensiva" ? (
+                  <TeamOffenseSummary />
+                ) : vistaStatsCompleta &&
                 tipoStats === "jugador" &&
                 categoriaStatsJugador === "especiales" ? (
                   /* ================= DETALLE_ESPECIALES_JUGADOR_REDZONE ================= */
@@ -6628,6 +6634,7 @@ export default function Home() {
                                     : "corriendo";
 
                               setCategoriaStatsEquipo("ofensiva");
+                              setVistaResumenEquipo(false);
                               setSubcategoriaStatsEquipo(destino);
                               setVistaStatsCompleta(true);
                             }}
