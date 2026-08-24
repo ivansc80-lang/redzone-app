@@ -43,8 +43,14 @@ function isInjured(a: Athlete) {
   return s.includes("injur") || s.includes("reserve") || s.includes("out") || s.includes("pup");
 }
 
-export default function FranchiseRoster({ teamId }: { teamId: string }) {
-  const [tab,setTab]=useState<Tab>("ofensiva");
+export default function FranchiseRoster({
+  teamId,
+  initialTab = "ofensiva",
+}: {
+  teamId: string;
+  initialTab?: Tab;
+}) {
+  const [tab,setTab]=useState<Tab>(initialTab);
   const [data,setData]=useState<RosterResponse | null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -115,7 +121,22 @@ export default function FranchiseRoster({ teamId }: { teamId: string }) {
                 return (
                   <tr key={a.id} className="border-t border-zinc-200 even:bg-zinc-50/60">
                     <td className="px-4 py-2">
-                      <a href={profile} className="inline-flex items-center gap-3 font-bold text-[#002244] hover:text-red-700 hover:underline">
+                      <a
+                        href={profile}
+                        onClick={() => {
+                          sessionStorage.setItem(
+                            "redzoneExternalReturn",
+                            JSON.stringify({
+                              pestanaActiva: "equipos",
+                              subPestanaEquipos: "franquicia",
+                              franquiciaSeleccionada: teamId,
+                              franchiseSection: "plantilla",
+                              rosterTab: tab,
+                            }),
+                          );
+                        }}
+                        className="inline-flex items-center gap-3 font-bold text-[#002244] hover:text-red-700 hover:underline"
+                      >
                         {a.headshot?.href ? <img src={a.headshot.href} alt="" className="h-10 w-10 rounded-full object-contain" loading="lazy" /> : <span className="h-10 w-10 rounded-full bg-zinc-100" />}
                         <span>{name}{a.jersey ? <span className="ml-1 text-[10px] font-normal text-zinc-400">{a.jersey}</span> : null}</span>
                       </a>
