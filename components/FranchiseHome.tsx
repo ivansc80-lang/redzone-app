@@ -24,6 +24,41 @@ const INFO_KC = [
   ["Ciudad", "Kansas City, Missouri"],
 ];
 
+const FRANCHISE_META: Record<string, { nombre: string; division: string; logo: string }> = {
+  BUF:{nombre:"Buffalo Bills",division:"AFC Este",logo:"buf"},
+  MIA:{nombre:"Miami Dolphins",division:"AFC Este",logo:"mia"},
+  NE:{nombre:"New England Patriots",division:"AFC Este",logo:"ne"},
+  NYJ:{nombre:"New York Jets",division:"AFC Este",logo:"nyj"},
+  BAL:{nombre:"Baltimore Ravens",division:"AFC Norte",logo:"bal"},
+  CIN:{nombre:"Cincinnati Bengals",division:"AFC Norte",logo:"cin"},
+  CLE:{nombre:"Cleveland Browns",division:"AFC Norte",logo:"cle"},
+  PIT:{nombre:"Pittsburgh Steelers",division:"AFC Norte",logo:"pit"},
+  HOU:{nombre:"Houston Texans",division:"AFC Sur",logo:"hou"},
+  IND:{nombre:"Indianapolis Colts",division:"AFC Sur",logo:"ind"},
+  JAX:{nombre:"Jacksonville Jaguars",division:"AFC Sur",logo:"jax"},
+  TEN:{nombre:"Tennessee Titans",division:"AFC Sur",logo:"ten"},
+  DEN:{nombre:"Denver Broncos",division:"AFC Oeste",logo:"den"},
+  KC:{nombre:"Kansas City Chiefs",division:"AFC Oeste",logo:"kc"},
+  LV:{nombre:"Las Vegas Raiders",division:"AFC Oeste",logo:"lv"},
+  LAC:{nombre:"Los Angeles Chargers",division:"AFC Oeste",logo:"lac"},
+  DAL:{nombre:"Dallas Cowboys",division:"NFC Este",logo:"dal"},
+  NYG:{nombre:"New York Giants",division:"NFC Este",logo:"nyg"},
+  PHI:{nombre:"Philadelphia Eagles",division:"NFC Este",logo:"phi"},
+  WSH:{nombre:"Washington Commanders",division:"NFC Este",logo:"wsh"},
+  CHI:{nombre:"Chicago Bears",division:"NFC Norte",logo:"chi"},
+  DET:{nombre:"Detroit Lions",division:"NFC Norte",logo:"det"},
+  GB:{nombre:"Green Bay Packers",division:"NFC Norte",logo:"gb"},
+  MIN:{nombre:"Minnesota Vikings",division:"NFC Norte",logo:"min"},
+  ATL:{nombre:"Atlanta Falcons",division:"NFC Sur",logo:"atl"},
+  CAR:{nombre:"Carolina Panthers",division:"NFC Sur",logo:"car"},
+  NO:{nombre:"New Orleans Saints",division:"NFC Sur",logo:"no"},
+  TB:{nombre:"Tampa Bay Buccaneers",division:"NFC Sur",logo:"tb"},
+  ARI:{nombre:"Arizona Cardinals",division:"NFC Oeste",logo:"ari"},
+  LAR:{nombre:"Los Angeles Rams",division:"NFC Oeste",logo:"lar"},
+  SF:{nombre:"San Francisco 49ers",division:"NFC Oeste",logo:"sf"},
+  SEA:{nombre:"Seattle Seahawks",division:"NFC Oeste",logo:"sea"},
+};
+
 export default function FranchiseHome({
   teamId,
   onBack,
@@ -32,28 +67,11 @@ export default function FranchiseHome({
 }: Props) {
   const [section, setSection] = require("react").useState<"home" | "plantilla">(initialSection);
   const esKansasCity = teamId === "KC";
-
-  if (!esKansasCity) {
-    return (
-      <section className="px-3 pt-4 pb-5 md:px-6 md:pt-5 md:pb-7">
-        <div className="rounded-2xl bg-white p-6 text-black shadow-2xl md:p-10">
-          <button
-            type="button"
-            onClick={onBack}
-            className="mb-6 rounded-lg border border-red-700 px-4 py-2 font-['Orbitron'] text-[10px] font-black uppercase text-red-700 hover:bg-red-50"
-          >
-            ← Volver a franquicias
-          </button>
-          <div className="font-['Orbitron'] text-xl font-black uppercase">
-            {teamId}
-          </div>
-          <p className="mt-2 text-sm text-zinc-500">
-            Construiremos esta franquicia a partir del modelo de Kansas City.
-          </p>
-        </div>
-      </section>
-    );
-  }
+  const franchise = FRANCHISE_META[teamId] ?? {
+    nombre: teamId,
+    division: "",
+    logo: teamId.toLowerCase(),
+  };
 
   return (
     <section className="px-3 pt-4 pb-5 md:px-6 md:pt-5 md:pb-7">
@@ -91,22 +109,26 @@ export default function FranchiseHome({
 
           <div className="mb-8 flex items-center gap-4 border-b border-zinc-200 pb-6 md:gap-6">
             <img
-              src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png"
-              alt="Kansas City Chiefs"
+              src={`https://a.espncdn.com/i/teamlogos/nfl/500/${franchise.logo}.png`}
+              alt={franchise.nombre}
               className="h-20 w-20 flex-shrink-0 object-contain md:h-28 md:w-28"
             />
             <div className="min-w-0">
               <div className="font-['Orbitron'] text-[10px] font-black uppercase tracking-widest text-zinc-500 md:text-xs">
-                AFC Oeste
+                {franchise.division}
               </div>
               <h2 className="mt-1 font-['Orbitron'] text-2xl font-black uppercase leading-tight text-[#002244] md:text-4xl">
-                Kansas City Chiefs
+                {franchise.nombre}
               </h2>
             </div>
           </div>
 
           {section === "plantilla" ? (
             <FranchiseRoster teamId={teamId} initialTab={initialRosterTab} />
+          ) : !esKansasCity ? (
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
+              HOME se generalizará después de validar PLANTILLA en las 32 franquicias.
+            </div>
           ) : (
           <>
           <div className="grid gap-8 lg:grid-cols-2">
