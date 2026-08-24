@@ -1,6 +1,7 @@
 "use client";
 
 import FranchiseTeamStatsSummary from "@/components/FranchiseTeamStatsSummary";
+import FranchiseSchedule from "@/components/FranchiseSchedule";
 
 type Props = {
   teamId: string;
@@ -191,6 +192,7 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
           </div>
 
           <FranchiseTeamStatsSummary teamId={teamId} />
+          <FranchiseSchedule teamId={teamId} />
         </div>
       </div>
     </section>
