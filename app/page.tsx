@@ -796,6 +796,8 @@ export default function Home() {
   >("score");
   const [tipoStats, setTipoStats] = useState<"jugador" | "equipo">("jugador");
   const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState<string | null>(null);
+  const [franquiciaSeccionInicial, setFranquiciaSeccionInicial] = useState<"home" | "plantilla">("home");
+  const [franquiciaRosterTabInicial, setFranquiciaRosterTabInicial] = useState<"ofensiva" | "defensiva" | "especiales" | "lesionados">("ofensiva");
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<
     | "pasando"
     | "corriendo"
@@ -835,6 +837,32 @@ export default function Home() {
   const [vistaResumenEquipo, setVistaResumenEquipo] = useState(false);
   const restaurandoHistorialRef = useRef(false);
   const ultimoEstadoNavegacionRef = useRef<string | null>(null);
+
+  // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("redzoneExternalReturn");
+      if (!raw) return;
+
+      const saved = JSON.parse(raw);
+      if (saved?.pestanaActiva === "equipos") {
+        setPestanaActiva("equipos");
+        setSubPestanaEquipos("franquicia");
+        setFranquiciaSeleccionada(saved.franquiciaSeleccionada ?? null);
+        setFranquiciaSeccionInicial(saved.franchiseSection === "plantilla" ? "plantilla" : "home");
+        setFranquiciaRosterTabInicial(
+          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(saved.rosterTab)
+            ? saved.rosterTab
+            : "ofensiva",
+        );
+      }
+
+      sessionStorage.removeItem("redzoneExternalReturn");
+    } catch (error) {
+      console.error("No se pudo restaurar la vuelta desde ESPN:", error);
+      sessionStorage.removeItem("redzoneExternalReturn");
+    }
+  }, []);
 
   // HISTORIAL DE NAVEGACIÓN INTERNA REDZONE
   // Permite que Atrás del navegador, botón lateral del ratón y gesto Atrás
@@ -3232,6 +3260,8 @@ export default function Home() {
             <FranchiseHome
               teamId={franquiciaSeleccionada}
               onBack={() => window.history.back()}
+              initialSection={franquiciaSeccionInicial}
+              initialRosterTab={franquiciaRosterTabInicial}
             />
           )
         )}
