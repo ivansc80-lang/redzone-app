@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getPartidosPorJornada } from "@/lib/queries";
 import TeamOffenseSummary from "@/components/TeamOffenseSummary";
@@ -796,9 +796,8 @@ export default function Home() {
   >("score");
   const [tipoStats, setTipoStats] = useState<"jugador" | "equipo">("jugador");
   const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState<string | null>(null);
-  const [franquiciaSeccionActual, setFranquiciaSeccionActual] = useState<"home" | "plantilla">("home");
-  const [franquiciaRosterTabActual, setFranquiciaRosterTabActual] = useState<"ofensiva" | "defensiva" | "especiales" | "lesionados">("ofensiva");
-  const [navegacionInicialLista, setNavegacionInicialLista] = useState(false);
+  const [franquiciaSeccionInicial, setFranquiciaSeccionInicial] = useState<"home" | "plantilla">("home");
+  const [franquiciaRosterTabInicial, setFranquiciaRosterTabInicial] = useState<"ofensiva" | "defensiva" | "especiales" | "lesionados">("ofensiva");
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<
     | "pasando"
     | "corriendo"
@@ -839,54 +838,29 @@ export default function Home() {
   const restaurandoHistorialRef = useRef(false);
   const ultimoEstadoNavegacionRef = useRef<string | null>(null);
 
-  // RESTAURA EL ESTADO DE NAVEGACIÓN ANTES DE MOSTRAR REDZONE.
-  useLayoutEffect(() => {
+  // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN.
+  useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const returnTeam = params.get("rzTeam");
-      const returnSection = params.get("rzSection");
-      const returnRoster = params.get("rzRoster");
+      const raw = sessionStorage.getItem("redzoneExternalReturn");
+      if (!raw) return;
 
-      // Prioridad al retorno explícito desde ESPN. Funciona incluso cuando la
-      // PWA destruye y vuelve a crear la página al regresar.
-      if (returnTeam && returnSection === "plantilla") {
+      const saved = JSON.parse(raw);
+      if (saved?.pestanaActiva === "equipos") {
         setPestanaActiva("equipos");
         setSubPestanaEquipos("franquicia");
-        setFranquiciaSeleccionada(returnTeam);
-        setFranquiciaSeccionActual("plantilla");
-        setFranquiciaRosterTabActual(
-          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(returnRoster ?? "")
-            ? (returnRoster as "ofensiva" | "defensiva" | "especiales" | "lesionados")
+        setFranquiciaSeleccionada(saved.franquiciaSeleccionada ?? null);
+        setFranquiciaSeccionInicial(saved.franchiseSection === "plantilla" ? "plantilla" : "home");
+        setFranquiciaRosterTabInicial(
+          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(saved.rosterTab)
+            ? saved.rosterTab
             : "ofensiva",
         );
-
-        // Una vez recuperado, limpiamos los parámetros sin recargar.
-        params.delete("rzTeam");
-        params.delete("rzSection");
-        params.delete("rzRoster");
-        const cleanQuery = params.toString();
-        const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash}`;
-        window.history.replaceState(window.history.state, "", cleanUrl);
-      } else {
-        const nav = window.history.state?.redzoneNav;
-        if (nav) {
-          setPestanaActiva(nav.pestanaActiva ?? "clasificacion");
-          setSubPestanaEquipos(nav.subPestanaEquipos ?? "score");
-          setTipoStats(nav.tipoStats ?? "jugador");
-          setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
-          setFranquiciaSeccionActual(nav.franquiciaSeccionActual === "plantilla" ? "plantilla" : "home");
-          setFranquiciaRosterTabActual(
-            ["ofensiva", "defensiva", "especiales", "lesionados"].includes(nav.franquiciaRosterTabActual)
-              ? nav.franquiciaRosterTabActual
-              : "ofensiva",
-          );
-        }
       }
-    } catch (error) {
-      console.error("No se pudo restaurar la navegación:", error);
-    } finally {
+
       sessionStorage.removeItem("redzoneExternalReturn");
-      setNavegacionInicialLista(true);
+    } catch (error) {
+      console.error("No se pudo restaurar la vuelta desde ESPN:", error);
+      sessionStorage.removeItem("redzoneExternalReturn");
     }
   }, []);
 
@@ -899,8 +873,6 @@ export default function Home() {
       subPestanaEquipos,
       tipoStats,
       franquiciaSeleccionada,
-      franquiciaSeccionActual,
-      franquiciaRosterTabActual,
       categoriaStatsJugador,
       subcategoriaStatsJugador,
       subcategoriaStatsDefensivaJugador,
@@ -913,15 +885,7 @@ export default function Home() {
       vistaResumenEquipo,
     };
 
-    // HOME/PLANTILLA y la categoría del roster son estado interno de la
-    // franquicia. Deben conservarse al salir a ESPN, pero NO crear escalones
-    // nuevos en el historial. El BACK de la franquicia debe volver al selector.
-    const {
-      franquiciaSeccionActual: _seccion,
-      franquiciaRosterTabActual: _rosterTab,
-      ...estadoNavegacionBase
-    } = estadoNavegacion;
-    const serializadoBase = JSON.stringify(estadoNavegacionBase);
+    const serializado = JSON.stringify(estadoNavegacion);
 
     if (ultimoEstadoNavegacionRef.current === null) {
       window.history.replaceState(
@@ -929,40 +893,30 @@ export default function Home() {
         "",
         window.location.href,
       );
-      ultimoEstadoNavegacionRef.current = serializadoBase;
+      ultimoEstadoNavegacionRef.current = serializado;
       return;
     }
 
     if (restaurandoHistorialRef.current) {
       restaurandoHistorialRef.current = false;
-      ultimoEstadoNavegacionRef.current = serializadoBase;
+      ultimoEstadoNavegacionRef.current = serializado;
       return;
     }
 
-    if (ultimoEstadoNavegacionRef.current !== serializadoBase) {
+    if (ultimoEstadoNavegacionRef.current !== serializado) {
       window.history.pushState(
         { ...(window.history.state ?? {}), redzoneNav: estadoNavegacion },
         "",
         window.location.href,
       );
-      ultimoEstadoNavegacionRef.current = serializadoBase;
-      return;
+      ultimoEstadoNavegacionRef.current = serializado;
     }
 
-    // Cambio HOME <-> PLANTILLA o de categoría: actualiza la entrada actual
-    // sin añadir otra posición a la pila del navegador.
-    window.history.replaceState(
-      { ...(window.history.state ?? {}), redzoneNav: estadoNavegacion },
-      "",
-      window.location.href,
-    );
   }, [
     pestanaActiva,
     subPestanaEquipos,
     tipoStats,
     franquiciaSeleccionada,
-    franquiciaSeccionActual,
-    franquiciaRosterTabActual,
     categoriaStatsJugador,
     subcategoriaStatsJugador,
     subcategoriaStatsDefensivaJugador,
@@ -986,12 +940,6 @@ export default function Home() {
       setSubPestanaEquipos(nav.subPestanaEquipos);
       setTipoStats(nav.tipoStats);
       setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
-      setFranquiciaSeccionActual(nav.franquiciaSeccionActual === "plantilla" ? "plantilla" : "home");
-      setFranquiciaRosterTabActual(
-        ["ofensiva", "defensiva", "especiales", "lesionados"].includes(nav.franquiciaRosterTabActual)
-          ? nav.franquiciaRosterTabActual
-          : "ofensiva",
-      );
       setCategoriaStatsJugador(nav.categoriaStatsJugador);
       setSubcategoriaStatsJugador(nav.subcategoriaStatsJugador);
       setSubcategoriaStatsDefensivaJugador(
@@ -3313,10 +3261,8 @@ export default function Home() {
             <FranchiseHome
               teamId={franquiciaSeleccionada}
               onBack={() => window.history.back()}
-              section={franquiciaSeccionActual}
-              onSectionChange={setFranquiciaSeccionActual}
-              rosterTab={franquiciaRosterTabActual}
-              onRosterTabChange={setFranquiciaRosterTabActual}
+              initialSection={franquiciaSeccionInicial}
+              initialRosterTab={franquiciaRosterTabInicial}
             />
           )
         )}
@@ -8167,11 +8113,7 @@ export default function Home() {
                                             ? "bg-[#292929] border-green-500 ring-2 ring-green-500/70 shadow-[0_0_10px_rgba(34,197,94,0.45)]"
                                             : "bg-[#292929] border-red-500 ring-2 ring-red-500/70 shadow-[0_0_10px_rgba(239,68,68,0.45)]";
 
-                                      if (!navegacionInicialLista) {
-    return <div className="min-h-screen bg-[#9e0101]" />;
-  }
-
-  return (
+                                      return (
                                         <div
                                           key={usr.id}
                                           className={`border rounded-lg px-1 py-2 flex flex-col items-center justify-center transition-all ${estiloPronostico}`}
