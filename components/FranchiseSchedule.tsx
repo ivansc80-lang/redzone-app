@@ -65,8 +65,8 @@ export default function FranchiseSchedule({ teamId }: Props) {
         Calendario
       </h3>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div>
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-1">
           {cargando ? (
             <div className="py-8 text-center text-xs font-semibold text-zinc-500">
               Cargando calendario...
@@ -116,9 +116,9 @@ export default function FranchiseSchedule({ teamId }: Props) {
                         <span className="truncate text-[11px] font-bold text-[#002244]">{local.nombre}</span>
                       </div>
                       <span className="shrink-0 font-['Orbitron'] text-[9px] font-black text-red-700">VS</span>
-                      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+                        <span className="truncate text-right text-[11px] font-bold text-[#002244]">{visitante.nombre}</span>
                         <img src={visitante.logo_url} alt="" className="h-7 w-7 shrink-0 object-contain" />
-                        <span className="truncate text-[11px] font-bold text-[#002244]">{visitante.nombre}</span>
                       </div>
                     </div>
 
@@ -132,7 +132,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
           )}
         </div>
 
-        <div className="hidden min-h-[300px] rounded-xl border border-dashed border-zinc-200 lg:block" aria-label="Espacio reservado para próximo rival" />
+        <div className="hidden min-h-[300px] rounded-xl border border-dashed border-zinc-200 lg:col-span-2 lg:block" aria-label="Espacio reservado para próximo partido" />
       </div>
     </div>
   );
