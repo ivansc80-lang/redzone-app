@@ -13,17 +13,9 @@ const AFC_WEST = [
 ];
 
 const INFO_KC = [
-  ["Nombre completo", "Kansas City Chiefs"],
-  ["Fundación", "1960"],
-  ["Conferencia", "AFC"],
-  ["División", "AFC Oeste"],
+  ["Fundador", "Lamar Hunt en 1959"],
   ["Estadio", "GEHA Field at Arrowhead Stadium"],
-  ["Ubicación", "Kansas City, Misuri"],
-  ["Capacidad", "76.416"],
-  ["Títulos AFL", "3 (1962, 1966, 1969)"],
-  ["Super Bowl", "4 (IV, LIV, LVII, LVIII)"],
-  ["Títulos de Conferencia", "5 (2019, 2020, 2022, 2023, 2024)"],
-  ["Títulos de División", "17 (1962, 1966, 1971, 1993, 1995, 1997, 2003, 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024)"],
+  ["Ciudad", "Kansas City, Missouri"],
 ];
 
 export default function FranchiseHome({ teamId, onBack }: Props) {
@@ -71,23 +63,7 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
         </div>
 
         <div className="p-5 md:p-8">
-          <div className="mb-8 flex items-center justify-between gap-4 border-b border-zinc-200 pb-6">
-            <div className="flex min-w-0 items-center gap-4 md:gap-6">
-              <img
-                src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png"
-                alt="Kansas City Chiefs"
-                className="h-20 w-20 flex-shrink-0 object-contain md:h-28 md:w-28"
-              />
-              <div className="min-w-0">
-                <div className="font-['Orbitron'] text-[10px] font-black uppercase tracking-widest text-zinc-500 md:text-xs">
-                  AFC Oeste
-                </div>
-                <h2 className="mt-1 font-['Orbitron'] text-2xl font-black uppercase leading-tight text-[#002244] md:text-4xl">
-                  Kansas City Chiefs
-                </h2>
-              </div>
-            </div>
-
+          <div className="mb-5 flex justify-end">
             <button
               type="button"
               onClick={onBack}
@@ -98,21 +74,69 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
             </button>
           </div>
 
+          <div className="mb-8 flex items-center gap-4 border-b border-zinc-200 pb-6 md:gap-6">
+            <img
+              src="https://a.espncdn.com/i/teamlogos/nfl/500/kc.png"
+              alt="Kansas City Chiefs"
+              className="h-20 w-20 flex-shrink-0 object-contain md:h-28 md:w-28"
+            />
+            <div className="min-w-0">
+              <div className="font-['Orbitron'] text-[10px] font-black uppercase tracking-widest text-zinc-500 md:text-xs">
+                AFC Oeste
+              </div>
+              <h2 className="mt-1 font-['Orbitron'] text-2xl font-black uppercase leading-tight text-[#002244] md:text-4xl">
+                Kansas City Chiefs
+              </h2>
+            </div>
+          </div>
+
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
-              <div className="mb-3 flex items-center gap-2 border-b-2 border-red-700 pb-2">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-700 font-serif text-lg font-black text-white">i</div>
-                <h3 className="font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">Información general</h3>
+              <div className="mb-3 border-b-2 border-red-700 pb-2">
+                <h3 className="font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">
+                  Información general
+                </h3>
               </div>
 
               <dl className="text-xs md:text-sm">
                 {INFO_KC.map(([label, value]) => (
-                  <div key={label} className="grid grid-cols-[150px_1fr] gap-3 border-b border-zinc-200 py-2 last:border-b-0 md:grid-cols-[180px_1fr]">
+                  <div
+                    key={label}
+                    className="grid grid-cols-[150px_1fr] gap-3 border-b border-zinc-200 py-2 last:border-b-0 md:grid-cols-[180px_1fr]"
+                  >
                     <dt className="font-bold text-zinc-800">{label}</dt>
                     <dd className="font-medium text-zinc-900">{value}</dd>
                   </div>
                 ))}
               </dl>
+
+              <div className="mt-6 mb-3 border-b-2 border-red-700 pb-2">
+                <h3 className="font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">
+                  Palmarés
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="rounded-xl bg-zinc-50 p-4">
+                  <div className="flex items-baseline gap-4">
+                    <div className="font-['Orbitron'] text-3xl font-black text-red-700">4</div>
+                    <div>
+                      <div className="font-bold text-[#002244]">Super Bowls</div>
+                      <div className="mt-1 text-xs text-zinc-500">IV · LIV · LVII · LVIII</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-zinc-50 p-4">
+                  <div className="flex items-baseline gap-4">
+                    <div className="font-['Orbitron'] text-3xl font-black text-red-700">3</div>
+                    <div>
+                      <div className="font-bold text-[#002244]">Títulos AFL</div>
+                      <div className="mt-1 text-xs text-zinc-500">1962 · 1966 · 1969</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
