@@ -8,6 +8,7 @@ import TeamDefenseSummary from "@/components/TeamDefenseSummary";
 import TeamSpecialTeamsSummary from "@/components/TeamSpecialTeamsSummary";
 import TeamTurnoversSummary from "@/components/TeamTurnoversSummary";
 import FranchiseSelector from "@/components/FranchiseSelector";
+import FranchiseHome from "@/components/FranchiseHome";
 import type {
   EspnPassingLeader,
   EspnRushingLeader,
@@ -3228,23 +3229,10 @@ export default function Home() {
           franquiciaSeleccionada === null ? (
             <FranchiseSelector onSelect={setFranquiciaSeleccionada} />
           ) : (
-            <section className="-mx-4 md:mx-0">
-              <div className="bg-white text-black rounded-none md:rounded-2xl shadow-2xl p-6 md:p-10">
-                <button
-                  type="button"
-                  onClick={() => window.history.back()}
-                  className="mb-6 rounded-lg border border-red-700 px-4 py-2 font-['Orbitron'] text-[10px] font-black uppercase text-red-700 hover:bg-red-50"
-                >
-                  ← Volver a franquicias
-                </button>
-                <div className="font-['Orbitron'] text-xl font-black uppercase text-zinc-900">
-                  {franquiciaSeleccionada}
-                </div>
-                <p className="mt-2 text-sm text-zinc-500">
-                  Ficha de franquicia en construcción.
-                </p>
-              </div>
-            </section>
+            <FranchiseHome
+              teamId={franquiciaSeleccionada}
+              onBack={() => window.history.back()}
+            />
           )
         )}
 
