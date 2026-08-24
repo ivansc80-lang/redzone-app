@@ -334,23 +334,55 @@ export default function FranchiseSchedule({ teamId }: Props) {
                 <div className="mb-3 font-['Orbitron'] text-[10px] font-black uppercase text-red-700">
                   Entregas
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {[resumenComparacion.local, resumenComparacion.visitante].map((equipo) => (
-                    <div key={equipo.codigo} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-lg bg-zinc-50 px-3 py-3 text-[10px]">
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-lg bg-zinc-50 px-4 py-3">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 text-xs">
                       <div className="flex min-w-0 items-center gap-2">
-                        <img src={equipo.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
-                        <span className="truncate font-bold text-[#002244]">{equipo.nombre}</span>
+                        <img src={resumenComparacion.local.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                        <span className="truncate font-bold text-[#002244]">{resumenComparacion.local.nombre}</span>
                       </div>
+
                       <div className="text-center">
-                        <div className="text-[8px] font-black uppercase text-zinc-400">Perdidas</div>
-                        <div className="mt-1 font-black text-red-700">{equipo.entregas?.GIVE ?? "-"}</div>
+                        <div className="text-[9px] font-black uppercase text-zinc-400">Perdidas</div>
+                        <div className="mt-1 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</div>
                       </div>
+
                       <div className="text-center">
-                        <div className="text-[8px] font-black uppercase text-zinc-400">Recuperadas</div>
-                        <div className="mt-1 font-black text-[#002244]">{equipo.entregas?.TAKE ?? "-"}</div>
+                        <div className="text-[9px] font-black uppercase text-zinc-400">Recuperadas</div>
+                        <div className="mt-1 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</div>
+                      </div>
+
+                      <div className="flex min-w-0 items-center justify-end gap-2">
+                        <span className="truncate text-right font-bold text-[#002244]">{resumenComparacion.visitante.nombre}</span>
+                        <img src={resumenComparacion.visitante.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="rounded-lg bg-zinc-50 px-4 py-3">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 text-xs">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <img src={resumenComparacion.visitante.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                        <span className="truncate font-bold text-[#002244]">{resumenComparacion.visitante.nombre}</span>
+                      </div>
+
+                      <div className="text-center">
+                        <div className="text-[9px] font-black uppercase text-zinc-400">Recuperadas</div>
+                        <div className="mt-1 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</div>
+                      </div>
+
+                      <div className="text-center">
+                        <div className="text-[9px] font-black uppercase text-zinc-400">Perdidas</div>
+                        <div className="mt-1 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</div>
+                      </div>
+
+                      <div className="flex min-w-0 items-center justify-end gap-2">
+                        <span className="truncate text-right font-bold text-[#002244]">{resumenComparacion.local.nombre}</span>
+                        <img src={resumenComparacion.local.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
