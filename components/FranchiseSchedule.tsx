@@ -281,50 +281,36 @@ export default function FranchiseSchedule({ teamId }: Props) {
                     <div className="border-b border-zinc-200 bg-zinc-50 px-3 py-2 font-['Orbitron'] text-[9px] font-black uppercase text-[#002244]">
                       {bloque.titulo}
                     </div>
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 gap-y-2 px-3 py-3 text-[10px]">
+                    <div className="grid grid-cols-[1fr_minmax(62px,auto)_44px_minmax(62px,auto)_44px] gap-x-4 gap-y-3 px-4 py-4 text-[12px]">
                       <span className="font-bold text-zinc-500">Métrica</span>
-                      <span className="font-black text-red-700">ATAQUE</span>
-                      <span className="font-black text-[#002244]">DEFENSA</span>
+                      <span className="text-center font-black text-red-700">ATAQUE</span>
+                      <span className="text-center font-black text-zinc-500">RK</span>
+                      <span className="text-center font-black text-[#002244]">DEFENSA</span>
+                      <span className="text-center font-black text-zinc-500">RK</span>
 
                       <span>YDS/G</span>
-                      <span className="text-center font-bold">
-                        {bloque.ataque?.TOTAL_YDS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "TOTAL_YDS_G"))})</span>
-                      </span>
-                      <span className="text-center font-bold">
-                        {bloque.defensa?.YDS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "YDS_G"))})</span>
-                      </span>
+                      <span className="text-center font-bold">{bloque.ataque?.TOTAL_YDS_G ?? "-"}</span>
+                      <span className="text-center font-black text-red-700">{ordinal(rankingOfensivo(bloque.ataqueCodigo, "TOTAL_YDS_G"))}</span>
+                      <span className="text-center font-bold">{bloque.defensa?.YDS_G ?? "-"}</span>
+                      <span className="text-center font-black text-[#002244]">{ordinal(rankingDefensivo(bloque.defensaCodigo, "YDS_G"))}</span>
 
                       <span>PASE/G</span>
-                      <span className="text-center font-bold">
-                        {bloque.ataque?.PASS_YDS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "PASS_YDS_G"))})</span>
-                      </span>
-                      <span className="text-center font-bold">
-                        {bloque.defensa?.PASS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "PASS_G"))})</span>
-                      </span>
+                      <span className="text-center font-bold">{bloque.ataque?.PASS_YDS_G ?? "-"}</span>
+                      <span className="text-center font-black text-red-700">{ordinal(rankingOfensivo(bloque.ataqueCodigo, "PASS_YDS_G"))}</span>
+                      <span className="text-center font-bold">{bloque.defensa?.PASS_G ?? "-"}</span>
+                      <span className="text-center font-black text-[#002244]">{ordinal(rankingDefensivo(bloque.defensaCodigo, "PASS_G"))}</span>
 
                       <span>CARRERA/G</span>
-                      <span className="text-center font-bold">
-                        {bloque.ataque?.RUSH_YDS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "RUSH_YDS_G"))})</span>
-                      </span>
-                      <span className="text-center font-bold">
-                        {bloque.defensa?.RUSH_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "RUSH_G"))})</span>
-                      </span>
+                      <span className="text-center font-bold">{bloque.ataque?.RUSH_YDS_G ?? "-"}</span>
+                      <span className="text-center font-black text-red-700">{ordinal(rankingOfensivo(bloque.ataqueCodigo, "RUSH_YDS_G"))}</span>
+                      <span className="text-center font-bold">{bloque.defensa?.RUSH_G ?? "-"}</span>
+                      <span className="text-center font-black text-[#002244]">{ordinal(rankingDefensivo(bloque.defensaCodigo, "RUSH_G"))}</span>
 
                       <span>PTS/G</span>
-                      <span className="text-center font-bold">
-                        {bloque.ataque?.PTS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "PTS_G"))})</span>
-                      </span>
-                      <span className="text-center font-bold">
-                        {bloque.defensa?.PTS_G ?? "-"}
-                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "PTS_G"))})</span>
-                      </span>
+                      <span className="text-center font-bold">{bloque.ataque?.PTS_G ?? "-"}</span>
+                      <span className="text-center font-black text-red-700">{ordinal(rankingOfensivo(bloque.ataqueCodigo, "PTS_G"))}</span>
+                      <span className="text-center font-bold">{bloque.defensa?.PTS_G ?? "-"}</span>
+                      <span className="text-center font-black text-[#002244]">{ordinal(rankingDefensivo(bloque.defensaCodigo, "PTS_G"))}</span>
                     </div>
                   </div>
                 ))}
@@ -336,21 +322,21 @@ export default function FranchiseSchedule({ teamId }: Props) {
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-lg bg-zinc-50 px-4 py-3">
-                    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 text-xs">
+                  <div className="rounded-lg bg-zinc-50 px-4 py-4">
+                    <div className="grid grid-cols-[1fr_auto_auto_1fr] items-center gap-5 text-[12px]">
                       <div className="flex min-w-0 items-center gap-2">
                         <img src={resumenComparacion.local.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
                         <span className="truncate font-bold text-[#002244]">{resumenComparacion.local.nombre}</span>
                       </div>
 
-                      <div className="text-center">
-                        <div className="text-[9px] font-black uppercase text-zinc-400">Perdidas</div>
-                        <div className="mt-1 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</div>
+                      <div className="whitespace-nowrap text-center">
+                        <span className="font-black uppercase text-zinc-400">Perdidas</span>
+                        <span className="ml-2 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</span>
                       </div>
 
-                      <div className="text-center">
-                        <div className="text-[9px] font-black uppercase text-zinc-400">Recuperadas</div>
-                        <div className="mt-1 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</div>
+                      <div className="whitespace-nowrap text-center">
+                        <span className="font-black uppercase text-zinc-400">Recuperadas</span>
+                        <span className="ml-2 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</span>
                       </div>
 
                       <div className="flex min-w-0 items-center justify-end gap-2">
@@ -360,21 +346,21 @@ export default function FranchiseSchedule({ teamId }: Props) {
                     </div>
                   </div>
 
-                  <div className="rounded-lg bg-zinc-50 px-4 py-3">
-                    <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 text-xs">
+                  <div className="rounded-lg bg-zinc-50 px-4 py-4">
+                    <div className="grid grid-cols-[1fr_auto_auto_1fr] items-center gap-5 text-[12px]">
                       <div className="flex min-w-0 items-center gap-2">
                         <img src={resumenComparacion.visitante.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
                         <span className="truncate font-bold text-[#002244]">{resumenComparacion.visitante.nombre}</span>
                       </div>
 
-                      <div className="text-center">
-                        <div className="text-[9px] font-black uppercase text-zinc-400">Recuperadas</div>
-                        <div className="mt-1 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</div>
+                      <div className="whitespace-nowrap text-center">
+                        <span className="font-black uppercase text-zinc-400">Recuperadas</span>
+                        <span className="ml-2 font-black text-[#002244]">{resumenComparacion.visitante.entregas?.TAKE ?? "-"}</span>
                       </div>
 
-                      <div className="text-center">
-                        <div className="text-[9px] font-black uppercase text-zinc-400">Perdidas</div>
-                        <div className="mt-1 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</div>
+                      <div className="whitespace-nowrap text-center">
+                        <span className="font-black uppercase text-zinc-400">Perdidas</span>
+                        <span className="ml-2 font-black text-red-700">{resumenComparacion.local.entregas?.GIVE ?? "-"}</span>
                       </div>
 
                       <div className="flex min-w-0 items-center justify-end gap-2">
