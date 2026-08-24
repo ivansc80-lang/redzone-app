@@ -22,6 +22,7 @@ export default function TeamSpecialTeamsSummary() {
 
   const columnas=["GP","KR YDS","KR AVG","KR TD","PR YDS","PR AVG","PR TD","FGM","FGA","FG%","XPM","PUNTS","P AVG","IN20"];
   const keys=["GP","KRYDS","KRAVG","KRTD","PRYDS","PRAVG","PRTD","FGM","FGA","FGPCT","XPM","PUNTS","PAVG","IN20"] as (keyof EspnTeamSpecialTeamsSummary)[];
+  const cortes=new Set([1,4,7,11]);
 
   return <div className="w-full">
     <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-3 mb-4">
@@ -34,7 +35,7 @@ export default function TeamSpecialTeamsSummary() {
         <thead><tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
           <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">POS</th>
           <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">EQUIPO</th>
-          {columnas.map(col=><th key={col} className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200">{col}</th>)}
+          {columnas.map((col,idx)=><th key={col} className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200 ${cortes.has(idx) ? "border-l-2 border-l-zinc-400" : ""}`}>{col}</th>)}
         </tr></thead>
         <tbody>{cargando?<tr><td colSpan={columnas.length+2} className="px-4 py-8 text-center text-zinc-500 font-semibold">Cargando estadísticas desde ESPN...</td></tr>
         :error?<tr><td colSpan={columnas.length+2} className="px-4 py-8 text-center text-red-600 font-semibold">{error}</td></tr>
@@ -45,7 +46,7 @@ export default function TeamSpecialTeamsSummary() {
             <img src={`https://a.espncdn.com/i/teamlogos/nfl/500/${e.equipo.toLowerCase()}.png`} alt={e.nombre} className="w-7 h-7 object-contain flex-shrink-0" />
             <div className="min-w-0"><div className="font-bold text-zinc-900 truncate">{e.nombre}</div><div className="text-[9px] text-zinc-400 font-semibold">{e.equipo}</div></div>
           </div></td>
-          {keys.map((key,idx)=><td key={String(key)} className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${idx===1?"font-black text-blue-700":"text-zinc-600"}`}>{String(e[key]||"-")}</td>)}
+          {keys.map((key,idx)=><td key={String(key)} className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${cortes.has(idx) ? "border-l-2 border-l-zinc-300" : ""} ${idx===1?"font-black text-blue-700":"text-zinc-600"}`}>{String(e[key]||"-")}</td>)}
         </tr>)}</tbody>
       </table>
     </div>
