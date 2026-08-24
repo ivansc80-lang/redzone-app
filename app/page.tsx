@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getPartidosPorJornada } from "@/lib/queries";
 import TeamOffenseSummary from "@/components/TeamOffenseSummary";
+import TeamDefenseSummary from "@/components/TeamDefenseSummary";
+import TeamSpecialTeamsSummary from "@/components/TeamSpecialTeamsSummary";
+import TeamTurnoversSummary from "@/components/TeamTurnoversSummary";
 import type {
   EspnPassingLeader,
   EspnRushingLeader,
@@ -3212,7 +3215,7 @@ export default function Home() {
                                     | "entregas",
                                 );
 
-                                setVistaResumenEquipo(id === "ofensiva");
+                                setVistaResumenEquipo(true);
 
                                 if (id === "defensiva") {
                                   setSubcategoriaStatsEquipo(
@@ -3321,6 +3324,7 @@ export default function Home() {
                                 key={id}
                                 onClick={() => {
                                   setCategoriaStatsEquipo("defensiva");
+                                  setVistaResumenEquipo(false);
                                   setSubcategoriaStatsEquipo(
                                     id as
                                       | "yardas_permitidas"
@@ -3364,6 +3368,7 @@ export default function Home() {
                                 key={id}
                                 onClick={() => {
                                   setCategoriaStatsEquipo("especiales");
+                                  setVistaResumenEquipo(false);
                                   setSubcategoriaEspecialesEquipo(
                                     id as
                                       "devoluciones" | "pateando" | "despejes",
@@ -3405,6 +3410,7 @@ export default function Home() {
                                 key={id}
                                 onClick={() => {
                                   setCategoriaStatsEquipo("entregas");
+                                  setVistaResumenEquipo(false);
                                   setSubcategoriaEntregasEquipo(
                                     id as
                                       | "perdidos"
@@ -3625,9 +3631,16 @@ export default function Home() {
 
                 {vistaStatsCompleta &&
                 tipoStats === "equipo" &&
-                vistaResumenEquipo &&
-                categoriaStatsEquipo === "ofensiva" ? (
-                  <TeamOffenseSummary />
+                vistaResumenEquipo ? (
+                  categoriaStatsEquipo === "ofensiva" ? (
+                    <TeamOffenseSummary />
+                  ) : categoriaStatsEquipo === "defensiva" ? (
+                    <TeamDefenseSummary />
+                  ) : categoriaStatsEquipo === "especiales" ? (
+                    <TeamSpecialTeamsSummary />
+                  ) : (
+                    <TeamTurnoversSummary />
+                  )
                 ) : vistaStatsCompleta &&
                 tipoStats === "jugador" &&
                 categoriaStatsJugador === "especiales" ? (
@@ -6733,6 +6746,7 @@ export default function Home() {
                                     : "entregas_def";
 
                               setCategoriaStatsEquipo("defensiva");
+                              setVistaResumenEquipo(false);
                               setSubcategoriaStatsEquipo(destino);
                               setVistaStatsCompleta(true);
                             }}
