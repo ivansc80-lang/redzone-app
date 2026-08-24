@@ -169,7 +169,7 @@ export default function FranchiseTeamStatsSummary({ teamId }: Props) {
         Resumen estadístico
       </h3>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {bloques.map((bloque) => (
           <div key={bloque.titulo} className="overflow-hidden rounded-xl border border-zinc-200">
             <div className="flex items-center justify-between bg-zinc-50 px-3 py-2">
