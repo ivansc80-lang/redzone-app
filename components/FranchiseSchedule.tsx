@@ -155,8 +155,8 @@ export default function FranchiseSchedule({ teamId }: Props) {
         Calendario
       </h3>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-1">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="">
           {cargando ? (
             <div className="py-8 text-center text-xs font-semibold text-zinc-500">
               Cargando calendario...
@@ -222,7 +222,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
           )}
         </div>
 
-        <div className="lg:col-span-2">
+        <div className="">
           <div className="mb-3 border-b-2 border-red-700 pb-2">
             <h4 className="font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">
               Próximo partido
