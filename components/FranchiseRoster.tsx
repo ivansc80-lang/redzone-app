@@ -38,6 +38,13 @@ const OFFENSE = new Set(["QB","RB","FB","WR","TE","OT","T","OG","G","C","OL"]);
 const DEFENSE = new Set(["DE","DT","NT","DL","LB","ILB","OLB","CB","DB","S","FS","SS"]);
 const SPECIAL = new Set(["K","P","PK","LS","KR","PR"]);
 
+const ESPN_TEAM_IDS: Record<string, string> = {
+  ATL: "1", BUF: "2", CHI: "3", CIN: "4", CLE: "5", DAL: "6", DEN: "7", DET: "8",
+  GB: "9", TEN: "10", IND: "11", KC: "12", LV: "13", LAR: "14", MIA: "15", MIN: "16",
+  NE: "17", NO: "18", NYG: "19", NYJ: "20", PHI: "21", ARI: "22", PIT: "23", LAC: "24",
+  SF: "25", SEA: "26", TB: "27", WSH: "28", WAS: "28", CAR: "29", JAX: "30", BAL: "33", HOU: "34",
+};
+
 const OFFENSE_ORDER = ["QB","RB","WR","TE","C","G","OT"];
 const DEFENSE_ORDER = ["DE","DT","LB","CB","S"];
 
@@ -134,7 +141,7 @@ export default function FranchiseRoster({
   useEffect(()=>{
     let alive=true;
     setLoading(true); setError("");
-    const espnId = teamId === "KC" ? "12" : teamId;
+    const espnId = ESPN_TEAM_IDS[teamId.toUpperCase()] ?? teamId;
     fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${espnId}/roster`)
       .then(r=>{ if(!r.ok) throw new Error(`ESPN ${r.status}`); return r.json(); })
       .then(j=>{ if(alive) setData(j); })
