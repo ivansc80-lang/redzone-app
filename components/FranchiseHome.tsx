@@ -2,6 +2,7 @@
 
 import FranchiseTeamStatsSummary from "@/components/FranchiseTeamStatsSummary";
 import FranchiseSchedule from "@/components/FranchiseSchedule";
+import FranchiseRoster from "@/components/FranchiseRoster";
 
 type Props = {
   teamId: string;
@@ -22,6 +23,7 @@ const INFO_KC = [
 ];
 
 export default function FranchiseHome({ teamId, onBack }: Props) {
+  const [section, setSection] = require("react").useState<"home" | "plantilla">("home");
   const esKansasCity = teamId === "KC";
 
   if (!esKansasCity) {
@@ -52,16 +54,19 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
         <div className="grid grid-cols-2 border-b border-zinc-200">
           <button
             type="button"
-            className="relative py-4 font-['Orbitron'] text-sm font-black uppercase text-red-700 md:py-5 md:text-base"
+            onClick={() => setSection("home")}
+            className={`relative py-4 font-['Orbitron'] text-sm font-black uppercase md:py-5 md:text-base ${section === "home" ? "text-red-700" : "text-zinc-400"}`}
           >
             HOME
-            <span className="absolute bottom-0 left-5 right-5 h-[3px] bg-red-700" />
+            {section === "home" && <span className="absolute bottom-0 left-5 right-5 h-[3px] bg-red-700" />}
           </button>
           <button
             type="button"
-            className="relative py-4 font-['Orbitron'] text-sm font-black uppercase text-zinc-400 md:py-5 md:text-base"
+            onClick={() => setSection("plantilla")}
+            className={`relative py-4 font-['Orbitron'] text-sm font-black uppercase md:py-5 md:text-base ${section === "plantilla" ? "text-red-700" : "text-zinc-400"}`}
           >
             PLANTILLA
+            {section === "plantilla" && <span className="absolute bottom-0 left-5 right-5 h-[3px] bg-red-700" />}
           </button>
         </div>
 
@@ -93,6 +98,10 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
             </div>
           </div>
 
+          {section === "plantilla" ? (
+            <FranchiseRoster teamId={teamId} />
+          ) : (
+          <>
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
               <div className="mb-3 border-b-2 border-red-700 pb-2">
@@ -193,6 +202,8 @@ export default function FranchiseHome({ teamId, onBack }: Props) {
 
           <FranchiseTeamStatsSummary teamId={teamId} />
           <FranchiseSchedule teamId={teamId} />
+          </>
+          )}
         </div>
       </div>
     </section>
