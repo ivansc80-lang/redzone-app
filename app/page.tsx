@@ -7,6 +7,7 @@ import TeamOffenseSummary from "@/components/TeamOffenseSummary";
 import TeamDefenseSummary from "@/components/TeamDefenseSummary";
 import TeamSpecialTeamsSummary from "@/components/TeamSpecialTeamsSummary";
 import TeamTurnoversSummary from "@/components/TeamTurnoversSummary";
+import FranchiseSelector from "@/components/FranchiseSelector";
 import type {
   EspnPassingLeader,
   EspnRushingLeader,
@@ -793,6 +794,7 @@ export default function Home() {
     "score" | "games" | "stats" | "franquicia"
   >("score");
   const [tipoStats, setTipoStats] = useState<"jugador" | "equipo">("jugador");
+  const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState<string | null>(null);
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<
     | "pasando"
     | "corriendo"
@@ -3125,6 +3127,30 @@ export default function Home() {
               })}
             </div>
           </div>
+        )}
+
+        {pestanaActiva === "equipos" && subPestanaEquipos === "franquicia" && (
+          franquiciaSeleccionada === null ? (
+            <FranchiseSelector onSelect={setFranquiciaSeleccionada} />
+          ) : (
+            <section className="-mx-4 md:mx-0">
+              <div className="bg-white text-black rounded-none md:rounded-2xl shadow-2xl p-6 md:p-10">
+                <button
+                  type="button"
+                  onClick={() => setFranquiciaSeleccionada(null)}
+                  className="mb-6 rounded-lg border border-red-700 px-4 py-2 font-['Orbitron'] text-[10px] font-black uppercase text-red-700 hover:bg-red-50"
+                >
+                  ← Volver a franquicias
+                </button>
+                <div className="font-['Orbitron'] text-xl font-black uppercase text-zinc-900">
+                  {franquiciaSeleccionada}
+                </div>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Ficha de franquicia en construcción.
+                </p>
+              </div>
+            </section>
+          )
         )}
 
         {/* STATS_FASE_1_REDZONE */}
