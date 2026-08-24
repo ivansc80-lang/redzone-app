@@ -842,18 +842,45 @@ export default function Home() {
   // RESTAURA EL ESTADO DE NAVEGACIÓN ANTES DE MOSTRAR REDZONE.
   useLayoutEffect(() => {
     try {
-      const nav = window.history.state?.redzoneNav;
-      if (nav) {
-        setPestanaActiva(nav.pestanaActiva ?? "clasificacion");
-        setSubPestanaEquipos(nav.subPestanaEquipos ?? "score");
-        setTipoStats(nav.tipoStats ?? "jugador");
-        setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
-        setFranquiciaSeccionActual(nav.franquiciaSeccionActual === "plantilla" ? "plantilla" : "home");
+      const params = new URLSearchParams(window.location.search);
+      const returnTeam = params.get("rzTeam");
+      const returnSection = params.get("rzSection");
+      const returnRoster = params.get("rzRoster");
+
+      // Prioridad al retorno explícito desde ESPN. Funciona incluso cuando la
+      // PWA destruye y vuelve a crear la página al regresar.
+      if (returnTeam && returnSection === "plantilla") {
+        setPestanaActiva("equipos");
+        setSubPestanaEquipos("franquicia");
+        setFranquiciaSeleccionada(returnTeam);
+        setFranquiciaSeccionActual("plantilla");
         setFranquiciaRosterTabActual(
-          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(nav.franquiciaRosterTabActual)
-            ? nav.franquiciaRosterTabActual
+          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(returnRoster ?? "")
+            ? (returnRoster as "ofensiva" | "defensiva" | "especiales" | "lesionados")
             : "ofensiva",
         );
+
+        // Una vez recuperado, limpiamos los parámetros sin recargar.
+        params.delete("rzTeam");
+        params.delete("rzSection");
+        params.delete("rzRoster");
+        const cleanQuery = params.toString();
+        const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash}`;
+        window.history.replaceState(window.history.state, "", cleanUrl);
+      } else {
+        const nav = window.history.state?.redzoneNav;
+        if (nav) {
+          setPestanaActiva(nav.pestanaActiva ?? "clasificacion");
+          setSubPestanaEquipos(nav.subPestanaEquipos ?? "score");
+          setTipoStats(nav.tipoStats ?? "jugador");
+          setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
+          setFranquiciaSeccionActual(nav.franquiciaSeccionActual === "plantilla" ? "plantilla" : "home");
+          setFranquiciaRosterTabActual(
+            ["ofensiva", "defensiva", "especiales", "lesionados"].includes(nav.franquiciaRosterTabActual)
+              ? nav.franquiciaRosterTabActual
+              : "ofensiva",
+          );
+        }
       }
     } catch (error) {
       console.error("No se pudo restaurar la navegación:", error);
