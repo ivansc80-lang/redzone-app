@@ -5583,16 +5583,30 @@ export default function Home() {
                         className={`w-full border-collapse text-xs ${
                           subcategoriaEspecialesEquipo === "devoluciones"
                             ? "min-w-[1150px]"
-                            : "min-w-[900px]"
+                            : subcategoriaEspecialesEquipo === "despejes"
+                              ? "min-w-max lg:min-w-[900px]"
+                              : "min-w-[900px]"
                         }`}
                       >
                         <thead>
                           <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                            <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                            <th
+                              className={`sticky left-0 z-30 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center ${
+                                subcategoriaEspecialesEquipo === "despejes"
+                                  ? "w-9 min-w-9 lg:w-11 lg:min-w-11"
+                                  : "w-11 min-w-11"
+                              }`}
+                            >
                               POS
                             </th>
 
-                            <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                            <th
+                              className={`sticky z-30 bg-zinc-100 border-r-2 border-zinc-300 py-3 text-left ${
+                                subcategoriaEspecialesEquipo === "despejes"
+                                  ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
+                                  : "left-11 min-w-[190px] md:min-w-[240px] px-3"
+                              }`}
+                            >
                               EQUIPO
                             </th>
 
@@ -5635,7 +5649,11 @@ export default function Home() {
                             ).map((col) => (
                               <th
                                 key={col}
-                                className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                className={`py-3 text-center whitespace-nowrap border-r border-zinc-200 ${
+                                  subcategoriaEspecialesEquipo === "despejes"
+                                    ? "min-w-[50px] px-1.5 lg:min-w-[78px] lg:px-3"
+                                    : "min-w-[78px] px-3"
+                                }`}
                               >
                                 {col}
                               </th>
@@ -5716,16 +5734,42 @@ export default function Home() {
                                   key={equipo.teamId}
                                   className="border-b border-zinc-100 hover:bg-zinc-50"
                                 >
-                                  <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                  <td
+                                    className={`sticky left-0 z-20 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500 ${
+                                      subcategoriaEspecialesEquipo ===
+                                      "despejes"
+                                        ? "w-9 min-w-9 lg:w-11 lg:min-w-11"
+                                        : "w-11 min-w-11"
+                                    }`}
+                                  >
                                     {equipo.posicion}
                                   </td>
 
-                                  <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                    <div className="flex items-center gap-2">
+                                  <td
+                                    className={`sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
+                                      subcategoriaEspecialesEquipo ===
+                                      "despejes"
+                                        ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
+                                        : "left-11 min-w-[190px] md:min-w-[240px] px-3"
+                                    }`}
+                                  >
+                                    <div
+                                      className={`flex items-center ${
+                                        subcategoriaEspecialesEquipo ===
+                                        "despejes"
+                                          ? "gap-1.5 lg:gap-2"
+                                          : "gap-2"
+                                      }`}
+                                    >
                                       <img
                                         src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
                                         alt={equipo.nombre}
-                                        className="w-7 h-7 object-contain flex-shrink-0"
+                                        className={`object-contain flex-shrink-0 ${
+                                          subcategoriaEspecialesEquipo ===
+                                          "despejes"
+                                            ? "w-6 h-6 lg:w-7 lg:h-7"
+                                            : "w-7 h-7"
+                                        }`}
                                       />
 
                                       <div className="min-w-0">
@@ -5755,7 +5799,12 @@ export default function Home() {
                                     return (
                                       <td
                                         key={idx}
-                                        className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                        className={`py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          subcategoriaEspecialesEquipo ===
+                                          "despejes"
+                                            ? "min-w-[50px] px-1.5 lg:min-w-[78px] lg:px-3"
+                                            : "min-w-[78px] px-3"
+                                        } ${
                                           destacado
                                             ? "font-black text-blue-700"
                                             : "text-zinc-600"
@@ -6007,17 +6056,35 @@ export default function Home() {
                           <table
                             className={`w-full border-collapse text-xs ${
                               subcategoriaStatsEquipo === "yardas_totales"
-                                ? "min-w-[920px]"
-                                : "min-w-[1050px]"
+                                ? "min-w-max lg:min-w-[920px]"
+                                : subcategoriaStatsEquipo === "pasando"
+                                  ? "min-w-max lg:min-w-[1050px]"
+                                  : "min-w-[1050px]"
                             }`}
                           >
                             <thead>
                               <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                                <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                                <th
+                                  className={`sticky left-0 z-30 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center ${
+                                    subcategoriaStatsEquipo ===
+                                      "yardas_totales" ||
+                                    subcategoriaStatsEquipo === "pasando"
+                                      ? "w-9 min-w-9 lg:w-11 lg:min-w-11"
+                                      : "w-11 min-w-11"
+                                  }`}
+                                >
                                   POS
                                 </th>
 
-                                <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                                <th
+                                  className={`sticky z-30 bg-zinc-100 border-r-2 border-zinc-300 py-3 text-left ${
+                                    subcategoriaStatsEquipo ===
+                                      "yardas_totales" ||
+                                    subcategoriaStatsEquipo === "pasando"
+                                      ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
+                                      : "left-11 min-w-[190px] md:min-w-[240px] px-3"
+                                  }`}
+                                >
                                   EQUIPO
                                 </th>
 
@@ -6054,7 +6121,13 @@ export default function Home() {
                                 ).map((col) => (
                                   <th
                                     key={col}
-                                    className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                    className={`py-3 text-center whitespace-nowrap border-r border-zinc-200 ${
+                                      subcategoriaStatsEquipo ===
+                                        "yardas_totales" ||
+                                      subcategoriaStatsEquipo === "pasando"
+                                        ? "min-w-[50px] px-1.5 lg:min-w-[78px] lg:px-3"
+                                        : "min-w-[78px] px-3"
+                                    }`}
                                   >
                                     {col}
                                   </th>
@@ -6129,16 +6202,48 @@ export default function Home() {
                                       key={equipo.teamId}
                                       className="border-b border-zinc-100 hover:bg-zinc-50"
                                     >
-                                      <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                      <td
+                                        className={`sticky left-0 z-20 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500 ${
+                                          subcategoriaStatsEquipo ===
+                                            "yardas_totales" ||
+                                          subcategoriaStatsEquipo === "pasando"
+                                            ? "w-9 min-w-9 lg:w-11 lg:min-w-11"
+                                            : "w-11 min-w-11"
+                                        }`}
+                                      >
                                         {equipo.posicion}
                                       </td>
 
-                                      <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                        <div className="flex items-center gap-2">
+                                      <td
+                                        className={`sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
+                                          subcategoriaStatsEquipo ===
+                                            "yardas_totales" ||
+                                          subcategoriaStatsEquipo === "pasando"
+                                            ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
+                                            : "left-11 min-w-[190px] md:min-w-[240px] px-3"
+                                        }`}
+                                      >
+                                        <div
+                                          className={`flex items-center ${
+                                            subcategoriaStatsEquipo ===
+                                              "yardas_totales" ||
+                                            subcategoriaStatsEquipo ===
+                                              "pasando"
+                                              ? "gap-1.5 lg:gap-2"
+                                              : "gap-2"
+                                          }`}
+                                        >
                                           <img
                                             src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
                                             alt={equipo.nombre}
-                                            className="w-7 h-7 object-contain flex-shrink-0"
+                                            className={`object-contain flex-shrink-0 ${
+                                              subcategoriaStatsEquipo ===
+                                                "yardas_totales" ||
+                                              subcategoriaStatsEquipo ===
+                                                "pasando"
+                                                ? "w-6 h-6 lg:w-7 lg:h-7"
+                                                : "w-7 h-7"
+                                            }`}
                                           />
 
                                           <div className="min-w-0">
@@ -6156,7 +6261,14 @@ export default function Home() {
                                       {valores.map((valor, idx) => (
                                         <td
                                           key={idx}
-                                          className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          className={`py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                            subcategoriaStatsEquipo ===
+                                              "yardas_totales" ||
+                                            subcategoriaStatsEquipo ===
+                                              "pasando"
+                                              ? "min-w-[50px] px-1.5 lg:min-w-[78px] lg:px-3"
+                                              : "min-w-[78px] px-3"
+                                          } ${
                                             (subcategoriaStatsEquipo ===
                                               "yardas_totales" &&
                                               idx === 1) ||
@@ -6186,19 +6298,37 @@ export default function Home() {
                         <table
                           className={`w-full border-collapse text-xs ${
                             subcategoriaStatsEquipo === "yardas_permitidas"
-                              ? "min-w-[1100px]"
+                              ? "min-w-max lg:min-w-[1100px]"
                               : subcategoriaStatsEquipo === "capturas"
-                                ? "min-w-[900px]"
-                                : "min-w-[780px]"
+                                ? "min-w-max lg:min-w-[900px]"
+                                : "min-w-max lg:min-w-[780px]"
                           }`}
                         >
                           <thead>
                             <tr className="bg-zinc-100 text-zinc-600 font-black uppercase">
-                              <th className="sticky left-0 z-30 w-11 min-w-11 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center">
+                              <th
+                                className={`sticky left-0 z-30 bg-zinc-100 border-r border-zinc-300 px-2 py-3 text-center ${
+                                  subcategoriaStatsEquipo ===
+                                    "yardas_permitidas" ||
+                                  subcategoriaStatsEquipo === "capturas" ||
+                                  subcategoriaStatsEquipo === "entregas_def"
+                                    ? "w-9 min-w-9 lg:w-11 lg:min-w-11"
+                                    : "w-11 min-w-11"
+                                }`}
+                              >
                                 POS
                               </th>
 
-                              <th className="sticky left-11 z-30 min-w-[190px] md:min-w-[240px] bg-zinc-100 border-r-2 border-zinc-300 px-3 py-3 text-left">
+                              <th
+                                className={`sticky z-30 bg-zinc-100 border-r-2 border-zinc-300 py-3 text-left ${
+                                  subcategoriaStatsEquipo ===
+                                    "yardas_permitidas" ||
+                                  subcategoriaStatsEquipo === "capturas" ||
+                                  subcategoriaStatsEquipo === "entregas_def"
+                                    ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
+                                    : "left-11 min-w-[190px] md:min-w-[240px] px-3"
+                                }`}
+                              >
                                 EQUIPO
                               </th>
 
@@ -6220,7 +6350,14 @@ export default function Home() {
                               ).map((col) => (
                                 <th
                                   key={col}
-                                  className="min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-200"
+                                  className={`py-3 text-center whitespace-nowrap border-r border-zinc-200 ${
+                                    subcategoriaStatsEquipo ===
+                                      "yardas_permitidas" ||
+                                    subcategoriaStatsEquipo === "capturas" ||
+                                    subcategoriaStatsEquipo === "entregas_def"
+                                      ? "min-w-[50px] px-1.5 lg:min-w-[78px] lg:px-3"
+                                      : "min-w-[78px] px-3"
+                                  }`}
                                 >
                                   {col}
                                 </th>
@@ -6292,16 +6429,58 @@ export default function Home() {
                                     key={equipo.teamId}
                                     className="border-b border-zinc-100 hover:bg-zinc-50"
                                   >
-                                    <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">
+                                    <td
+                                      className={`sticky left-0 z-20 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500 ${
+                                        subcategoriaStatsEquipo ===
+                                          "yardas_permitidas" ||
+                                        subcategoriaStatsEquipo ===
+                                          "capturas" ||
+                                        subcategoriaStatsEquipo ===
+                                          "entregas_def"
+                                          ? "w-9 min-w-9 lg:w-11 lg:min-w-11"
+                                          : "w-11 min-w-11"
+                                      }`}
+                                    >
                                       {equipo.posicion}
                                     </td>
 
-                                    <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                                      <div className="flex items-center gap-2">
+                                    <td
+                                      className={`sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
+                                        subcategoriaStatsEquipo ===
+                                          "yardas_permitidas" ||
+                                        subcategoriaStatsEquipo ===
+                                          "capturas" ||
+                                        subcategoriaStatsEquipo ===
+                                          "entregas_def"
+                                          ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
+                                          : "left-11 min-w-[190px] md:min-w-[240px] px-3"
+                                      }`}
+                                    >
+                                      <div
+                                        className={`flex items-center ${
+                                          subcategoriaStatsEquipo ===
+                                            "yardas_permitidas" ||
+                                          subcategoriaStatsEquipo ===
+                                            "capturas" ||
+                                          subcategoriaStatsEquipo ===
+                                            "entregas_def"
+                                            ? "gap-1.5 lg:gap-2"
+                                            : "gap-2"
+                                        }`}
+                                      >
                                         <img
                                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
                                           alt={equipo.nombre}
-                                          className="w-7 h-7 object-contain flex-shrink-0"
+                                          className={`object-contain flex-shrink-0 ${
+                                            subcategoriaStatsEquipo ===
+                                              "yardas_permitidas" ||
+                                            subcategoriaStatsEquipo ===
+                                              "capturas" ||
+                                            subcategoriaStatsEquipo ===
+                                              "entregas_def"
+                                              ? "w-6 h-6 lg:w-7 lg:h-7"
+                                              : "w-7 h-7"
+                                          }`}
                                         />
 
                                         <div className="min-w-0">
@@ -6331,7 +6510,16 @@ export default function Home() {
                                       return (
                                         <td
                                           key={idx}
-                                          className={`min-w-[78px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                          className={`py-3 text-center whitespace-nowrap border-r border-zinc-100 ${
+                                            subcategoriaStatsEquipo ===
+                                              "yardas_permitidas" ||
+                                            subcategoriaStatsEquipo ===
+                                              "capturas" ||
+                                            subcategoriaStatsEquipo ===
+                                              "entregas_def"
+                                              ? "min-w-[50px] px-1.5 lg:min-w-[78px] lg:px-3"
+                                              : "min-w-[78px] px-3"
+                                          } ${
                                             destacado
                                               ? "font-black text-blue-700"
                                               : "text-zinc-600"
