@@ -92,6 +92,37 @@ export default function FranchiseSchedule({ teamId }: Props) {
   const buscarEntregas = (equipo: string) =>
     entregas.find((item) => item.equipo.toUpperCase() === equipo.toUpperCase()) ?? null;
 
+  const numero = (valor?: string | null) => {
+    const n = Number(String(valor ?? "").replace(/,/g, "").trim());
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const rankingOfensivo = (
+    equipo: string,
+    campo: "TOTAL_YDS_G" | "PASS_YDS_G" | "RUSH_YDS_G" | "PTS_G",
+  ) => {
+    const orden = ofensiva
+      .map((item) => ({ equipo: item.equipo, valor: numero(item[campo]) }))
+      .filter((item): item is { equipo: string; valor: number } => item.valor !== null)
+      .sort((a, b) => b.valor - a.valor);
+    const index = orden.findIndex((item) => item.equipo.toUpperCase() === equipo.toUpperCase());
+    return index >= 0 ? index + 1 : null;
+  };
+
+  const rankingDefensivo = (
+    equipo: string,
+    campo: "YDS_G" | "PASS_G" | "RUSH_G" | "PTS_G",
+  ) => {
+    const orden = defensiva
+      .map((item) => ({ equipo: item.equipo, valor: numero(item[campo]) }))
+      .filter((item): item is { equipo: string; valor: number } => item.valor !== null)
+      .sort((a, b) => a.valor - b.valor);
+    const index = orden.findIndex((item) => item.equipo.toUpperCase() === equipo.toUpperCase());
+    return index >= 0 ? index + 1 : null;
+  };
+
+  const ordinal = (ranking: number | null) => (ranking ? `${ranking}º` : "-");
+
   const resumenComparacion = proximoPartido
     ? {
         local: {
@@ -233,11 +264,15 @@ export default function FranchiseSchedule({ teamId }: Props) {
                 {[
                   {
                     titulo: `Ataque ${resumenComparacion.local.nombre} vs defensa ${resumenComparacion.visitante.nombre}`,
+                    ataqueCodigo: resumenComparacion.local.codigo,
+                    defensaCodigo: resumenComparacion.visitante.codigo,
                     ataque: resumenComparacion.local.ofensiva,
                     defensa: resumenComparacion.visitante.defensiva,
                   },
                   {
                     titulo: `Ataque ${resumenComparacion.visitante.nombre} vs defensa ${resumenComparacion.local.nombre}`,
+                    ataqueCodigo: resumenComparacion.visitante.codigo,
+                    defensaCodigo: resumenComparacion.local.codigo,
                     ataque: resumenComparacion.visitante.ofensiva,
                     defensa: resumenComparacion.local.defensiva,
                   },
@@ -252,20 +287,44 @@ export default function FranchiseSchedule({ teamId }: Props) {
                       <span className="font-black text-[#002244]">DEFENSA</span>
 
                       <span>YDS/G</span>
-                      <span className="text-center font-bold">{bloque.ataque?.TOTAL_YDS_G ?? "-"}</span>
-                      <span className="text-center font-bold">{bloque.defensa?.YDS_G ?? "-"}</span>
+                      <span className="text-center font-bold">
+                        {bloque.ataque?.TOTAL_YDS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "TOTAL_YDS_G"))})</span>
+                      </span>
+                      <span className="text-center font-bold">
+                        {bloque.defensa?.YDS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "YDS_G"))})</span>
+                      </span>
 
                       <span>PASE/G</span>
-                      <span className="text-center font-bold">{bloque.ataque?.PASS_YDS_G ?? "-"}</span>
-                      <span className="text-center font-bold">{bloque.defensa?.PASS_G ?? "-"}</span>
+                      <span className="text-center font-bold">
+                        {bloque.ataque?.PASS_YDS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "PASS_YDS_G"))})</span>
+                      </span>
+                      <span className="text-center font-bold">
+                        {bloque.defensa?.PASS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "PASS_G"))})</span>
+                      </span>
 
                       <span>CARRERA/G</span>
-                      <span className="text-center font-bold">{bloque.ataque?.RUSH_YDS_G ?? "-"}</span>
-                      <span className="text-center font-bold">{bloque.defensa?.RUSH_G ?? "-"}</span>
+                      <span className="text-center font-bold">
+                        {bloque.ataque?.RUSH_YDS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "RUSH_YDS_G"))})</span>
+                      </span>
+                      <span className="text-center font-bold">
+                        {bloque.defensa?.RUSH_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "RUSH_G"))})</span>
+                      </span>
 
                       <span>PTS/G</span>
-                      <span className="text-center font-bold">{bloque.ataque?.PTS_G ?? "-"}</span>
-                      <span className="text-center font-bold">{bloque.defensa?.PTS_G ?? "-"}</span>
+                      <span className="text-center font-bold">
+                        {bloque.ataque?.PTS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-red-700">({ordinal(rankingOfensivo(bloque.ataqueCodigo, "PTS_G"))})</span>
+                      </span>
+                      <span className="text-center font-bold">
+                        {bloque.defensa?.PTS_G ?? "-"}
+                        <span className="ml-1 text-[8px] font-black text-[#002244]">({ordinal(rankingDefensivo(bloque.defensaCodigo, "PTS_G"))})</span>
+                      </span>
                     </div>
                   </div>
                 ))}
