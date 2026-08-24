@@ -128,13 +128,12 @@ function isInjured(a: Athlete) {
 
 export default function FranchiseRoster({
   teamId,
-  tab,
-  onTabChange,
+  initialTab = "ofensiva",
 }: {
   teamId: string;
-  tab: Tab;
-  onTabChange: (tab: Tab) => void;
+  initialTab?: Tab;
 }) {
+  const [tab,setTab]=useState<Tab>(initialTab);
   const [data,setData]=useState<RosterResponse | null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
@@ -182,7 +181,7 @@ export default function FranchiseRoster({
 
       <div className="mb-4 flex overflow-x-auto border-b border-zinc-200">
         {tabs.map(t=>(
-          <button key={t.id} type="button" onClick={()=>onTabChange(t.id)}
+          <button key={t.id} type="button" onClick={()=>setTab(t.id)}
             className={`whitespace-nowrap border-b-2 px-4 py-3 text-xs font-black uppercase md:text-sm ${tab===t.id ? "border-red-700 text-red-700" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}>
             {t.label}
           </button>
@@ -214,21 +213,17 @@ export default function FranchiseRoster({
                     <td className="px-4 py-2">
                       <a
                         href={profile}
-                        onClick={(event) => {
-                          // Guardamos una URL interna real de REDZONE antes de salir.
-                          // Así, si la PWA se reconstruye al volver desde ESPN, puede
-                          // restaurar la franquicia sin depender de history.state.
-                          const returnUrl = new URL(window.location.href);
-                          returnUrl.searchParams.set("rzTeam", teamId);
-                          returnUrl.searchParams.set("rzSection", "plantilla");
-                          returnUrl.searchParams.set("rzRoster", tab);
-                          window.history.replaceState(
-                            window.history.state,
-                            "",
-                            returnUrl.toString(),
+                        onClick={() => {
+                          sessionStorage.setItem(
+                            "redzoneExternalReturn",
+                            JSON.stringify({
+                              pestanaActiva: "equipos",
+                              subPestanaEquipos: "franquicia",
+                              franquiciaSeleccionada: teamId,
+                              franchiseSection: "plantilla",
+                              rosterTab: tab,
+                            }),
                           );
-
-                          event.currentTarget.href = profile;
                         }}
                         className="inline-flex items-center gap-3 font-bold text-[#002244] hover:text-red-700 hover:underline"
                       >
