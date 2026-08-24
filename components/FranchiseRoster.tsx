@@ -214,23 +214,21 @@ export default function FranchiseRoster({
                     <td className="px-4 py-2">
                       <a
                         href={profile}
-                        onClick={() => {
-                          const current = window.history.state?.redzoneNav ?? {};
+                        onClick={(event) => {
+                          // Guardamos una URL interna real de REDZONE antes de salir.
+                          // Así, si la PWA se reconstruye al volver desde ESPN, puede
+                          // restaurar la franquicia sin depender de history.state.
+                          const returnUrl = new URL(window.location.href);
+                          returnUrl.searchParams.set("rzTeam", teamId);
+                          returnUrl.searchParams.set("rzSection", "plantilla");
+                          returnUrl.searchParams.set("rzRoster", tab);
                           window.history.replaceState(
-                            {
-                              ...(window.history.state ?? {}),
-                              redzoneNav: {
-                                ...current,
-                                pestanaActiva: "equipos",
-                                subPestanaEquipos: "franquicia",
-                                franquiciaSeleccionada: teamId,
-                                franquiciaSeccionActual: "plantilla",
-                                franquiciaRosterTabActual: tab,
-                              },
-                            },
+                            window.history.state,
                             "",
-                            window.location.href,
+                            returnUrl.toString(),
                           );
+
+                          event.currentTarget.href = profile;
                         }}
                         className="inline-flex items-center gap-3 font-bold text-[#002244] hover:text-red-700 hover:underline"
                       >
