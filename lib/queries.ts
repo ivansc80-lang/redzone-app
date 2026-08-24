@@ -84,6 +84,43 @@ export async function getPartidosPorJornada(jornada: number): Promise<PartidoTem
 }
 
 /**
+ * Obtiene toda la temporada regular ignorando el modo temporal de pretemporada.
+ * Se usa en FRANQUICIAS para mostrar las 18 jornadas completas.
+ */
+export async function getPartidosTemporadaRegularCompleta(): Promise<PartidoTemporada[]> {
+  try {
+    const { data, error } = await supabase
+      .from('partidos')
+      .select(`
+        *,
+        info_local:equipos!partidos_equipo_local_fkey (
+          id,
+          nombre,
+          logo_url
+        ),
+        info_visitante:equipos!partidos_equipo_visitante_fkey (
+          id,
+          nombre,
+          logo_url
+        )
+      `)
+      .eq('tipo_competicion', 'regular')
+      .order('jornada', { ascending: true })
+      .order('fecha_partido', { ascending: true });
+
+    if (error) {
+      console.error('Error al obtener la temporada regular completa:', error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (err) {
+    console.error('Excepción en getPartidosTemporadaRegularCompleta:', err);
+    return [];
+  }
+}
+
+/**
  * Obtiene la información general de la temporada completa o resumen por jornadas.
  */
 export async function getResumenTemporada() {
