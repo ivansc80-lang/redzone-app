@@ -7,8 +7,10 @@ import FranchiseRoster from "@/components/FranchiseRoster";
 type Props = {
   teamId: string;
   onBack: () => void;
-  initialSection?: "home" | "plantilla";
-  initialRosterTab?: "ofensiva" | "defensiva" | "especiales" | "lesionados";
+  section: "home" | "plantilla";
+  onSectionChange: (section: "home" | "plantilla") => void;
+  rosterTab: "ofensiva" | "defensiva" | "especiales" | "lesionados";
+  onRosterTabChange: (tab: "ofensiva" | "defensiva" | "especiales" | "lesionados") => void;
 };
 
 const AFC_WEST = [
@@ -62,10 +64,11 @@ const FRANCHISE_META: Record<string, { nombre: string; division: string; logo: s
 export default function FranchiseHome({
   teamId,
   onBack,
-  initialSection = "home",
-  initialRosterTab = "ofensiva",
+  section,
+  onSectionChange,
+  rosterTab,
+  onRosterTabChange,
 }: Props) {
-  const [section, setSection] = require("react").useState<"home" | "plantilla">(initialSection);
   const esKansasCity = teamId === "KC";
   const franchise = FRANCHISE_META[teamId] ?? {
     nombre: teamId,
@@ -79,7 +82,7 @@ export default function FranchiseHome({
         <div className="grid grid-cols-2 border-b border-zinc-200">
           <button
             type="button"
-            onClick={() => setSection("home")}
+            onClick={() => onSectionChange("home")}
             className={`relative py-4 font-['Orbitron'] text-sm font-black uppercase md:py-5 md:text-base ${section === "home" ? "text-red-700" : "text-zinc-400"}`}
           >
             HOME
@@ -87,7 +90,7 @@ export default function FranchiseHome({
           </button>
           <button
             type="button"
-            onClick={() => setSection("plantilla")}
+            onClick={() => onSectionChange("plantilla")}
             className={`relative py-4 font-['Orbitron'] text-sm font-black uppercase md:py-5 md:text-base ${section === "plantilla" ? "text-red-700" : "text-zinc-400"}`}
           >
             PLANTILLA
@@ -124,7 +127,7 @@ export default function FranchiseHome({
           </div>
 
           {section === "plantilla" ? (
-            <FranchiseRoster teamId={teamId} initialTab={initialRosterTab} />
+            <FranchiseRoster teamId={teamId} tab={rosterTab} onTabChange={onRosterTabChange} />
           ) : !esKansasCity ? (
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
               HOME se generalizará después de validar PLANTILLA en las 32 franquicias.
