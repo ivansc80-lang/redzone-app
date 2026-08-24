@@ -886,7 +886,15 @@ export default function Home() {
       vistaResumenEquipo,
     };
 
-    const serializado = JSON.stringify(estadoNavegacion);
+    // HOME/PLANTILLA y la categoría del roster son estado interno de la
+    // franquicia. Deben conservarse al salir a ESPN, pero NO crear escalones
+    // nuevos en el historial. El BACK de la franquicia debe volver al selector.
+    const {
+      franquiciaSeccionActual: _seccion,
+      franquiciaRosterTabActual: _rosterTab,
+      ...estadoNavegacionBase
+    } = estadoNavegacion;
+    const serializadoBase = JSON.stringify(estadoNavegacionBase);
 
     if (ultimoEstadoNavegacionRef.current === null) {
       window.history.replaceState(
@@ -894,24 +902,33 @@ export default function Home() {
         "",
         window.location.href,
       );
-      ultimoEstadoNavegacionRef.current = serializado;
+      ultimoEstadoNavegacionRef.current = serializadoBase;
       return;
     }
 
     if (restaurandoHistorialRef.current) {
       restaurandoHistorialRef.current = false;
-      ultimoEstadoNavegacionRef.current = serializado;
+      ultimoEstadoNavegacionRef.current = serializadoBase;
       return;
     }
 
-    if (ultimoEstadoNavegacionRef.current !== serializado) {
+    if (ultimoEstadoNavegacionRef.current !== serializadoBase) {
       window.history.pushState(
         { ...(window.history.state ?? {}), redzoneNav: estadoNavegacion },
         "",
         window.location.href,
       );
-      ultimoEstadoNavegacionRef.current = serializado;
+      ultimoEstadoNavegacionRef.current = serializadoBase;
+      return;
     }
+
+    // Cambio HOME <-> PLANTILLA o de categoría: actualiza la entrada actual
+    // sin añadir otra posición a la pila del navegador.
+    window.history.replaceState(
+      { ...(window.history.state ?? {}), redzoneNav: estadoNavegacion },
+      "",
+      window.location.href,
+    );
   }, [
     pestanaActiva,
     subPestanaEquipos,
