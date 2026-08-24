@@ -51,8 +51,8 @@ const FRANQUICIAS: Franchise[] = [
 ];
 
 const ORDEN_DIVISIONES = [
-  "AFC ESTE", "AFC OESTE", "NFC ESTE", "NFC OESTE",
-  "AFC NORTE", "AFC SUR", "NFC NORTE", "NFC SUR",
+  "AFC ESTE", "AFC NORTE", "AFC SUR", "AFC OESTE",
+  "NFC ESTE", "NFC NORTE", "NFC SUR", "NFC OESTE",
 ];
 
 export default function FranchiseSelector({
@@ -61,22 +61,31 @@ export default function FranchiseSelector({
   onSelect: (teamId: string) => void;
 }) {
   return (
-    <section className="-mx-4 md:mx-0">
-      <div className="bg-white text-black rounded-none md:rounded-2xl shadow-2xl px-4 py-6 md:px-8 md:py-10">
-        <div className="mb-7">
-          <h2 className="font-['Orbitron'] text-lg md:text-2xl font-black uppercase text-red-700">
-            Franquicias NFL
-          </h2>
-          <p className="mt-1 text-xs md:text-sm text-zinc-500">
-            Selecciona un equipo para abrir su información.
-          </p>
+    <section className="px-3 pt-4 pb-5 md:px-6 md:pt-5 md:pb-7">
+      <div className="bg-white text-black rounded-2xl shadow-2xl px-4 py-6 md:px-8 md:py-10">
+        <div className="mb-8 flex items-start gap-4 md:gap-5">
+          <img
+            src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png"
+            alt="NFL"
+            className="h-14 w-14 flex-shrink-0 object-contain md:h-20 md:w-20"
+          />
+
+          <div className="min-w-0 pt-1">
+            <h2 className="font-['Orbitron'] text-xl md:text-3xl font-black uppercase tracking-tight text-red-700">
+              Franquicias NFL
+            </h2>
+            <p className="mt-1 text-xs md:text-sm text-zinc-500">
+              Selecciona un equipo para ver su información.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-x-10 gap-y-9 sm:grid-cols-2 xl:grid-cols-4">
           {ORDEN_DIVISIONES.map((division) => (
             <div key={division} className="min-w-0">
-              <div className="mb-3 border-b border-zinc-200 pb-2 font-['Orbitron'] text-[10px] font-black uppercase tracking-wide text-zinc-400">
+              <div className="mb-3 border-b border-zinc-200 pb-2 font-['Orbitron'] text-[10px] font-black uppercase tracking-wide text-[#002244]">
                 {division}
+                <span className="mt-1 block h-[2px] w-8 rounded-full bg-red-600" />
               </div>
 
               <div className="space-y-2">
