@@ -151,18 +151,19 @@ export default function FranchiseSchedule({ teamId }: Props) {
 
   return (
     <div className="mt-10 border-t border-zinc-200 pt-7">
-      <h3 className="mb-5 border-b-2 border-red-700 pb-2 font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">
-        Calendario
-      </h3>
-
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="">
+      <div className="grid items-stretch gap-8 lg:grid-cols-2">
+        <div className="flex h-full flex-col">
+          <div className="mb-3 border-b-2 border-red-700 pb-2">
+            <h3 className="font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">
+              Calendario
+            </h3>
+          </div>
           {cargando ? (
             <div className="py-8 text-center text-xs font-semibold text-zinc-500">
               Cargando calendario...
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-zinc-200">
+            <div className="flex-1 overflow-hidden rounded-xl border border-zinc-200">
               {Array.from({ length: 18 }, (_, i) => i + 1).map((jornada) => {
                 const partido = partidos.find((p) => p.jornada === jornada);
 
@@ -222,7 +223,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
           )}
         </div>
 
-        <div className="">
+        <div className="flex h-full min-h-0 flex-col">
           <div className="mb-3 border-b-2 border-red-700 pb-2">
             <h4 className="font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">
               Próximo partido
@@ -234,12 +235,12 @@ export default function FranchiseSchedule({ teamId }: Props) {
               No hay próximo partido disponible.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-zinc-200">
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 bg-zinc-50 px-5 py-5">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-5 bg-zinc-50 px-6 py-7">
                 <div className="flex items-center gap-3">
-                  <img src={resumenComparacion.local.logo} alt="" className="h-12 w-12 object-contain" />
+                  <img src={resumenComparacion.local.logo} alt="" className="h-14 w-14 object-contain" />
                   <div>
-                    <div className="text-sm font-black text-[#002244]">{resumenComparacion.local.nombre}</div>
+                    <div className="text-base font-black text-[#002244]">{resumenComparacion.local.nombre}</div>
                     <div className="text-[9px] font-semibold uppercase text-zinc-400">Local</div>
                   </div>
                 </div>
@@ -253,14 +254,14 @@ export default function FranchiseSchedule({ teamId }: Props) {
 
                 <div className="flex items-center justify-end gap-3 text-right">
                   <div>
-                    <div className="text-sm font-black text-[#002244]">{resumenComparacion.visitante.nombre}</div>
+                    <div className="text-base font-black text-[#002244]">{resumenComparacion.visitante.nombre}</div>
                     <div className="text-[9px] font-semibold uppercase text-zinc-400">Visitante</div>
                   </div>
-                  <img src={resumenComparacion.visitante.logo} alt="" className="h-12 w-12 object-contain" />
+                  <img src={resumenComparacion.visitante.logo} alt="" className="h-14 w-14 object-contain" />
                 </div>
               </div>
 
-              <div className="grid gap-4 p-4 xl:grid-cols-2">
+              <div className="grid min-h-0 flex-1 grid-rows-2 gap-5 p-5">
                 {[
                   {
                     titulo: `Ataque ${resumenComparacion.local.nombre} vs defensa ${resumenComparacion.visitante.nombre}`,
@@ -277,11 +278,11 @@ export default function FranchiseSchedule({ teamId }: Props) {
                     defensa: resumenComparacion.local.defensiva,
                   },
                 ].map((bloque) => (
-                  <div key={bloque.titulo} className="rounded-xl border border-zinc-200">
+                  <div key={bloque.titulo} className="flex min-h-0 flex-col rounded-xl border border-zinc-200">
                     <div className="border-b border-zinc-200 bg-zinc-50 px-3 py-2 font-['Orbitron'] text-[9px] font-black uppercase text-[#002244]">
                       {bloque.titulo}
                     </div>
-                    <div className="grid grid-cols-[1fr_minmax(62px,auto)_44px_minmax(62px,auto)_44px] gap-x-4 gap-y-3 px-4 py-4 text-[12px]">
+                    <div className="grid flex-1 grid-cols-[1fr_minmax(72px,auto)_48px_minmax(72px,auto)_48px] content-evenly gap-x-5 gap-y-4 px-5 py-5 text-[12px] md:text-[13px]">
                       <span className="font-bold text-zinc-500">Métrica</span>
                       <span className="text-center font-black text-red-700">ATAQUE</span>
                       <span className="text-center font-black text-zinc-500">RK</span>
@@ -316,14 +317,14 @@ export default function FranchiseSchedule({ teamId }: Props) {
                 ))}
               </div>
 
-              <div className="border-t border-zinc-200 p-4">
+              <div className="border-t border-zinc-200 p-5">
                 <div className="mb-3 font-['Orbitron'] text-[10px] font-black uppercase text-red-700">
                   Entregas
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-lg bg-zinc-50 px-4 py-4">
-                    <div className="grid grid-cols-[1fr_auto_auto_1fr] items-center gap-5 text-[12px]">
+                <div className="grid gap-4">
+                  <div className="rounded-lg bg-zinc-50 px-5 py-5">
+                    <div className="grid grid-cols-[minmax(120px,1fr)_auto_auto_minmax(120px,1fr)] items-center gap-6 text-[12px] md:text-[13px]">
                       <div className="flex min-w-0 items-center gap-2">
                         <img src={resumenComparacion.local.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
                         <span className="truncate font-bold text-[#002244]">{resumenComparacion.local.nombre}</span>
@@ -346,8 +347,8 @@ export default function FranchiseSchedule({ teamId }: Props) {
                     </div>
                   </div>
 
-                  <div className="rounded-lg bg-zinc-50 px-4 py-4">
-                    <div className="grid grid-cols-[1fr_auto_auto_1fr] items-center gap-5 text-[12px]">
+                  <div className="rounded-lg bg-zinc-50 px-5 py-5">
+                    <div className="grid grid-cols-[minmax(120px,1fr)_auto_auto_minmax(120px,1fr)] items-center gap-6 text-[12px] md:text-[13px]">
                       <div className="flex min-w-0 items-center gap-2">
                         <img src={resumenComparacion.visitante.logo} alt="" className="h-7 w-7 shrink-0 object-contain" />
                         <span className="truncate font-bold text-[#002244]">{resumenComparacion.visitante.nombre}</span>
