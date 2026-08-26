@@ -319,20 +319,29 @@ export default function FranchiseRoster({
                     className="border-t border-zinc-200 even:bg-zinc-50/60"
                   >
                     <td className="px-4 py-2">
+                      {/*
+                        FUTURO PROYECTO — PERFIL ESPN EN PESTAÑA ÚNICA
+                        ------------------------------------------------
+                        Se conserva como referencia la lógica anterior de retorno:
+
+                        sessionStorage.setItem(
+                          "redzoneExternalReturn",
+                          JSON.stringify({
+                            pestanaActiva: "equipos",
+                            subPestanaEquipos: "franquicia",
+                            franquiciaSeleccionada: teamId,
+                            franchiseSection: "plantilla",
+                            rosterTab: tab,
+                          }),
+                        );
+
+                        Actualmente NO tiene poder operativo.
+                        El perfil ESPN se abre en una pestaña nueva.
+                      */}
                       <a
                         href={profile}
-                        onClick={() => {
-                          sessionStorage.setItem(
-                            "redzoneExternalReturn",
-                            JSON.stringify({
-                              pestanaActiva: "equipos",
-                              subPestanaEquipos: "franquicia",
-                              franquiciaSeleccionada: teamId,
-                              franchiseSection: "plantilla",
-                              rosterTab: tab,
-                            }),
-                          );
-                        }}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-3 font-bold text-[#002244] hover:text-red-700 hover:underline"
                       >
                         {a.headshot?.href ? (
@@ -387,7 +396,7 @@ export default function FranchiseRoster({
         </div>
       )}
       <p className="mt-3 text-[10px] text-zinc-400">
-        Foto + nombre abren el perfil del jugador en ESPN en esta misma pestaña.
+        Foto + nombre abren el perfil del jugador en ESPN en una nueva pestaña.
       </p>
     </div>
   );

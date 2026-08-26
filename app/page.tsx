@@ -2339,6 +2339,91 @@ export default function Home() {
     setUsuarioLogueado(null);
   };
 
+  // ============================================================
+  // RACHAS GAMES
+  // ============================================================
+  // El cerebro administrativo decide QUÉ jornadas pueden contar.
+  // TEST  -> jornadas_eventos_test
+  // TR26  -> jornadas_eventos
+  //
+  // Solo se contabilizan jornadas con estado = "finalizada".
+  // Esta lógica es exclusivamente de LECTURA.
+  const [jornadasFinalizadasRacha, setJornadasFinalizadasRacha] =
+    useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarJornadasFinalizadasRacha() {
+      try {
+        const { data: config, error: configError } = await supabase
+          .from("app_config")
+          .select(
+            "temporada, modo_pretemporada_test, temporada_test",
+          )
+          .eq("id", 1)
+          .maybeSingle();
+
+        if (configError) throw configError;
+        if (!config || cancelado) return;
+
+        if (config.modo_pretemporada_test) {
+          const temporadaTest =
+            Number(config.temporada_test) || Number(config.temporada) || 2026;
+
+          const { data, error } = await supabase
+            .from("jornadas_eventos_test")
+            .select("jornada_test, estado")
+            .eq("temporada", temporadaTest)
+            .eq("estado", "finalizada");
+
+          if (error) throw error;
+
+          if (!cancelado) {
+            setJornadasFinalizadasRacha(
+              new Set(
+                (data || []).map((fila: any) =>
+                  Number(fila.jornada_test),
+                ),
+              ),
+            );
+          }
+
+          return;
+        }
+
+        const temporadaRegular = Number(config.temporada) || 2026;
+
+        const { data, error } = await supabase
+          .from("jornadas_eventos")
+          .select("jornada, estado")
+          .eq("temporada", temporadaRegular)
+          .eq("estado", "finalizada");
+
+        if (error) throw error;
+
+        if (!cancelado) {
+          setJornadasFinalizadasRacha(
+            new Set(
+              (data || []).map((fila: any) => Number(fila.jornada)),
+            ),
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Error cargando jornadas finalizadas para RACHAS:",
+          error,
+        );
+      }
+    }
+
+    cargarJornadasFinalizadasRacha();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   const calcularPuntosJornada = (userId: string, numJornada: number) => {
     const dataJornada = pronosticosPorUsuario[numJornada]?.[userId];
     if (!dataJornada || !dataJornada.confirmado) return 0;
@@ -2348,21 +2433,38 @@ export default function Home() {
   const obtenerRachaEquipo = (nombreEquipo: string, hastaJornada: number) => {
     let v = 0;
     let d = 0;
+
+    const codigoEquipo = nombreEquipo.toUpperCase();
+
     for (let j = 1; j < hastaJornada; j++) {
-      const jornadaValidada = pronosticosPorUsuario[j]?.["cace"]?.validado;
-      if (jornadaValidada) {
-        const partidos = pronosticosPorUsuario[j]?.["cace"]?.pronosticos || [];
-        partidos.forEach((p) => {
-          if (p.local.toLowerCase() === nombreEquipo.toLowerCase()) {
-            if (p.resultadoReal === "1") v++;
-            else if (p.resultadoReal === "2") d++;
-          } else if (p.visitante.toLowerCase() === nombreEquipo.toLowerCase()) {
-            if (p.resultadoReal === "2") v++;
-            else if (p.resultadoReal === "1") d++;
-          }
-        });
-      }
+      // REDZONE autoriza la jornada.
+      // Si administrativamente todavía no está FINALIZADA, no cuenta.
+      if (!jornadasFinalizadasRacha.has(j)) continue;
+
+      const partidos = jornadasGames[j] || [];
+
+      partidos.forEach((p) => {
+        const local = String(p.local || "").toUpperCase();
+        const visitante = String(p.visitante || "").toUpperCase();
+
+        if (local !== codigoEquipo && visitante !== codigoEquipo) return;
+
+        // resultadoReal procede de resultado_oficial de PARTIDOS,
+        // alimentado por la sincronización ESPN.
+        const resultado = p.resultadoReal;
+
+        if (resultado === "1") {
+          if (local === codigoEquipo) v++;
+          if (visitante === codigoEquipo) d++;
+        } else if (resultado === "2") {
+          if (visitante === codigoEquipo) v++;
+          if (local === codigoEquipo) d++;
+        }
+
+        // Un empate X no incrementa V ni D.
+      });
     }
+
     return `${v} V - ${d} D`;
   };
 
@@ -7722,7 +7824,7 @@ export default function Home() {
                       estadoJornadaActual === "cerrada" ||
                       estadoJornadaActual === "finalizada"
                     }
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${estadoJornadaActual === "cerrada" || estadoJornadaActual === "finalizada" ? "bg-zinc-700 text-zinc-300 cursor-not-allowed" : estadoBotonConfirmar === "confirmado" ? "bg-emerald-500 text-black cursor-pointer" : estadoBotonConfirmar === "incompleto" ? "bg-red-600 text-white animate-pulse cursor-pointer" : "bg-[#b3b3b3] text-[#d32f2f] hover:bg-[#a8a8a8] cursor-pointer"}`}
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${estadoJornadaActual === "cerrada" || estadoJornadaActual === "finalizada" ? "bg-red-600 text-white cursor-not-allowed" : estadoBotonConfirmar === "confirmado" ? "bg-emerald-500 text-black cursor-pointer" : estadoBotonConfirmar === "incompleto" ? "bg-red-600 text-white animate-pulse cursor-pointer" : "bg-[#b3b3b3] text-[#d32f2f] hover:bg-[#a8a8a8] cursor-pointer"}`}
                   >
                     {estadoJornadaActual === "cerrada" ||
                     estadoJornadaActual === "finalizada"
@@ -8180,13 +8282,19 @@ export default function Home() {
 
                                 return (
                                   <>
-                                    <span className="text-emerald-700 font-semibold">
+                                    <span
+                                      className="font-bold"
+                                      style={{ color: "#10B981" }}
+                                    >
                                       {match[1]} V
                                     </span>
-                                    <span className="text-zinc-700">
+                                    <span className="text-zinc-700 font-bold">
                                       {" - "}
                                     </span>
-                                    <span className="text-red-700 font-semibold">
+                                    <span
+                                      className="font-bold"
+                                      style={{ color: "#E00000" }}
+                                    >
                                       {match[2]} D
                                     </span>
                                   </>
