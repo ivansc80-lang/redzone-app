@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { getPartidosPorJornada } from "@/lib/queries";
+import {
+  getContextoJornadaActiva,
+  getPartidosGames,
+  getPartidosPorJornada,
+} from "@/lib/queries";
 import TeamOffenseSummary from "@/components/TeamOffenseSummary";
 import TeamDefenseSummary from "@/components/TeamDefenseSummary";
 import TeamSpecialTeamsSummary from "@/components/TeamSpecialTeamsSummary";
@@ -795,9 +799,15 @@ export default function Home() {
     "score" | "games" | "stats" | "franquicia"
   >("score");
   const [tipoStats, setTipoStats] = useState<"jugador" | "equipo">("jugador");
-  const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState<string | null>(null);
-  const [franquiciaSeccionInicial, setFranquiciaSeccionInicial] = useState<"home" | "plantilla">("home");
-  const [franquiciaRosterTabInicial, setFranquiciaRosterTabInicial] = useState<"ofensiva" | "defensiva" | "especiales" | "lesionados">("ofensiva");
+  const [franquiciaSeleccionada, setFranquiciaSeleccionada] = useState<
+    string | null
+  >(null);
+  const [franquiciaSeccion, setFranquiciaSeccion] = useState<
+    "home" | "plantilla"
+  >("home");
+  const [franquiciaRosterTab, setFranquiciaRosterTab] = useState<
+    "ofensiva" | "defensiva" | "especiales" | "lesionados"
+  >("ofensiva");
   const [subcategoriaStatsJugador, setSubcategoriaStatsJugador] = useState<
     | "pasando"
     | "corriendo"
@@ -835,32 +845,45 @@ export default function Home() {
     useState<"touchdowns" | "puntos" | "td_recepcion">("touchdowns");
   const [vistaStatsCompleta, setVistaStatsCompleta] = useState(false);
   const [vistaResumenEquipo, setVistaResumenEquipo] = useState(false);
+  const [navegacionInicialLista, setNavegacionInicialLista] = useState(false);
   const restaurandoHistorialRef = useRef(false);
   const ultimoEstadoNavegacionRef = useRef<string | null>(null);
 
   // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN.
-  useEffect(() => {
+  //
+  // El servidor y el primer render del cliente mantienen REDZONE oculto.
+  // useLayoutEffect comprueba el retorno antes del primer pintado visible.
+  // Después libera la interfaz ya en su destino correcto.
+  useLayoutEffect(() => {
     try {
       const raw = sessionStorage.getItem("redzoneExternalReturn");
-      if (!raw) return;
 
-      const saved = JSON.parse(raw);
-      if (saved?.pestanaActiva === "equipos") {
-        setPestanaActiva("equipos");
-        setSubPestanaEquipos("franquicia");
-        setFranquiciaSeleccionada(saved.franquiciaSeleccionada ?? null);
-        setFranquiciaSeccionInicial(saved.franchiseSection === "plantilla" ? "plantilla" : "home");
-        setFranquiciaRosterTabInicial(
-          ["ofensiva", "defensiva", "especiales", "lesionados"].includes(saved.rosterTab)
-            ? saved.rosterTab
-            : "ofensiva",
-        );
+      if (raw) {
+        const saved = JSON.parse(raw);
+
+        if (saved?.pestanaActiva === "equipos") {
+          setPestanaActiva("equipos");
+          setSubPestanaEquipos("franquicia");
+          setFranquiciaSeleccionada(saved.franquiciaSeleccionada ?? null);
+          setFranquiciaSeccion(
+            saved.franchiseSection === "plantilla" ? "plantilla" : "home",
+          );
+          setFranquiciaRosterTab(
+            ["ofensiva", "defensiva", "especiales", "lesionados"].includes(
+              saved.rosterTab,
+            )
+              ? saved.rosterTab
+              : "ofensiva",
+          );
+        }
+
+        sessionStorage.removeItem("redzoneExternalReturn");
       }
-
-      sessionStorage.removeItem("redzoneExternalReturn");
     } catch (error) {
       console.error("No se pudo restaurar la vuelta desde ESPN:", error);
       sessionStorage.removeItem("redzoneExternalReturn");
+    } finally {
+      setNavegacionInicialLista(true);
     }
   }, []);
 
@@ -873,6 +896,8 @@ export default function Home() {
       subPestanaEquipos,
       tipoStats,
       franquiciaSeleccionada,
+      franquiciaSeccion,
+      franquiciaRosterTab,
       categoriaStatsJugador,
       subcategoriaStatsJugador,
       subcategoriaStatsDefensivaJugador,
@@ -911,12 +936,13 @@ export default function Home() {
       );
       ultimoEstadoNavegacionRef.current = serializado;
     }
-
   }, [
     pestanaActiva,
     subPestanaEquipos,
     tipoStats,
     franquiciaSeleccionada,
+    franquiciaSeccion,
+    franquiciaRosterTab,
     categoriaStatsJugador,
     subcategoriaStatsJugador,
     subcategoriaStatsDefensivaJugador,
@@ -940,6 +966,16 @@ export default function Home() {
       setSubPestanaEquipos(nav.subPestanaEquipos);
       setTipoStats(nav.tipoStats);
       setFranquiciaSeleccionada(nav.franquiciaSeleccionada ?? null);
+      setFranquiciaSeccion(
+        nav.franquiciaSeccion === "plantilla" ? "plantilla" : "home",
+      );
+      setFranquiciaRosterTab(
+        ["ofensiva", "defensiva", "especiales", "lesionados"].includes(
+          nav.franquiciaRosterTab,
+        )
+          ? nav.franquiciaRosterTab
+          : "ofensiva",
+      );
       setCategoriaStatsJugador(nav.categoriaStatsJugador);
       setSubcategoriaStatsJugador(nav.subcategoriaStatsJugador);
       setSubcategoriaStatsDefensivaJugador(
@@ -1067,6 +1103,11 @@ export default function Home() {
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
   const [modoTest, setModoTest] = useState<boolean>(true);
+
+  // Herramientas manuales de emergencia.
+  // Deben permanecer invisibles e inertes durante el ciclo automático.
+  // Solo se habilitarán temporalmente durante una intervención controlada.
+  const CONTROLES_TEST_EMERGENCIA = false;
 
   useEffect(() => {
     let cancelado = false;
@@ -1791,6 +1832,23 @@ export default function Home() {
   const [jornadasOficiales, setJornadasOficiales] = useState<
     Record<number, PronosticoPartido[]>
   >({});
+  const [jornadasGames, setJornadasGames] = useState<
+    Record<number, PronosticoPartido[]>
+  >({});
+
+  const [pronosticosGames, setPronosticosGames] = useState<
+    Record<
+      number,
+      Record<
+        string,
+        {
+          pronosticos: PronosticoPartido[];
+          confirmado: boolean;
+          validado?: boolean;
+        }
+      >
+    >
+  >({});
 
   useEffect(() => {
     let buffer = "";
@@ -2038,6 +2096,35 @@ export default function Home() {
       });
       setJornadasOficiales(agrupadas);
 
+      // GAMES tiene su propio calendario completo.
+      // No comparte el filtro de jornada activa utilizado por PORRA/JORNADA.
+      const partidosGamesData = await getPartidosGames();
+      const agrupadasGames: Record<number, PronosticoPartido[]> = {};
+
+      partidosGamesData.forEach((row: any) => {
+        const numJornada = row.jornada || 1;
+        if (!agrupadasGames[numJornada]) agrupadasGames[numJornada] = [];
+
+        agrupadasGames[numJornada].push({
+          id: row.id,
+          local: row.equipo_local,
+          localLogo: row.info_local?.logo_url || "",
+          visitante: row.equipo_visitante,
+          visitanteLogo: row.info_visitante?.logo_url || "",
+          eleccion: null,
+          resultadoReal: row.resultado_oficial || undefined,
+          acierto: null,
+          estado: row.estado ?? "",
+          puntos_local: row.puntos_local ?? null,
+          puntos_visitante: row.puntos_visitante ?? null,
+          periodo: row.periodo ?? null,
+          reloj: row.reloj ?? null,
+          fecha_partido: row.fecha_partido ?? null,
+        });
+      });
+
+      setJornadasGames(agrupadasGames);
+
       const { data: pronosData, error: pronosError } = await supabase
         .from("pronosticos")
         .select("*");
@@ -2101,10 +2188,82 @@ export default function Home() {
         });
       }
       setPronosticosPorUsuario(obj);
+
+      // GAMES necesita conservar los pronósticos históricos de todas
+      // las jornadas visibles de la competición, no solo de la activa.
+      const objGames: Record<
+        number,
+        Record<
+          string,
+          {
+            pronosticos: PronosticoPartido[];
+            confirmado: boolean;
+            validado?: boolean;
+          }
+        >
+      > = {};
+
+      for (let j = 1; j <= 18; j++) {
+        objGames[j] = {
+          cace: {
+            pronosticos: JSON.parse(JSON.stringify(agrupadasGames[j] || [])),
+            confirmado: false,
+            validado: false,
+          },
+          juanjo: {
+            pronosticos: JSON.parse(JSON.stringify(agrupadasGames[j] || [])),
+            confirmado: false,
+            validado: false,
+          },
+          ivan: {
+            pronosticos: JSON.parse(JSON.stringify(agrupadasGames[j] || [])),
+            confirmado: false,
+            validado: false,
+          },
+        };
+      }
+
+      if (pronosData && pronosData.length > 0) {
+        const mapaUsuariosGames: Record<string, string> = {
+          "351a81a5-86f9-4d6d-a567-f49ed5959e57": "ivan",
+          "dadb359a-8bc1-442e-8202-62fa2f8ddab9": "juanjo",
+          "088072d0-0782-409f-b5e4-f8a558f27b4f": "cace",
+        };
+
+        pronosData.forEach((row: any) => {
+          const { user_id, partido_id, eleccion, acierto } = row;
+
+          const partidoEncontrado = partidosGamesData.find(
+            (p: any) => p.id === partido_id,
+          );
+
+          const jornada = partidoEncontrado?.jornada;
+          const usuarioInterno = mapaUsuariosGames[user_id] || null;
+
+          if (
+            jornada &&
+            usuarioInterno &&
+            objGames[jornada]?.[usuarioInterno]
+          ) {
+            const partido = objGames[jornada][usuarioInterno].pronosticos.find(
+              (p) => p.id === partido_id,
+            );
+
+            if (partido) {
+              partido.eleccion = eleccion;
+              partido.acierto = acierto ?? null;
+            }
+
+            objGames[jornada][usuarioInterno].confirmado = true;
+          }
+        });
+      }
+
+      setPronosticosGames(objGames);
     };
 
     if (usuarioLogueado?.id) cargarDatosSupabase();
-  }, [usuarioLogueado?.id, usuarioActivoId]);
+  }, [usuarioLogueado?.id, usuarioActivoId, jornadaActual]);
 
   const cargarPerfil = async (userId: string) => {
     const { data } = await supabase
@@ -2214,7 +2373,9 @@ export default function Home() {
         let totalAciertosPartidos = 0;
         let totalValidados = 0;
         for (let jNum = 1; jNum <= 18; jNum++) {
-          const jData = pronosticosPorUsuario[jNum]?.[usr.id];
+          // RANKING y Total Acumulado deben conservar el histórico
+          // completo de la competición, no solo la jornada activa.
+          const jData = pronosticosGames[jNum]?.[usr.id];
           if (jData && jData.confirmado) {
             jData.pronosticos.forEach((p) => {
               if (p.acierto !== null && p.acierto !== undefined) {
@@ -2252,7 +2413,7 @@ export default function Home() {
         };
       });
     });
-  }, [pronosticosPorUsuario]);
+  }, [pronosticosGames]);
 
   useEffect(() => {
     if (pestanaActiva === "noticias" && noticias.length === 0) {
@@ -2386,35 +2547,40 @@ export default function Home() {
     let activo = true;
 
     const cargarEstadoJornada = async () => {
-      const { data, error } = await supabase
-        .from("jornadas_eventos")
-        .select("estado, cierre_pronosticos")
-        .eq("jornada", jornadaActual)
-        .maybeSingle();
+      try {
+        const contextoJornada = await getContextoJornadaActiva();
 
-      if (error) {
+        if (!activo) return;
+
+        // La jornada activa de Supabase es la única autoridad.
+        //
+        // Si cambia J1 -> J2, primero cambiamos el contexto visual.
+        // NO aplicamos todavía el estado de J2 sobre los partidos de J1.
+        // El cambio de jornada provocará la recarga completa de datos.
+        if (contextoJornada.jornada !== jornadaActual) {
+          setJornadaActual(contextoJornada.jornada);
+          return;
+        }
+
+        const cierre = contextoJornada.cierrePronosticos;
+        setCierrePronosticosActual(cierre);
+
+        const cierreVencido =
+          cierre !== null && Date.now() >= new Date(cierre).getTime();
+
+        if (
+          contextoJornada.estado === "finalizada" ||
+          contextoJornada.estado === "cerrada" ||
+          cierreVencido
+        ) {
+          setEstadoJornadaActual(
+            contextoJornada.estado === "finalizada" ? "finalizada" : "cerrada",
+          );
+        } else {
+          setEstadoJornadaActual("pendiente");
+        }
+      } catch (error) {
         console.error("Error al cargar estado de jornada:", error);
-        return;
-      }
-
-      if (!activo || !data) return;
-
-      const cierre = data.cierre_pronosticos || null;
-      setCierrePronosticosActual(cierre);
-
-      const cierreVencido =
-        cierre !== null && Date.now() >= new Date(cierre).getTime();
-
-      if (
-        data.estado === "finalizada" ||
-        data.estado === "cerrada" ||
-        cierreVencido
-      ) {
-        setEstadoJornadaActual(
-          data.estado === "finalizada" ? "finalizada" : "cerrada",
-        );
-      } else {
-        setEstadoJornadaActual("pendiente");
       }
     };
 
@@ -2685,6 +2851,8 @@ export default function Home() {
   };
 
   const handleVotacionAleatoriaYSimular = async () => {
+    if (!CONTROLES_TEST_EMERGENCIA) return;
+
     try {
       const response = await fetch("/api/test-votacion", {
         method: "POST",
@@ -2755,11 +2923,15 @@ export default function Home() {
   };
 
   const handleSiguienteJornada = () => {
+    if (!CONTROLES_TEST_EMERGENCIA) return;
+
     if (jornadaActual < 18) setJornadaActual((prev) => prev + 1);
     else alert("Has llegado a la última jornada (18).");
   };
 
   const handleValidarJornada = async () => {
+    if (!CONTROLES_TEST_EMERGENCIA) return;
+
     const opciones: ("1" | "X" | "2")[] = ["1", "X", "2"];
     const partidosAActualizar: {
       id: string;
@@ -3149,6 +3321,10 @@ export default function Home() {
             ? "AJUSTES DE PERFIL PRIVADO"
             : null;
 
+  if (!navegacionInicialLista) {
+    return <div className="min-h-screen bg-black" />;
+  }
+
   return (
     <div className="min-h-screen bg-[#8b0000] text-white w-full font-sans">
       <link
@@ -3224,6 +3400,10 @@ export default function Home() {
                         id === "franquicia"
                       ) {
                         setSubPestanaEquipos(id);
+
+                        if (id === "franquicia") {
+                          setFranquiciaSeleccionada(null);
+                        }
                       }
                     }}
                     className={`flex flex-col items-center justify-center gap-1.5 min-w-[68px] md:min-w-[100px] text-white transition-all ${
@@ -3254,18 +3434,20 @@ export default function Home() {
           </div>
         )}
 
-        {pestanaActiva === "equipos" && subPestanaEquipos === "franquicia" && (
-          franquiciaSeleccionada === null ? (
+        {pestanaActiva === "equipos" &&
+          subPestanaEquipos === "franquicia" &&
+          (franquiciaSeleccionada === null ? (
             <FranchiseSelector onSelect={setFranquiciaSeleccionada} />
           ) : (
             <FranchiseHome
               teamId={franquiciaSeleccionada}
-              onBack={() => window.history.back()}
-              initialSection={franquiciaSeccionInicial}
-              initialRosterTab={franquiciaRosterTabInicial}
+              onBack={() => setFranquiciaSeleccionada(null)}
+              section={franquiciaSeccion}
+              onSectionChange={setFranquiciaSeccion}
+              rosterTab={franquiciaRosterTab}
+              onRosterTabChange={setFranquiciaRosterTab}
             />
-          )
-        )}
+          ))}
 
         {/* STATS_FASE_1_REDZONE */}
         {pestanaActiva === "equipos" && subPestanaEquipos === "stats" && (
@@ -3782,8 +3964,8 @@ export default function Home() {
                     <TeamTurnoversSummary />
                   )
                 ) : vistaStatsCompleta &&
-                tipoStats === "jugador" &&
-                categoriaStatsJugador === "especiales" ? (
+                  tipoStats === "jugador" &&
+                  categoriaStatsJugador === "especiales" ? (
                   /* ================= DETALLE_ESPECIALES_JUGADOR_REDZONE ================= */
                   <div className="w-full">
                     <div className="flex items-center justify-between gap-3 border-b-2 border-blue-500 pb-3 mb-4">
@@ -7540,7 +7722,7 @@ export default function Home() {
                       estadoJornadaActual === "cerrada" ||
                       estadoJornadaActual === "finalizada"
                     }
-                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${estadoJornadaActual === "cerrada" || estadoJornadaActual === "finalizada" ? "bg-zinc-700 text-zinc-300 cursor-not-allowed" : estadoBotonConfirmar === "confirmado" ? "bg-emerald-500 text-black cursor-pointer" : estadoBotonConfirmar === "incompleto" ? "bg-red-600 text-white animate-pulse cursor-pointer" : "bg-white text-[#d32f2f] hover:bg-gray-100 cursor-pointer"}`}
+                    className={`w-full font-black text-sm py-3.5 rounded-xl shadow-lg transition-colors uppercase tracking-wider ${estadoJornadaActual === "cerrada" || estadoJornadaActual === "finalizada" ? "bg-zinc-700 text-zinc-300 cursor-not-allowed" : estadoBotonConfirmar === "confirmado" ? "bg-emerald-500 text-black cursor-pointer" : estadoBotonConfirmar === "incompleto" ? "bg-red-600 text-white animate-pulse cursor-pointer" : "bg-[#b3b3b3] text-[#d32f2f] hover:bg-[#a8a8a8] cursor-pointer"}`}
                   >
                     {estadoJornadaActual === "cerrada" ||
                     estadoJornadaActual === "finalizada"
@@ -7553,7 +7735,7 @@ export default function Home() {
                   </button>
                 </div>
 
-                {modoTest && (
+                {modoTest && CONTROLES_TEST_EMERGENCIA && (
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                     <button
                       onClick={handleVotacionAleatoriaYSimular}
@@ -7575,7 +7757,7 @@ export default function Home() {
 
           {pestanaActiva === "jornada" && (
             <section className="space-y-8 bg-[#8b0000] p-2 md:p-6 rounded-2xl">
-              {modoTest && (
+              {modoTest && CONTROLES_TEST_EMERGENCIA && (
                 <div className="flex justify-end py-2">
                   <button
                     onClick={handleValidarJornada}
@@ -7876,7 +8058,7 @@ export default function Home() {
                 ) : (
                   <div className="space-y-8">
                     {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
-                      const partidosJornada = jornadasOficiales[jNum] || [];
+                      const partidosJornada = jornadasGames[jNum] || [];
 
                       if (partidosJornada.length === 0) return null;
 
@@ -8078,12 +8260,10 @@ export default function Home() {
                                   <div className="grid grid-cols-3 gap-1.5 text-center">
                                     {usuarios.map((usr) => {
                                       const eleccionUsr =
-                                        pronosticosPorUsuario[jNum]?.[
+                                        pronosticosGames[jNum]?.[
                                           usr.id
                                         ]?.pronosticos?.find(
-                                          (p) =>
-                                            p.local === local ||
-                                            p.id === partido.id,
+                                          (p) => p.id === partido.id,
                                         )?.eleccion || "-";
 
                                       const partidoFinalizado =
