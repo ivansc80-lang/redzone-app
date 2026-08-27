@@ -8,7 +8,7 @@ import type {
   EspnTeamTurnoversSummary,
 } from "@/lib/espnTeamSummary";
 
-type Props = { teamId: string };
+type Props = { teamId: string; temporada: number };
 
 type PartidoFranquicia = PartidoTemporada & {
   rivalLocal: boolean;
@@ -26,7 +26,7 @@ function formatearFecha(fecha: string) {
   }).format(d);
 }
 
-export default function FranchiseSchedule({ teamId }: Props) {
+export default function FranchiseSchedule({ teamId, temporada }: Props) {
   const [partidos, setPartidos] = useState<PartidoFranquicia[]>([]);
   const [cargando, setCargando] = useState(true);
   const [ofensiva, setOfensiva] = useState<EspnTeamOffenseSummary[]>([]);
@@ -40,9 +40,9 @@ export default function FranchiseSchedule({ teamId }: Props) {
       setCargando(true);
       const [temporadaRegular, offenseRes, defenseRes, turnoversRes] = await Promise.all([
         getPartidosTemporadaRegularCompleta(),
-        fetch("/api/espn-team-stats/summary/offense", { cache: "no-store" }),
-        fetch("/api/espn-team-stats/summary/defense", { cache: "no-store" }),
-        fetch("/api/espn-team-stats/summary/turnovers", { cache: "no-store" }),
+        fetch(`/api/espn-team-stats/summary/offense?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
+        fetch(`/api/espn-team-stats/summary/defense?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
+        fetch(`/api/espn-team-stats/summary/turnovers?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
       ]);
 
       const [offenseData, defenseData, turnoversData] = await Promise.all([
@@ -76,7 +76,7 @@ export default function FranchiseSchedule({ teamId }: Props) {
     return () => {
       cancelado = true;
     };
-  }, [teamId]);
+  }, [teamId, temporada]);
 
   const proximoPartido =
     partidos.find((p) => new Date(p.fecha_partido).getTime() >= Date.now()) ??

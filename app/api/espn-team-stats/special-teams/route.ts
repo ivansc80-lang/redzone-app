@@ -4,6 +4,8 @@ import {
   getTeamSpecialTeamsLeaders,
 } from "@/lib/espnTeamSpecialTeams";
 
+export const dynamic = "force-dynamic";
+
 const CATEGORIAS = new Set<EspnTeamSpecialTeamsCategory>([
   "devoluciones",
   "pateando",

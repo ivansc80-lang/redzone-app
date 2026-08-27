@@ -4,6 +4,8 @@ import {
   getTeamDefenseLeaders,
 } from "@/lib/espnTeamDefense";
 
+export const dynamic = "force-dynamic";
+
 const CATEGORIAS: EspnTeamDefenseCategory[] = [
   "yardas_permitidas",
   "capturas",

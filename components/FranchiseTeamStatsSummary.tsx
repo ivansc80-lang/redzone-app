@@ -10,6 +10,7 @@ import type {
 
 type Props = {
   teamId: string;
+  temporada: number;
 };
 
 type Estado = {
@@ -26,7 +27,7 @@ const VACIO: Estado = {
   turnovers: null,
 };
 
-export default function FranchiseTeamStatsSummary({ teamId }: Props) {
+export default function FranchiseTeamStatsSummary({ teamId, temporada }: Props) {
   const [datos, setDatos] = useState<Estado>(VACIO);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +42,10 @@ export default function FranchiseTeamStatsSummary({ teamId }: Props) {
       try {
         const [offenseRes, defenseRes, specialRes, turnoversRes] =
           await Promise.all([
-            fetch("/api/espn-team-stats/summary/offense", { cache: "no-store" }),
-            fetch("/api/espn-team-stats/summary/defense", { cache: "no-store" }),
-            fetch("/api/espn-team-stats/summary/special-teams", { cache: "no-store" }),
-            fetch("/api/espn-team-stats/summary/turnovers", { cache: "no-store" }),
+            fetch(`/api/espn-team-stats/summary/offense?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
+            fetch(`/api/espn-team-stats/summary/defense?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
+            fetch(`/api/espn-team-stats/summary/special-teams?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
+            fetch(`/api/espn-team-stats/summary/turnovers?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
           ]);
 
         if (![offenseRes, defenseRes, specialRes, turnoversRes].every((r) => r.ok)) {
@@ -82,7 +83,7 @@ export default function FranchiseTeamStatsSummary({ teamId }: Props) {
     return () => {
       cancelado = true;
     };
-  }, [teamId]);
+  }, [teamId, temporada]);
 
   const bloques = useMemo(() => {
     const { offense, defense, special, turnovers } = datos;

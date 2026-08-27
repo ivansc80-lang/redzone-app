@@ -851,6 +851,21 @@ export default function Home() {
   const restaurandoHistorialRef = useRef(false);
   const ultimoEstadoNavegacionRef = useRef<string | null>(null);
 
+  // STATS -> EQUIPO -> FRANQUICIA HOME
+  // Navegación completamente interna dentro de REDZONE.
+  const abrirFranquiciaDesdeStats = (abreviatura: string) => {
+    const equipo = String(abreviatura ?? "").trim().toUpperCase();
+
+    if (!equipo) return;
+
+    setFranquiciaSeleccionada(equipo);
+    setFranquiciaSeccion("home");
+    setSubPestanaEquipos("franquicia");
+    setPestanaActiva("equipos");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   // RESTAURA LA VISTA EXACTA AL VOLVER DESDE UN PERFIL EXTERNO DE ESPN.
   //
   // El servidor y el primer render del cliente mantienen REDZONE oculto.
@@ -1101,14 +1116,69 @@ export default function Home() {
   const [cargandoTeamOffense, setCargandoTeamOffense] = useState(false);
   const [errorTeamOffense, setErrorTeamOffense] = useState<string | null>(null);
 
+  // TOPS de la portada STATS -> EQUIPO.
+  // Independientes de las listas completas.
+  const [teamTopYardasTotales, setTeamTopYardasTotales] = useState<
+    EspnTeamOffenseLeader[]
+  >([]);
+  const [teamTopPasando, setTeamTopPasando] = useState<
+    EspnTeamOffenseLeader[]
+  >([]);
+  const [teamTopCorriendo, setTeamTopCorriendo] = useState<
+    EspnTeamOffenseLeader[]
+  >([]);
+  const [teamTopYardasPermitidas, setTeamTopYardasPermitidas] = useState<
+    EspnTeamDefenseLeader[]
+  >([]);
+  const [teamTopCapturas, setTeamTopCapturas] = useState<
+    EspnTeamDefenseLeader[]
+  >([]);
+  const [teamTopEntregas, setTeamTopEntregas] = useState<
+    EspnTeamTurnoversLeader[]
+  >([]);
+
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
 
-  // Temporada utilizada exclusivamente para consultar estadísticas ESPN.
-  // Más adelante se inicializará automáticamente desde app_config.temporada.
+  // Temporada regular activa de REDZONE.
+  // app_config.temporada es la única autoridad.
+  const [temporadaRegular, setTemporadaRegular] = useState<number>(2026);
+
+  // STATS parte automáticamente de la temporada activa,
+  // pero conserva su selector manual para consultar temporadas anteriores.
   const [temporadaStats, setTemporadaStats] = useState<number>(2026);
   const [modoTest, setModoTest] = useState<boolean>(true);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarTemporadaRegular() {
+      const { data, error } = await supabase
+        .from("app_config")
+        .select("temporada")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error cargando temporada activa desde app_config:", error);
+        return;
+      }
+
+      const temporada = Number(data?.temporada);
+
+      if (!cancelado && Number.isFinite(temporada) && temporada > 0) {
+        setTemporadaRegular(temporada);
+        setTemporadaStats(temporada);
+      }
+    }
+
+    cargarTemporadaRegular();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   // Herramientas manuales de emergencia.
   // Deben permanecer invisibles e inertes durante el ciclo automático.
@@ -1121,6 +1191,7 @@ export default function Home() {
     async function cargarPassingLeaders() {
       setCargandoPassing(true);
       setErrorPassing(null);
+      setPassingLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/passing?temporada=${temporadaStats}&seasonType=2`, {
@@ -1162,6 +1233,7 @@ export default function Home() {
     async function cargarRushingLeaders() {
       setCargandoRushing(true);
       setErrorRushing(null);
+      setRushingLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/rushing?temporada=${temporadaStats}&seasonType=2`, {
@@ -1203,6 +1275,7 @@ export default function Home() {
     async function cargarReceivingLeaders() {
       setCargandoReceiving(true);
       setErrorReceiving(null);
+      setReceivingLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/receiving?temporada=${temporadaStats}&seasonType=2`, {
@@ -1247,6 +1320,7 @@ export default function Home() {
     async function cargarTacklesLeaders() {
       setCargandoTackles(true);
       setErrorTackles(null);
+      setTacklesLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/tackles?temporada=${temporadaStats}&seasonType=2`, {
@@ -1288,6 +1362,7 @@ export default function Home() {
     async function cargarSacksLeaders() {
       setCargandoSacks(true);
       setErrorSacks(null);
+      setSacksLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/sacks?temporada=${temporadaStats}&seasonType=2`, {
@@ -1329,6 +1404,7 @@ export default function Home() {
     async function cargarInterceptionsLeaders() {
       setCargandoInterceptions(true);
       setErrorInterceptions(null);
+      setInterceptionsLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/interceptions?temporada=${temporadaStats}&seasonType=2`, {
@@ -1375,6 +1451,7 @@ export default function Home() {
     async function cargarScoringTouchdowns() {
       setCargandoScoringTouchdowns(true);
       setErrorScoringTouchdowns(null);
+      setScoringTouchdownsLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/scoring-touchdowns?temporada=${temporadaStats}&seasonType=2`, {
@@ -1418,6 +1495,7 @@ export default function Home() {
     async function cargarScoringPoints() {
       setCargandoScoringPoints(true);
       setErrorScoringPoints(null);
+      setScoringPointsLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/scoring-points?temporada=${temporadaStats}&seasonType=2`, {
@@ -1461,6 +1539,7 @@ export default function Home() {
     async function cargarReceivingTouchdowns() {
       setCargandoReceivingTouchdowns(true);
       setErrorReceivingTouchdowns(null);
+      setReceivingTouchdownsLeaders([]);
 
       try {
         const response = await fetch(`/api/espn-stats/receiving-touchdowns?temporada=${temporadaStats}&seasonType=2`, {
@@ -1571,6 +1650,78 @@ export default function Home() {
   }, [temporadaStats]);
 
   useEffect(() => {
+    if (tipoStats !== "equipo" || vistaStatsCompleta) {
+      return;
+    }
+
+    let cancelado = false;
+
+    // Al cambiar de temporada desaparecen inmediatamente los datos anteriores.
+    setTeamTopYardasTotales([]);
+    setTeamTopPasando([]);
+    setTeamTopCorriendo([]);
+    setTeamTopYardasPermitidas([]);
+    setTeamTopCapturas([]);
+    setTeamTopEntregas([]);
+
+    async function cargarTopEquipo<T>(
+      url: string,
+      setter: (datos: T[]) => void,
+    ) {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const datos: T[] = await response.json();
+
+        if (!cancelado) {
+          setter(Array.isArray(datos) ? datos.slice(0, 5) : []);
+        }
+      } catch (error) {
+        console.error("Error cargando TOP EQUIPO:", url, error);
+
+        if (!cancelado) {
+          setter([]);
+        }
+      }
+    }
+
+    Promise.all([
+      cargarTopEquipo<EspnTeamOffenseLeader>(
+        `/api/espn-team-stats/offense?categoria=yardas_totales&temporada=${temporadaStats}&seasonType=2`,
+        setTeamTopYardasTotales,
+      ),
+      cargarTopEquipo<EspnTeamOffenseLeader>(
+        `/api/espn-team-stats/offense?categoria=pasando&temporada=${temporadaStats}&seasonType=2`,
+        setTeamTopPasando,
+      ),
+      cargarTopEquipo<EspnTeamOffenseLeader>(
+        `/api/espn-team-stats/offense?categoria=corriendo&temporada=${temporadaStats}&seasonType=2`,
+        setTeamTopCorriendo,
+      ),
+      cargarTopEquipo<EspnTeamDefenseLeader>(
+        `/api/espn-team-stats/defense?categoria=yardas_permitidas&temporada=${temporadaStats}&seasontype=2`,
+        setTeamTopYardasPermitidas,
+      ),
+      cargarTopEquipo<EspnTeamDefenseLeader>(
+        `/api/espn-team-stats/defense?categoria=capturas&temporada=${temporadaStats}&seasontype=2`,
+        setTeamTopCapturas,
+      ),
+      cargarTopEquipo<EspnTeamTurnoversLeader>(
+        `/api/espn-team-stats/turnovers?categoria=diferencial&season=${temporadaStats}`,
+        setTeamTopEntregas,
+      ),
+    ]);
+
+    return () => {
+      cancelado = true;
+    };
+  }, [tipoStats, vistaStatsCompleta, temporadaStats]);
+
+  useEffect(() => {
     if (
       tipoStats !== "equipo" ||
       !vistaStatsCompleta ||
@@ -1584,6 +1735,7 @@ export default function Home() {
     async function cargarTeamTurnovers() {
       setCargandoTeamTurnovers(true);
       setErrorTeamTurnovers(null);
+      setTeamTurnoversLeaders([]);
 
       try {
         const categoria =
@@ -1649,6 +1801,7 @@ export default function Home() {
     async function cargarTeamSpecialTeams() {
       setCargandoTeamSpecialTeams(true);
       setErrorTeamSpecialTeams(null);
+      setTeamSpecialTeamsLeaders([]);
 
       try {
         const categoria =
@@ -1714,6 +1867,7 @@ export default function Home() {
     async function cargarTeamDefense() {
       setCargandoTeamDefense(true);
       setErrorTeamDefense(null);
+      setTeamDefenseLeaders([]);
 
       try {
         const categoria =
@@ -1779,6 +1933,7 @@ export default function Home() {
     async function cargarTeamOffense() {
       setCargandoTeamOffense(true);
       setErrorTeamOffense(null);
+      setTeamOffenseLeaders([]);
 
       try {
         const categoria =
@@ -1834,7 +1989,9 @@ export default function Home() {
   const [nombreEquipo, setNombreEquipo] = useState("");
   const [avatarUrlInput, setAvatarUrlInput] = useState("");
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
-  const [verPassword, setVerPassword] = useState(false);
+  
+  const [vistaPerfilPalmares, setVistaPerfilPalmares] = useState(false);
+const [verPassword, setVerPassword] = useState(false);
   const [campoPerfilEditando, setCampoPerfilEditando] = useState<
     "nombre" | "equipo" | "avatar" | null
   >(null);
@@ -3133,7 +3290,7 @@ export default function Home() {
 
       try {
         const response = await fetch(
-          "/api/espn-standings?season=2025&seasontype=2",
+          `/api/espn-standings?season=${temporadaRegular}&seasontype=2`,
           { cache: "no-store" },
         );
 
@@ -3166,7 +3323,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, [pestanaActiva, subPestanaEquipos]);
+  }, [pestanaActiva, subPestanaEquipos, temporadaRegular]);
 
   const divisionesScoreEspn: Division[] = [
     ["AFC", "EAST", "AFC Este"],
@@ -3453,7 +3610,9 @@ export default function Home() {
         : pestanaActiva === "jornada"
           ? `RESULTADOS JORNADA ${jornadaActual}`
           : pestanaActiva === "perfil"
-            ? "AJUSTES DE PERFIL PRIVADO"
+            ? vistaPerfilPalmares
+              ? "🏆 PALMARÉS"
+              : "AJUSTES DE PERFIL PRIVADO"
             : null;
 
   if (!navegacionInicialLista) {
@@ -3506,10 +3665,20 @@ export default function Home() {
           </div>
         </nav>
         {tituloBarraPrincipal && (
-          <div className="w-full bg-[#002244] flex items-center justify-center px-4 py-5 md:py-6">
+          <div className="relative w-full bg-[#002244] flex items-center justify-center px-4 py-5 md:py-6">
             <h1 className="text-white text-base md:text-2xl font-black uppercase tracking-wider font-['Orbitron'] italic text-center">
               {tituloBarraPrincipal}
             </h1>
+
+            {pestanaActiva === "perfil" && vistaPerfilPalmares && (
+              <button
+                type="button"
+                onClick={() => setVistaPerfilPalmares(false)}
+                className="absolute right-4 md:right-6 px-3 py-2 rounded-lg border border-white/40 text-white hover:bg-white hover:text-[#002244] transition-colors font-['Orbitron'] font-black text-[8px] md:text-[9px] uppercase cursor-pointer"
+              >
+                ← Volver a perfil
+              </button>
+            )}
           </div>
         )}
 
@@ -3575,6 +3744,7 @@ export default function Home() {
             <FranchiseSelector onSelect={setFranquiciaSeleccionada} />
           ) : (
             <FranchiseHome
+                    temporada={temporadaRegular}
               teamId={franquiciaSeleccionada}
               onBack={() => setFranquiciaSeleccionada(null)}
               section={franquiciaSeccion}
@@ -5687,6 +5857,19 @@ export default function Home() {
                 ) : tipoStats === "jugador" ? (
                   /* ================= JUGADORES ================= */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* TEMPORADA — PORTADA LÍDERES */}
+                    <div className="md:col-span-2 flex justify-end -mb-2">
+                      <select
+                        value={temporadaStats}
+                        onChange={(e) =>
+                          setTemporadaStats(Number(e.target.value))
+                        }
+                        className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none"
+                      >
+                        <option value={2026}>2026 Temporada regular</option>
+                        <option value={2025}>2025 Temporada regular</option>
+                      </select>
+                    </div>
                     <div>
                       <div
                         className={`flex items-center gap-3 border-b-2 pb-2 mb-3 ${
@@ -5755,35 +5938,29 @@ export default function Home() {
                             {
                               titulo: "PASANDO",
                               valor: "YDS",
-                              filas: [
-                                ["Matthew Stafford", "LAR", "4,707"],
-                                ["Jared Goff", "DET", "4,564"],
-                                ["Dak Prescott", "DAL", "4,552"],
-                                ["Drake Maye", "NE", "4,394"],
-                                ["Sam Darnold", "SEA", "4,048"],
-                              ],
+                              filas: passingLeaders.slice(0, 5).map((jugador) => [
+                                jugador.nombre,
+                                jugador.equipo,
+                                jugador.YDS,
+                              ]),
                             },
                             {
                               titulo: "CORRIENDO",
                               valor: "YDS",
-                              filas: [
-                                ["James Cook III", "BUF", "1,621"],
-                                ["Derrick Henry", "BAL", "1,595"],
-                                ["Jonathan Taylor", "IND", "1,585"],
-                                ["Bijan Robinson", "ATL", "1,478"],
-                                ["DeVon Achane", "MIA", "1,350"],
-                              ],
+                              filas: rushingLeaders.slice(0, 5).map((jugador) => [
+                                jugador.nombre,
+                                jugador.equipo,
+                                jugador.YDS,
+                              ]),
                             },
                             {
                               titulo: "RECIBIENDO",
                               valor: "YDS",
-                              filas: [
-                                ["Jaxon Smith-Njigba", "SEA", "1,793"],
-                                ["Puka Nacua", "LAR", "1,715"],
-                                ["George Pickens", "DAL", "1,429"],
-                                ["Ja'Marr Chase", "CIN", "1,412"],
-                                ["Amon-Ra St. Brown", "DET", "1,401"],
-                              ],
+                              filas: receivingLeaders.slice(0, 5).map((jugador) => [
+                                jugador.nombre,
+                                jugador.equipo,
+                                jugador.YDS,
+                              ]),
                             },
                           ]
                       ).map((bloque) => (
@@ -5857,35 +6034,29 @@ export default function Home() {
                             {
                               titulo: "TOUCHDOWNS",
                               valor: "TD",
-                              filas: [
-                                ["Josh Allen", "BUF", "15"],
-                                ["Jalen Hurts", "PHI", "14"],
-                                ["Jahmyr Gibbs", "DET", "13"],
-                                ["Derrick Henry", "BAL", "13"],
-                                ["Saquon Barkley", "PHI", "13"],
-                              ],
+                              filas: scoringTouchdownsLeaders.slice(0, 5).map((jugador) => [
+                                jugador.nombre,
+                                jugador.equipo,
+                                jugador.TD,
+                              ]),
                             },
                             {
                               titulo: "PUNTOS",
                               valor: "PTS",
-                              filas: [
-                                ["Brandon Aubrey", "DAL", "157"],
-                                ["Chris Boswell", "PIT", "149"],
-                                ["Cameron Dicker", "LAC", "145"],
-                                ["Ka’imi Fairbairn", "HOU", "141"],
-                                ["Jake Bates", "DET", "138"],
-                              ],
+                              filas: scoringPointsLeaders.slice(0, 5).map((jugador) => [
+                                jugador.nombre,
+                                jugador.equipo,
+                                jugador.PTS,
+                              ]),
                             },
                             {
                               titulo: "TD DE RECEPCIÓN",
                               valor: "TD",
-                              filas: [
-                                ["Ja'Marr Chase", "CIN", "12"],
-                                ["Amon-Ra St. Brown", "DET", "12"],
-                                ["George Pickens", "DAL", "11"],
-                                ["Puka Nacua", "LAR", "10"],
-                                ["Jaxon Smith-Njigba", "SEA", "10"],
-                              ],
+                              filas: receivingTouchdownsLeaders.slice(0, 5).map((jugador) => [
+                                jugador.nombre,
+                                jugador.equipo,
+                                jugador.TD,
+                              ]),
                             },
                           ].map((bloque) => (
                             <div key={bloque.titulo} className="mb-7">
@@ -5947,35 +6118,29 @@ export default function Home() {
                           {
                             titulo: "TACLEADAS",
                             valor: "TOT",
-                            filas: [
-                              ["Jordyn Brooks", "MIA", "183"],
-                              ["Jack Campbell", "DET", "176"],
-                              ["Devin White", "LV", "174"],
-                              ["Cedric Gray", "TEN", "164"],
-                              ["Bobby Wagner", "WSH", "162"],
-                            ],
+                            filas: tacklesLeaders.slice(0, 5).map((jugador) => [
+                              jugador.nombre,
+                              jugador.equipo,
+                              jugador.TOT,
+                            ]),
                           },
                           {
                             titulo: "CAPTURAS DE MARISCAL",
                             valor: "SACK",
-                            filas: [
-                              ["Myles Garrett", "CLE", "23.0"],
-                              ["Brian Burns", "NYG", "16.5"],
-                              ["Danielle Hunter", "HOU", "15.0"],
-                              ["Aidan Hutchinson", "DET", "14.5"],
-                              ["Nik Bonitto", "DEN", "14.0"],
-                            ],
+                            filas: sacksLeaders.slice(0, 5).map((jugador) => [
+                              jugador.nombre,
+                              jugador.equipo,
+                              jugador.SACK,
+                            ]),
                           },
                           {
                             titulo: "INTERCEPCIONES",
                             valor: "INT",
-                            filas: [
-                              ["Kevin Byard", "CHI", "7"],
-                              ["Devin Lloyd", "JAX", "5"],
-                              ["Jaycee Horn", "CAR", "5"],
-                              ["Ernest Jones IV", "SEA", "5"],
-                              ["Antonio Johnson", "JAX", "5"],
-                            ],
+                            filas: interceptionsLeaders.slice(0, 5).map((jugador) => [
+                              jugador.nombre,
+                              jugador.equipo,
+                              jugador.INT,
+                            ]),
                           },
                         ].map((bloque) => (
                           <div key={bloque.titulo} className="mb-7">
@@ -6237,13 +6402,18 @@ export default function Home() {
                                   </td>
 
                                   <td
-                                    className={`sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
+                                    className={`cursor-pointer sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
                                       subcategoriaEspecialesEquipo ===
                                       "despejes"
                                         ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
                                         : "left-11 min-w-[190px] md:min-w-[240px] px-3"
                                     }`}
-                                  >
+                                  
+                                      onClick={() =>
+                                        abrirFranquiciaDesdeStats(equipo.equipo)
+                                      }
+                                      title={`Abrir HOME de ${equipo.nombre}`}
+                                    >
                                     <div
                                       className={`flex items-center ${
                                         subcategoriaEspecialesEquipo ===
@@ -6425,7 +6595,12 @@ export default function Home() {
                                     {equipo.posicion}
                                   </td>
 
-                                  <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
+                                  <td className="cursor-pointer sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3"
+                                      onClick={() =>
+                                        abrirFranquiciaDesdeStats(equipo.equipo)
+                                      }
+                                      title={`Abrir HOME de ${equipo.nombre}`}
+                                    >
                                     <div className="flex items-center gap-2">
                                       <img
                                         src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
@@ -6706,14 +6881,19 @@ export default function Home() {
                                       </td>
 
                                       <td
-                                        className={`sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
+                                        className={`cursor-pointer sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
                                           subcategoriaStatsEquipo ===
                                             "yardas_totales" ||
                                           subcategoriaStatsEquipo === "pasando"
                                             ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
                                             : "left-11 min-w-[190px] md:min-w-[240px] px-3"
                                         }`}
-                                      >
+                                      
+                                      onClick={() =>
+                                        abrirFranquiciaDesdeStats(equipo.equipo)
+                                      }
+                                      title={`Abrir HOME de ${equipo.nombre}`}
+                                    >
                                         <div
                                           className={`flex items-center ${
                                             subcategoriaStatsEquipo ===
@@ -6936,7 +7116,7 @@ export default function Home() {
                                     </td>
 
                                     <td
-                                      className={`sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
+                                      className={`cursor-pointer sticky z-20 bg-white border-r-2 border-zinc-300 py-3 ${
                                         subcategoriaStatsEquipo ===
                                           "yardas_permitidas" ||
                                         subcategoriaStatsEquipo ===
@@ -6946,6 +7126,11 @@ export default function Home() {
                                           ? "left-9 lg:left-11 w-[155px] min-w-[155px] max-w-[155px] px-2 lg:w-auto lg:min-w-[240px] lg:max-w-none lg:px-3"
                                           : "left-11 min-w-[190px] md:min-w-[240px] px-3"
                                       }`}
+                                    
+                                      onClick={() =>
+                                        abrirFranquiciaDesdeStats(equipo.equipo)
+                                      }
+                                      title={`Abrir HOME de ${equipo.nombre}`}
                                     >
                                       <div
                                         className={`flex items-center ${
@@ -7032,6 +7217,19 @@ export default function Home() {
                 ) : (
                   /* ================= EQUIPOS ================= */
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* TEMPORADA — PORTADA TOPS EQUIPO */}
+                    <div className="md:col-span-2 flex justify-end -mb-2">
+                      <select
+                        value={temporadaStats}
+                        onChange={(e) =>
+                          setTemporadaStats(Number(e.target.value))
+                        }
+                        className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none"
+                      >
+                        <option value={2026}>2026 Temporada regular</option>
+                        <option value={2025}>2025 Temporada regular</option>
+                      </select>
+                    </div>
                     {/* ================= OFENSIVA EQUIPOS ================= */}
                     <div>
                       <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-3">
@@ -7045,35 +7243,29 @@ export default function Home() {
                         {
                           titulo: "YARDAS TOTALES",
                           valor: "YDS/G",
-                          filas: [
-                            ["Los Angeles Rams", "LAR", "394.6"],
-                            ["Dallas Cowboys", "DAL", "391.9"],
-                            ["New England Patriots", "NE", "379.4"],
-                            ["Buffalo Bills", "BUF", "376.3"],
-                            ["Detroit Lions", "DET", "373.2"],
-                          ],
+                          filas: teamTopYardasTotales.map((equipo) => [
+                            equipo.nombre,
+                            equipo.equipo,
+                            equipo.YDS_G,
+                          ]),
                         },
                         {
                           titulo: "PASANDO",
                           valor: "YDS/G",
-                          filas: [
-                            ["Los Angeles Rams", "LAR", "268.1"],
-                            ["Dallas Cowboys", "DAL", "266.3"],
-                            ["Detroit Lions", "DET", "253.1"],
-                            ["New England Patriots", "NE", "250.5"],
-                            ["San Francisco 49ers", "SF", "244.5"],
-                          ],
+                          filas: teamTopPasando.map((equipo) => [
+                            equipo.nombre,
+                            equipo.equipo,
+                            equipo.YDS_G,
+                          ]),
                         },
                         {
                           titulo: "CORRIENDO",
                           valor: "YDS/G",
-                          filas: [
-                            ["Buffalo Bills", "BUF", "159.6"],
-                            ["Baltimore Ravens", "BAL", "156.6"],
-                            ["Chicago Bears", "CHI", "144.5"],
-                            ["Washington Commanders", "WSH", "134.7"],
-                            ["New York Giants", "NYG", "129.1"],
-                          ],
+                          filas: teamTopCorriendo.map((equipo) => [
+                            equipo.nombre,
+                            equipo.equipo,
+                            equipo.YDS_G,
+                          ]),
                         },
                       ].map((bloque) => (
                         <div key={bloque.titulo} className="mb-7">
@@ -7091,7 +7283,14 @@ export default function Home() {
                                 {i + 1}
                               </span>
 
-                              <div className="flex items-center gap-2 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  abrirFranquiciaDesdeStats(fila[1])
+                                }
+                                title={`Abrir HOME de ${fila[0]}`}
+                                className="flex items-center gap-2 min-w-0 text-left hover:text-red-700 transition-colors"
+                              >
                                 <img
                                   src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
                                   alt={fila[0]}
@@ -7101,7 +7300,7 @@ export default function Home() {
                                 <span className="text-xs md:text-sm font-semibold truncate">
                                   {fila[0]}
                                 </span>
-                              </div>
+                              </button>
 
                               <span className="text-xs md:text-sm text-zinc-600">
                                 {fila[2]}
@@ -7144,35 +7343,29 @@ export default function Home() {
                         {
                           titulo: "YARDAS PERMITIDAS",
                           valor: "YDS/G",
-                          filas: [
-                            ["Houston Texans", "HOU", "277.2"],
-                            ["Denver Broncos", "DEN", "278.2"],
-                            ["Minnesota Vikings", "MIN", "282.6"],
-                            ["Cleveland Browns", "CLE", "283.6"],
-                            ["Los Angeles Chargers", "LAC", "285.2"],
-                          ],
+                          filas: teamTopYardasPermitidas.map((equipo) => [
+                            equipo.nombre,
+                            equipo.equipo,
+                            equipo.YDS_G,
+                          ]),
                         },
                         {
                           titulo: "CAPTURAS DE MARISCAL",
                           valor: "SACK",
-                          filas: [
-                            ["Denver Broncos", "DEN", "68.0"],
-                            ["Atlanta Falcons", "ATL", "57.0"],
-                            ["Cleveland Browns", "CLE", "53.0"],
-                            ["Detroit Lions", "DET", "49.0"],
-                            ["Minnesota Vikings", "MIN", "49.0"],
-                          ],
+                          filas: teamTopCapturas.map((equipo) => [
+                            equipo.nombre,
+                            equipo.equipo,
+                            equipo.SACK,
+                          ]),
                         },
                         {
                           titulo: "ENTREGAS",
                           valor: "DIFF",
-                          filas: [
-                            ["Chicago Bears", "CHI", "22"],
-                            ["Houston Texans", "HOU", "17"],
-                            ["Jacksonville Jaguars", "JAX", "13"],
-                            ["Pittsburgh Steelers", "PIT", "12"],
-                            ["Los Angeles Rams", "LAR", "11"],
-                          ],
+                          filas: teamTopEntregas.map((equipo) => [
+                            equipo.nombre,
+                            equipo.equipo,
+                            equipo.DIFF,
+                          ]),
                         },
                       ].map((bloque) => (
                         <div key={bloque.titulo} className="mb-7">
@@ -7190,7 +7383,14 @@ export default function Home() {
                                 {i + 1}
                               </span>
 
-                              <div className="flex items-center gap-2 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  abrirFranquiciaDesdeStats(fila[1])
+                                }
+                                title={`Abrir HOME de ${fila[0]}`}
+                                className="flex items-center gap-2 min-w-0 text-left hover:text-red-700 transition-colors"
+                              >
                                 <img
                                   src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
                                   alt={fila[0]}
@@ -7200,7 +7400,7 @@ export default function Home() {
                                 <span className="text-xs md:text-sm font-semibold truncate">
                                   {fila[0]}
                                 </span>
-                              </div>
+                              </button>
 
                               <span className="text-xs md:text-sm text-zinc-600">
                                 {fila[2]}
@@ -8544,7 +8744,13 @@ export default function Home() {
           )}
 
           {pestanaActiva === "perfil" && (
-            <section className="space-y-5 max-w-md mx-auto">
+            <section
+              className={
+                vistaPerfilPalmares
+                  ? "w-full"
+                  : "space-y-5 max-w-md mx-auto"
+              }
+            >
               {!usuarioLogueado ? (
                 <div className="bg-black/90 border border-red-800 rounded-xl p-6 space-y-4 shadow-xl">
                   <h3 className="text-sm font-['Orbitron'] text-white font-bold uppercase text-center">
@@ -8589,7 +8795,7 @@ export default function Home() {
                     Entrar
                   </button>
                 </div>
-              ) : (
+              ) : !vistaPerfilPalmares ? (
                 <>
                   <div className="bg-white border border-red-800 rounded-xl p-6 space-y-5 shadow-2xl text-black font-['Orbitron']">
                     <div className="text-center p-3 bg-[#9e0101] rounded-lg shadow-inner">
@@ -8748,28 +8954,43 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="bg-black/80 border border-red-900/60 rounded-xl p-4 flex items-center justify-between gap-4 shadow-lg">
-                    <div>
-                      <p className="text-xs font-black font-['Orbitron'] uppercase text-white">
-                        Modo de prueba
+                  <button
+                      type="button"
+                      onClick={() => setVistaPerfilPalmares(true)}
+                      className="w-full bg-[#002244] hover:bg-[#00305f] border border-[#163a5c] rounded-xl px-5 py-4 flex items-center justify-between gap-4 shadow-lg transition-colors cursor-pointer"
+                    >
+                      <div className="text-left">
+                        <p className="text-sm font-black font-['Orbitron'] uppercase text-white">
+                          🏆 Palmarés
+                        </p>
+                        <p className="text-[10px] text-zinc-300 mt-1">
+                          Consulta tus títulos y logros
+                        </p>
+                      </div>
+
+                      <span className="text-white text-xl font-black">
+                        →
+                      </span>
+                    </button>
+                </>
+              ) : (
+                <div className="w-full px-4 md:px-6 pt-5 pb-8">
+                  <div className="w-full min-h-[720px] md:min-h-[900px] bg-white text-black rounded-2xl border border-zinc-200 shadow-xl flex items-start justify-center">
+                    <div className="text-center pt-24 md:pt-28 px-6">
+                      <div className="text-5xl mb-4">
+                        🏆
+                      </div>
+
+                      <p className="font-['Orbitron'] font-black text-sm md:text-base uppercase text-[#002244]">
+                        Palmarés de REDZONE
                       </p>
-                      <p className="text-[10px] text-zinc-400 mt-1">
-                        Controles internos de simulación
+
+                      <p className="mt-3 text-xs text-zinc-500">
+                        Aquí aparecerán los títulos conseguidos en temporadas anteriores.
                       </p>
                     </div>
-
-                    <button
-                      onClick={() => setModoTest(!modoTest)}
-                      className={`px-4 py-2 rounded-lg text-xs font-black font-['Orbitron'] uppercase transition-all cursor-pointer ${
-                        modoTest
-                          ? "bg-red-600 text-white"
-                          : "bg-zinc-700 text-zinc-300"
-                      }`}
-                    >
-                      {modoTest ? "MODO TEST" : "MODO NORMAL"}
-                    </button>
                   </div>
-                </>
+                </div>
               )}
             </section>
           )}

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FranchiseTeamStatsSummary from "@/components/FranchiseTeamStatsSummary";
 import FranchiseSchedule from "@/components/FranchiseSchedule";
 import FranchiseRoster from "@/components/FranchiseRoster";
 
 type Props = {
   teamId: string;
+  temporada: number;
   onBack: () => void;
   section: "home" | "plantilla";
   onSectionChange: (section: "home" | "plantilla") => void;
@@ -391,6 +392,31 @@ const AFC_WEST = [
     dif: "-191",
   },
 ];
+
+type DivisionStandingHome = {
+  nombre: string;
+  abrev: string;
+  g: string;
+  p: string;
+  e: string;
+  pct: string;
+  pf: string;
+  pc: string;
+  dif: string;
+};
+
+type EspnStandingHome = {
+  nombre: string;
+  equipo: string;
+  conferencia: "AFC" | "NFC" | "";
+  division: string;
+  G: string;
+  P: string;
+  E: string;
+  PCT: string;
+  PA: string;
+  PC: string;
+};
 
 type FranchiseHomeData = {
   info: [string, string][];
@@ -1107,7 +1133,7 @@ const FRANCHISE_META: Record<
 };
 
 export default function FranchiseHome({
-  teamId,
+  teamId, temporada,
   onBack,
   section,
   onSectionChange,
@@ -1121,22 +1147,111 @@ export default function FranchiseHome({
     logo: teamId.toLowerCase(),
   };
 
-  const divisionTeams =
-    ["ARI", "LAR", "SEA", "SF"].includes(teamId)
-      ? NFC_WEST
-      : ["ATL", "CAR", "NO", "TB"].includes(teamId)
-        ? NFC_SOUTH
-        : ["CHI", "DET", "GB", "MIN"].includes(teamId)
-          ? NFC_NORTH
-          : ["DAL", "NYG", "PHI", "WSH"].includes(teamId)
-            ? NFC_EAST
-            : ["HOU", "IND", "JAX", "TEN"].includes(teamId)
-              ? AFC_SOUTH
-              : ["BAL", "CIN", "CLE", "PIT"].includes(teamId)
-                ? AFC_NORTH
-                : ["BUF", "MIA", "NE", "NYJ"].includes(teamId)
-                  ? AFC_EAST
-                  : AFC_WEST;
+  const [divisionTeams, setDivisionTeams] = useState<
+    DivisionStandingHome[]
+  >([]);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function cargarDivision() {
+      // Evitamos conservar datos de otra temporada mientras carga.
+      setDivisionTeams([]);
+
+      const esAfc =
+        ["BUF", "MIA", "NE", "NYJ",
+         "BAL", "CIN", "CLE", "PIT",
+         "HOU", "IND", "JAX", "TEN",
+         "DEN", "KC", "LV", "LAC"].includes(teamId);
+
+      const conferencia = esAfc ? "AFC" : "NFC";
+
+      const division =
+        ["BUF", "MIA", "NE", "NYJ",
+         "DAL", "NYG", "PHI", "WSH"].includes(teamId)
+          ? "EAST"
+          : ["BAL", "CIN", "CLE", "PIT",
+             "CHI", "DET", "GB", "MIN"].includes(teamId)
+            ? "NORTH"
+            : ["HOU", "IND", "JAX", "TEN",
+               "ATL", "CAR", "NO", "TB"].includes(teamId)
+              ? "SOUTH"
+              : "WEST";
+
+      try {
+        const response = await fetch(
+          `/api/espn-standings?season=${temporada}&seasontype=2`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const datos: EspnStandingHome[] = await response.json();
+
+        const filtrados = datos
+          .filter(
+            (equipo) =>
+              equipo.conferencia === conferencia &&
+              String(equipo.division).toUpperCase() === division,
+          )
+          .map((equipo) => {
+            const pf = Number(equipo.PA);
+            const pc = Number(equipo.PC);
+
+            const diferencia =
+              Number.isFinite(pf) && Number.isFinite(pc)
+                ? pf - pc
+                : 0;
+
+            return {
+              nombre: equipo.nombre,
+              abrev: equipo.equipo,
+              g: equipo.G || "0",
+              p: equipo.P || "0",
+              e: equipo.E || "0",
+              pct: equipo.PCT || ".000",
+              pf: equipo.PA || "0",
+              pc: equipo.PC || "0",
+              dif:
+                diferencia > 0
+                  ? `+${diferencia}`
+                  : String(diferencia),
+            };
+          })
+          .sort((a, b) => {
+            const pctA = Number(a.pct);
+            const pctB = Number(b.pct);
+
+            if (pctB !== pctA) {
+              return pctB - pctA;
+            }
+
+            return Number(b.g) - Number(a.g);
+          });
+
+        if (!cancelado) {
+          setDivisionTeams(filtrados);
+        }
+      } catch (error) {
+        console.error(
+          "Error cargando clasificación divisional ESPN:",
+          error,
+        );
+
+        if (!cancelado) {
+          setDivisionTeams([]);
+        }
+      }
+    }
+
+    cargarDivision();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [teamId, temporada]);
 
   return (
     <section className="px-3 pt-4 pb-5 md:px-6 md:pt-5 md:pb-7">
@@ -1339,13 +1454,13 @@ export default function FranchiseHome({
                     </table>
                   </div>
                   <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-zinc-400">
-                    Temporada regular 2025
+                    Temporada regular {temporada}
                   </p>
                 </div>
               </div>
 
-              <FranchiseTeamStatsSummary teamId={teamId} />
-              <FranchiseSchedule teamId={teamId} />
+              <FranchiseTeamStatsSummary teamId={teamId} temporada={temporada} />
+              <FranchiseSchedule teamId={teamId} temporada={temporada} />
             </>
           )}
         </div>
