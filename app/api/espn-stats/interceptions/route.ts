@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getInterceptionsLeaders } from "@/lib/espnStats";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const jugadores = await getInterceptionsLeaders(2025, 2);
+    const searchParams = request.nextUrl.searchParams;
+    const temporada = Number(searchParams.get("temporada") ?? "2025");
+    const seasonType = Number(searchParams.get("seasonType") ?? "2");
+
+    const jugadores = await getInterceptionsLeaders(temporada, seasonType);
 
     return NextResponse.json(jugadores);
   } catch (error) {

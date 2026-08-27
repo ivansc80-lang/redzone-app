@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient";
 
 export interface PartidoTemporada {
   id: string;
+  temporada: number;
   jornada: number;
   equipo_local: string;
   equipo_visitante: string;

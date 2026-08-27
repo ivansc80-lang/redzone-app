@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import type { EspnTeamDefenseSummary } from "@/lib/espnTeamSummary";
 
-export default function TeamDefenseSummary() {
+type Props = {
+  temporada: number;
+};
+
+export default function TeamDefenseSummary({ temporada }: Props) {
   const [datos,setDatos]=useState<EspnTeamDefenseSummary[]>([]);
   const [cargando,setCargando]=useState(true);
   const [error,setError]=useState<string|null>(null);
 
   useEffect(()=>{ let cancelado=false;
     (async()=>{ try {
-      const response=await fetch("/api/espn-team-stats/summary/defense",{cache:"no-store"});
+      const response=await fetch(`/api/espn-team-stats/summary/defense?temporada=${temporada}&seasonType=2`,{cache:"no-store"});
       if(!response.ok) throw new Error(`HTTP ${response.status}`);
       const data:EspnTeamDefenseSummary[]=await response.json();
       if(!cancelado) setDatos(data);
@@ -18,7 +22,7 @@ export default function TeamDefenseSummary() {
       finally { if(!cancelado) setCargando(false); }
     })();
     return()=>{cancelado=true};
-  },[]);
+  },[temporada]);
 
   const columnas=["GP","YDS","YDS/G","PASS","PASS/G","RUSH","RUSH/G","PTS","PTS/G"];
   const keys=["GP","YDS","YDS_G","PASS","PASS_G","RUSH","RUSH_G","PTS","PTS_G"] as (keyof EspnTeamDefenseSummary)[];

@@ -34,6 +34,8 @@ import type { EspnStandingTeam } from "@/lib/espnStandings";
 
 interface PronosticoPartido {
   id: string;
+  temporada: number;
+  tipo_competicion: "regular" | "pretemporada_test" | "playoffs" | "superbowl";
   local: string;
   localLogo: string;
   visitante: string;
@@ -1102,6 +1104,10 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
+
+  // Temporada utilizada exclusivamente para consultar estadísticas ESPN.
+  // Más adelante se inicializará automáticamente desde app_config.temporada.
+  const [temporadaStats, setTemporadaStats] = useState<number>(2026);
   const [modoTest, setModoTest] = useState<boolean>(true);
 
   // Herramientas manuales de emergencia.
@@ -1117,7 +1123,7 @@ export default function Home() {
       setErrorPassing(null);
 
       try {
-        const response = await fetch("/api/espn-stats/passing", {
+        const response = await fetch(`/api/espn-stats/passing?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1148,7 +1154,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1158,7 +1164,7 @@ export default function Home() {
       setErrorRushing(null);
 
       try {
-        const response = await fetch("/api/espn-stats/rushing", {
+        const response = await fetch(`/api/espn-stats/rushing?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1189,7 +1195,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1199,7 +1205,7 @@ export default function Home() {
       setErrorReceiving(null);
 
       try {
-        const response = await fetch("/api/espn-stats/receiving", {
+        const response = await fetch(`/api/espn-stats/receiving?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1233,7 +1239,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1243,7 +1249,7 @@ export default function Home() {
       setErrorTackles(null);
 
       try {
-        const response = await fetch("/api/espn-stats/tackles", {
+        const response = await fetch(`/api/espn-stats/tackles?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1274,7 +1280,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1284,7 +1290,7 @@ export default function Home() {
       setErrorSacks(null);
 
       try {
-        const response = await fetch("/api/espn-stats/sacks", {
+        const response = await fetch(`/api/espn-stats/sacks?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1315,7 +1321,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1325,7 +1331,7 @@ export default function Home() {
       setErrorInterceptions(null);
 
       try {
-        const response = await fetch("/api/espn-stats/interceptions", {
+        const response = await fetch(`/api/espn-stats/interceptions?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1361,7 +1367,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1371,7 +1377,7 @@ export default function Home() {
       setErrorScoringTouchdowns(null);
 
       try {
-        const response = await fetch("/api/espn-stats/scoring-touchdowns", {
+        const response = await fetch(`/api/espn-stats/scoring-touchdowns?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1404,7 +1410,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1414,7 +1420,7 @@ export default function Home() {
       setErrorScoringPoints(null);
 
       try {
-        const response = await fetch("/api/espn-stats/scoring-points", {
+        const response = await fetch(`/api/espn-stats/scoring-points?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1447,7 +1453,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1457,7 +1463,7 @@ export default function Home() {
       setErrorReceivingTouchdowns(null);
 
       try {
-        const response = await fetch("/api/espn-stats/receiving-touchdowns", {
+        const response = await fetch(`/api/espn-stats/receiving-touchdowns?temporada=${temporadaStats}&seasonType=2`, {
           cache: "no-store",
         });
 
@@ -1490,7 +1496,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     let cancelado = false;
@@ -1537,19 +1543,19 @@ export default function Home() {
 
       await Promise.all([
         cargar(
-          "/api/espn-stats/returning",
+          `/api/espn-stats/returning?temporada=${temporadaStats}&seasonType=2`,
           setReturningLeaders,
           setErrorReturning,
           setCargandoReturning,
         ),
         cargar(
-          "/api/espn-stats/kicking",
+          `/api/espn-stats/kicking?temporada=${temporadaStats}&seasonType=2`,
           setKickingLeaders,
           setErrorKicking,
           setCargandoKicking,
         ),
         cargar(
-          "/api/espn-stats/punting",
+          `/api/espn-stats/punting?temporada=${temporadaStats}&seasonType=2`,
           setPuntingLeaders,
           setErrorPunting,
           setCargandoPunting,
@@ -1562,7 +1568,7 @@ export default function Home() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporadaStats]);
 
   useEffect(() => {
     if (
@@ -1588,7 +1594,7 @@ export default function Home() {
               : "perdidos";
 
         const response = await fetch(
-          `/api/espn-team-stats/turnovers?categoria=${categoria}`,
+          `/api/espn-team-stats/turnovers?categoria=${categoria}&season=${temporadaStats}`,
           { cache: "no-store" },
         );
 
@@ -1626,6 +1632,7 @@ export default function Home() {
     vistaStatsCompleta,
     categoriaStatsEquipo,
     subcategoriaEntregasEquipo,
+    temporadaStats,
   ]);
 
   useEffect(() => {
@@ -1652,7 +1659,7 @@ export default function Home() {
               : "devoluciones";
 
         const response = await fetch(
-          `/api/espn-team-stats/special-teams?categoria=${categoria}`,
+          `/api/espn-team-stats/special-teams?categoria=${categoria}&temporada=${temporadaStats}&seasontype=2`,
           { cache: "no-store" },
         );
 
@@ -1690,6 +1697,7 @@ export default function Home() {
     vistaStatsCompleta,
     categoriaStatsEquipo,
     subcategoriaEspecialesEquipo,
+    temporadaStats,
   ]);
 
   useEffect(() => {
@@ -1716,7 +1724,7 @@ export default function Home() {
               : "yardas_permitidas";
 
         const response = await fetch(
-          `/api/espn-team-stats/defense?categoria=${categoria}`,
+          `/api/espn-team-stats/defense?categoria=${categoria}&temporada=${temporadaStats}&seasontype=2`,
           { cache: "no-store" },
         );
 
@@ -1754,6 +1762,7 @@ export default function Home() {
     vistaStatsCompleta,
     categoriaStatsEquipo,
     subcategoriaStatsEquipo,
+    temporadaStats,
   ]);
 
   useEffect(() => {
@@ -1780,7 +1789,7 @@ export default function Home() {
               : "yardas_totales";
 
         const response = await fetch(
-          `/api/espn-team-stats/offense?categoria=${categoria}`,
+          `/api/espn-team-stats/offense?categoria=${categoria}&temporada=${temporadaStats}&seasonType=2`,
           { cache: "no-store" },
         );
 
@@ -1818,6 +1827,7 @@ export default function Home() {
     vistaStatsCompleta,
     categoriaStatsEquipo,
     subcategoriaStatsEquipo,
+    temporadaStats,
   ]);
 
   const [nombrePerfil, setNombrePerfil] = useState("");
@@ -2079,6 +2089,8 @@ export default function Home() {
         if (!agrupadas[numJornada]) agrupadas[numJornada] = [];
         agrupadas[numJornada].push({
           id: row.id,
+          temporada: Number(row.temporada),
+          tipo_competicion: row.tipo_competicion,
           local: row.equipo_local,
           localLogo: row.info_local?.logo_url || "",
           visitante: row.equipo_visitante,
@@ -2107,6 +2119,8 @@ export default function Home() {
 
         agrupadasGames[numJornada].push({
           id: row.id,
+          temporada: Number(row.temporada),
+          tipo_competicion: row.tipo_competicion,
           local: row.equipo_local,
           localLogo: row.info_local?.logo_url || "",
           visitante: row.equipo_visitante,
@@ -2765,10 +2779,29 @@ export default function Home() {
       alert("Debes iniciar sesión para guardar tus pronósticos.");
       return;
     }
+    const partidoSinContexto = datosUsuarioActual.pronosticos.find(
+      (p) =>
+        !Number.isFinite(p.temporada) ||
+        !p.tipo_competicion,
+    );
+
+    if (partidoSinContexto) {
+      console.error(
+        "Pronóstico sin temporada/tipo_competicion:",
+        partidoSinContexto,
+      );
+      alert(
+        "No se pudieron guardar los pronósticos porque falta el contexto de competición.",
+      );
+      return;
+    }
+
     const filasGuardar = datosUsuarioActual.pronosticos.map((p) => ({
       user_id: usuarioLogueado.id,
       partido_id: p.id,
       eleccion: p.eleccion,
+      temporada: p.temporada,
+      tipo_competicion: p.tipo_competicion,
       updated_at: new Date().toISOString(),
     }));
     const { error } = await supabase
@@ -3858,8 +3891,13 @@ export default function Home() {
 
                     {/* TEMPORADA MÓVIL EQUIPO */}
                     <div className="shrink-0 xl:hidden">
-                      <select className="bg-white border border-zinc-300 rounded-full px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 outline-none">
-                        <option>2025</option>
+                      <select
+                        value={temporadaStats}
+                        onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                        className="bg-white border border-zinc-300 rounded-full px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 outline-none"
+                      >
+                        <option value={2026}>2026</option>
+                        <option value={2025}>2025</option>
                       </select>
                     </div>
                   </div>
@@ -4039,8 +4077,13 @@ export default function Home() {
 
                     {/* TEMPORADA MÓVIL */}
                     <div className="shrink-0 xl:hidden">
-                      <select className="bg-white border border-zinc-300 rounded-full px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 outline-none">
-                        <option>2025</option>
+                      <select
+                        value={temporadaStats}
+                        onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                        className="bg-white border border-zinc-300 rounded-full px-2.5 py-1.5 text-[10px] font-semibold text-zinc-700 outline-none"
+                      >
+                        <option value={2026}>2026</option>
+                        <option value={2025}>2025</option>
                       </select>
                     </div>
                   </div>
@@ -4048,8 +4091,13 @@ export default function Home() {
 
                 {/* TEMPORADA ESCRITORIO */}
                 <div className="mb-6 hidden xl:block">
-                  <select className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none">
-                    <option>2025 Temporada regular</option>
+                  <select
+                    value={temporadaStats}
+                    onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                    className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none"
+                  >
+                    <option value={2026}>2026 Temporada regular</option>
+                    <option value={2025}>2025 Temporada regular</option>
                   </select>
                 </div>
 
@@ -4057,13 +4105,13 @@ export default function Home() {
                 tipoStats === "equipo" &&
                 vistaResumenEquipo ? (
                   categoriaStatsEquipo === "ofensiva" ? (
-                    <TeamOffenseSummary />
+                    <TeamOffenseSummary temporada={temporadaStats} />
                   ) : categoriaStatsEquipo === "defensiva" ? (
-                    <TeamDefenseSummary />
+                    <TeamDefenseSummary temporada={temporadaStats} />
                   ) : categoriaStatsEquipo === "especiales" ? (
-                    <TeamSpecialTeamsSummary />
+                    <TeamSpecialTeamsSummary temporada={temporadaStats} />
                   ) : (
-                    <TeamTurnoversSummary />
+                    <TeamTurnoversSummary temporada={temporadaStats} />
                   )
                 ) : vistaStatsCompleta &&
                   tipoStats === "jugador" &&

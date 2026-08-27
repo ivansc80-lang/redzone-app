@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import type { EspnTeamOffenseSummary } from "@/lib/espnTeamSummary";
 
-export default function TeamOffenseSummary() {
+type Props = {
+  temporada: number;
+};
+
+export default function TeamOffenseSummary({ temporada }: Props) {
   const [datos, setDatos] = useState<EspnTeamOffenseSummary[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,9 +20,12 @@ export default function TeamOffenseSummary() {
       setError(null);
 
       try {
-        const response = await fetch("/api/espn-team-stats/summary/offense", {
-          cache: "no-store",
-        });
+        const response = await fetch(
+          `/api/espn-team-stats/summary/offense?temporada=${temporada}&seasonType=2`,
+          {
+            cache: "no-store",
+          },
+        );
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -46,7 +53,7 @@ export default function TeamOffenseSummary() {
     return () => {
       cancelado = true;
     };
-  }, []);
+  }, [temporada]);
 
   const columnas = [
     "GP",

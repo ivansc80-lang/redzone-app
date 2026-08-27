@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getReturningLeaders } from "@/lib/espnSpecialTeams";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    return NextResponse.json(await getReturningLeaders(2025, 2));
+    const searchParams = request.nextUrl.searchParams;
+    const temporada = Number(searchParams.get("temporada") ?? "2025");
+    const seasonType = Number(searchParams.get("seasonType") ?? "2");
+
+    return NextResponse.json(await getReturningLeaders(temporada, seasonType));
   } catch (error) {
     console.error("Error ESPN STATS DEVOLUCIONES:", error);
     return NextResponse.json(

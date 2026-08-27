@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import type { EspnTeamTurnoversSummary } from "@/lib/espnTeamSummary";
 
-export default function TeamTurnoversSummary() {
+type Props = {
+  temporada: number;
+};
+
+export default function TeamTurnoversSummary({ temporada }: Props) {
   const [datos,setDatos]=useState<EspnTeamTurnoversSummary[]>([]);
   const [cargando,setCargando]=useState(true);
   const [error,setError]=useState<string|null>(null);
 
   useEffect(()=>{ let cancelado=false;
     (async()=>{ try {
-      const response=await fetch("/api/espn-team-stats/summary/turnovers",{cache:"no-store"});
+      const response=await fetch(`/api/espn-team-stats/summary/turnovers?temporada=${temporada}&seasonType=2`,{cache:"no-store"});
       if(!response.ok) throw new Error(`HTTP ${response.status}`);
       const data:EspnTeamTurnoversSummary[]=await response.json();
       if(!cancelado) setDatos(data);
@@ -18,7 +22,7 @@ export default function TeamTurnoversSummary() {
       finally { if(!cancelado) setCargando(false); }
     })();
     return()=>{cancelado=true};
-  },[]);
+  },[temporada]);
 
   const columnas=["GP","PERDIDOS","RECUPERADOS","DIF"];
   const keys=["GP","GIVE","TAKE","DIFF"] as (keyof EspnTeamTurnoversSummary)[];

@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import type { EspnTeamSpecialTeamsSummary } from "@/lib/espnTeamSummary";
 
-export default function TeamSpecialTeamsSummary() {
+type Props = {
+  temporada: number;
+};
+
+export default function TeamSpecialTeamsSummary({ temporada }: Props) {
   const [datos,setDatos]=useState<EspnTeamSpecialTeamsSummary[]>([]);
   const [cargando,setCargando]=useState(true);
   const [error,setError]=useState<string|null>(null);
 
   useEffect(()=>{ let cancelado=false;
     (async()=>{ try {
-      const response=await fetch("/api/espn-team-stats/summary/special-teams",{cache:"no-store"});
+      const response=await fetch(`/api/espn-team-stats/summary/special-teams?temporada=${temporada}&seasonType=2`,{cache:"no-store"});
       if(!response.ok) throw new Error(`HTTP ${response.status}`);
       const data:EspnTeamSpecialTeamsSummary[]=await response.json();
       if(!cancelado) setDatos(data);
@@ -18,7 +22,7 @@ export default function TeamSpecialTeamsSummary() {
       finally { if(!cancelado) setCargando(false); }
     })();
     return()=>{cancelado=true};
-  },[]);
+  },[temporada]);
 
   const columnas=["GP","KR YDS","KR AVG","KR TD","PR YDS","PR AVG","PR TD","FGM","FGA","FG%","XPM","PUNTS","P AVG","IN20"];
   const keys=["GP","KRYDS","KRAVG","KRTD","PRYDS","PRAVG","PRTD","FGM","FGA","FGPCT","XPM","PUNTS","PAVG","IN20"] as (keyof EspnTeamSpecialTeamsSummary)[];
