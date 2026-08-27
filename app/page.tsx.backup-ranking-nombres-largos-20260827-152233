@@ -142,48 +142,6 @@ const NOMBRES_FAN: Record<string, string> = {
 const nombreFanEquipo = (codigo: string) =>
   NOMBRES_FAN[codigo?.toUpperCase()] || codigo;
 
-const EQUIPOS_PERFIL_NFL = [
-  "BUF", "MIA", "NE", "NYJ",
-  "BAL", "CIN", "CLE", "PIT",
-  "HOU", "IND", "JAX", "TEN",
-  "DEN", "KC", "LV", "LAC",
-  "DAL", "NYG", "PHI", "WAS",
-  "CHI", "DET", "GB", "MIN",
-  "ATL", "CAR", "NO", "TB",
-  "ARI", "LAR", "SF", "SEA",
-] as const;
-
-const logoEquipoPerfil = (codigo: string) =>
-  `https://a.espncdn.com/i/teamlogos/nfl/500/${codigo.toLowerCase()}.png`;
-
-const normalizarCodigoEquipoPerfil = (valor?: string | null) => {
-  const limpio = String(valor || "").trim().toUpperCase();
-
-  if (!limpio) return "";
-
-  if (EQUIPOS_PERFIL_NFL.includes(limpio as any)) {
-    return limpio;
-  }
-
-  // Compatibilidad con los valores antiguos guardados como nombre.
-  const especiales: Record<string, string> = {
-    "49ERS": "SF",
-    "CHIEFS": "KC",
-    "PATRIOTS": "NE",
-    "COMMANDERS": "WAS",
-  };
-
-  if (especiales[limpio]) return especiales[limpio];
-
-  const encontrado = Object.entries(NOMBRES_FAN).find(
-    ([codigo, nombre]) =>
-      codigo !== "WSH" &&
-      nombre.toUpperCase() === limpio,
-  );
-
-  return encontrado?.[0] || limpio;
-};
-
 const DIVISIONES_BASE: Division[] = [
   {
     nombre: "AFC Este",
@@ -2037,8 +1995,6 @@ const [verPassword, setVerPassword] = useState(false);
   const [campoPerfilEditando, setCampoPerfilEditando] = useState<
     "nombre" | "equipo" | "avatar" | null
   >(null);
-  const [selectorEquipoAbierto, setSelectorEquipoAbierto] =
-    useState(false);
 
   const [jornadasOficiales, setJornadasOficiales] = useState<
     Record<number, PronosticoPartido[]>
@@ -2491,14 +2447,11 @@ const [verPassword, setVerPassword] = useState(false);
       .maybeSingle();
 
     if (data) {
-      const codigoEquipo =
-        normalizarCodigoEquipoPerfil(data.nombre_equipo);
-
       setNombrePerfil(data.nombre || "");
-      setNombreEquipo(codigoEquipo);
+      setNombreEquipo(data.nombre_equipo || "");
       setAvatarUrlInput(data.avatar_url || "");
 
-      // Sincroniza PERFIL con RANKING.
+      // Sincroniza los datos guardados del perfil con RANKING.
       if (userEmail) {
         setUsuarios((prev) =>
           prev.map((usuario) =>
@@ -2506,12 +2459,6 @@ const [verPassword, setVerPassword] = useState(false);
               ? {
                   ...usuario,
                   nombre: data.nombre || usuario.nombre,
-                  nombreEquipo: codigoEquipo
-                    ? nombreFanEquipo(codigoEquipo).toUpperCase()
-                    : usuario.nombreEquipo,
-                  logoEquipo: codigoEquipo
-                    ? logoEquipoPerfil(codigoEquipo)
-                    : usuario.logoEquipo,
                 }
               : usuario,
           ),
@@ -2523,19 +2470,11 @@ const [verPassword, setVerPassword] = useState(false);
   const handleGuardarPerfil = async () => {
     if (!usuarioLogueado) return;
     setGuardandoPerfil(true);
-
-    const codigoEquipo =
-      normalizarCodigoEquipoPerfil(nombreEquipo);
-
-    const logoEquipo = codigoEquipo
-      ? logoEquipoPerfil(codigoEquipo)
-      : "";
-
     const { error } = await supabase.from("profiles").upsert({
       id: usuarioLogueado.id,
       nombre: nombrePerfil,
-      nombre_equipo: codigoEquipo,
-      logo_equipo: logoEquipo,
+      nombre_equipo: nombreEquipo,
+      avatar_url: avatarUrlInput,
       updated_at: new Date(),
     });
     setGuardandoPerfil(false);
@@ -2551,12 +2490,6 @@ const [verPassword, setVerPassword] = useState(false);
             ? {
                 ...usuario,
                 nombre: nombrePerfil || usuario.nombre,
-                nombreEquipo: codigoEquipo
-                  ? nombreFanEquipo(codigoEquipo).toUpperCase()
-                  : usuario.nombreEquipo,
-                logoEquipo: codigoEquipo
-                  ? logoEquipoPerfil(codigoEquipo)
-                  : usuario.logoEquipo,
               }
             : usuario,
         ),
@@ -2598,27 +2531,6 @@ const [verPassword, setVerPassword] = useState(false);
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // Si se abandona PERFIL mientras el nombre está en edición
-  // sin haber pulsado Guardar Cambios, descartamos el borrador
-  // y restauramos el último nombre guardado en el estado de usuarios.
-  useEffect(() => {
-    if (
-      pestanaActiva !== "perfil" &&
-      campoPerfilEditando === "nombre"
-    ) {
-      const nombreGuardado =
-        usuarios.find((usuario) => usuario.id === usuarioActivoId)?.nombre || "";
-
-      setNombrePerfil(nombreGuardado);
-      setCampoPerfilEditando(null);
-    }
-  }, [
-    pestanaActiva,
-    campoPerfilEditando,
-    usuarios,
-    usuarioActivoId,
-  ]);
-
   const handleLogin = async () => {
     setErrorLogin("");
     const { error } = await supabase.auth.signInWithPassword({
@@ -2645,7 +2557,6 @@ const [verPassword, setVerPassword] = useState(false);
     setAvatarUrlInput("");
     setCampoPerfilEditando(null);
     setVistaPerfilPalmares(false);
-    setSelectorEquipoAbierto(false);
   };
 
   // ============================================================
@@ -7821,25 +7732,15 @@ const [verPassword, setVerPassword] = useState(false);
                           className="w-20 h-20 md:w-24 md:h-24 rounded-2xl border-2 border-white object-cover shadow-lg flex-shrink-0"
                         />
                         <div className="flex items-center gap-4 md:gap-8">
-                          <div className="flex flex-col justify-center w-36 md:w-52 flex-shrink-0 min-w-0">
+                          <div className="flex flex-col justify-center w-28 md:w-36 flex-shrink-0">
                             <span className="text-[10px] md:text-xs font-mono tracking-widest text-zinc-300 uppercase font-semibold">
                               HEADCOACH
                             </span>
-                            <span
-                              className={`font-black text-white tracking-wider font-['Orbitron'] italic uppercase whitespace-nowrap ${
-                                usr.nombre.length > 12
-                                  ? "text-sm md:text-lg"
-                                  : usr.nombre.length > 9
-                                    ? "text-base md:text-xl"
-                                    : usr.nombre.length > 6
-                                      ? "text-lg md:text-2xl"
-                                      : "text-xl md:text-3xl"
-                              }`}
-                            >
+                            <span className="text-xl md:text-3xl font-black text-white tracking-wider font-['Orbitron'] italic uppercase">
                               {usr.nombre}
                             </span>
                           </div>
-                          <div className="hidden md:flex items-center gap-6 ml-2 md:ml-8">
+                          <div className="hidden md:flex items-center gap-6 ml-4 md:ml-20">
                             <img
                               src={usr.logoEquipo}
                               alt={usr.nombreEquipo}
@@ -8963,16 +8864,14 @@ const [verPassword, setVerPassword] = useState(false);
 
                         <div className="relative">
                           <input
-                            id="nombre-perfil-input"
                             type="text"
-                            maxLength={15}
                             value={
                               campoPerfilEditando === "nombre"
                                 ? nombrePerfil
                                 : nombrePerfil || usuarioPerfilActual?.nombre || ""
                             }
                             readOnly={campoPerfilEditando !== "nombre"}
-                            onChange={(e) => setNombrePerfil(e.target.value.slice(0, 15))}
+                            onChange={(e) => setNombrePerfil(e.target.value)}
                             className={`w-full bg-[#9e0101] text-white border border-red-700 rounded-lg p-2.5 pr-12 font-mono focus:outline-none ${
                               campoPerfilEditando === "nombre"
                                 ? "ring-2 ring-white"
@@ -8991,14 +8890,6 @@ const [verPassword, setVerPassword] = useState(false);
                                 // vacío para escribir el nuevo nombre.
                                 setNombrePerfil("");
                                 setCampoPerfilEditando("nombre");
-
-                                // Coloca automáticamente el cursor dentro
-                                // del campo de Nombre de Usuario.
-                                setTimeout(() => {
-                                  document
-                                    .getElementById("nombre-perfil-input")
-                                    ?.focus();
-                                }, 0);
                               }
                             }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/20 text-white cursor-pointer"
@@ -9017,85 +8908,79 @@ const [verPassword, setVerPassword] = useState(false);
                           <input
                             type="text"
                             value={
-                              nombreEquipo
-                                ? nombreFanEquipo(
-                                    normalizarCodigoEquipoPerfil(nombreEquipo),
-                                  ).toUpperCase()
-                                : ""
+                              nombreEquipo ||
+                              usuarioPerfilActual?.nombreEquipo ||
+                              ""
                             }
-                            readOnly
-                            className="w-full bg-[#9e0101] text-white border border-red-700 rounded-lg p-2.5 pr-12 font-mono focus:outline-none cursor-default"
+                            readOnly={campoPerfilEditando !== "equipo"}
+                            onChange={(e) => setNombreEquipo(e.target.value)}
+                            className={`w-full bg-[#9e0101] text-white border border-red-700 rounded-lg p-2.5 pr-12 font-mono focus:outline-none ${
+                              campoPerfilEditando === "equipo"
+                                ? "ring-2 ring-white"
+                                : "cursor-default"
+                            }`}
                           />
 
                           <button
                             type="button"
-                            aria-label="Seleccionar equipo NFL"
+                            aria-label="Editar nombre del equipo"
                             onClick={() => {
-                              setSelectorEquipoAbierto(
-                                (anterior) => !anterior,
+                              if (
+                                !nombreEquipo &&
+                                usuarioPerfilActual?.nombreEquipo
+                              ) {
+                                setNombreEquipo(
+                                  usuarioPerfilActual.nombreEquipo,
+                                );
+                              }
+                              setCampoPerfilEditando(
+                                campoPerfilEditando === "equipo"
+                                  ? null
+                                  : "equipo",
                               );
-                              setCampoPerfilEditando(null);
                             }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/20 text-white cursor-pointer"
                           >
                             ✎
                           </button>
                         </div>
-
-                        {selectorEquipoAbierto && (
-                          <div className="mt-3 bg-white border-2 border-[#002244] rounded-xl p-4 shadow-xl">
-                            <div className="flex items-center justify-between mb-4">
-                              <p className="font-['Orbitron'] font-black text-[#002244] text-xs uppercase">
-                                Selecciona tu equipo
-                              </p>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setSelectorEquipoAbierto(false)
-                                }
-                                className="text-[#002244] text-lg font-black hover:text-red-700 cursor-pointer"
-                              >
-                                ×
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-8 gap-2 md:gap-3">
-                              {EQUIPOS_PERFIL_NFL.map((codigo) => {
-                                const seleccionado =
-                                  normalizarCodigoEquipoPerfil(
-                                    nombreEquipo,
-                                  ) === codigo;
-
-                                return (
-                                  <button
-                                    key={codigo}
-                                    type="button"
-                                    title={nombreFanEquipo(codigo)}
-                                    aria-label={`Seleccionar ${nombreFanEquipo(codigo)}`}
-                                    onClick={() => {
-                                      setNombreEquipo(codigo);
-                                      setSelectorEquipoAbierto(false);
-                                    }}
-                                    className={`aspect-square rounded-lg flex items-center justify-center p-1.5 transition-all cursor-pointer ${
-                                      seleccionado
-                                        ? "border-2 border-red-600 bg-red-50 shadow-md scale-105"
-                                        : "border border-zinc-200 hover:border-[#002244] hover:bg-zinc-50 hover:scale-105"
-                                    }`}
-                                  >
-                                    <img
-                                      src={logoEquipoPerfil(codigo)}
-                                      alt={nombreFanEquipo(codigo)}
-                                      className="w-full h-full object-contain"
-                                    />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
                       </div>
 
+                      <div>
+                        <label className="block text-[#002244] font-bold mb-1">
+                          URL del Avatar
+                        </label>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={avatarUrlInput}
+                            readOnly={campoPerfilEditando !== "avatar"}
+                            onChange={(e) => setAvatarUrlInput(e.target.value)}
+                            placeholder="https://..."
+                            className={`w-full bg-[#9e0101] text-white placeholder-red-200 border border-red-700 rounded-lg p-2.5 pr-12 font-mono focus:outline-none ${
+                              campoPerfilEditando === "avatar"
+                                ? "ring-2 ring-white"
+                                : "cursor-default"
+                            }`}
+                          />
+
+                          <button
+                            type="button"
+                            aria-label="Editar URL del avatar"
+                            onClick={() =>
+                              setCampoPerfilEditando(
+                                campoPerfilEditando === "avatar"
+                                  ? null
+                                  : "avatar",
+                              )
+                            }
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/20 text-white cursor-pointer"
+                          >
+                            ✎
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
                     <button

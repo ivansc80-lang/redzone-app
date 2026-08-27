@@ -2536,6 +2536,7 @@ const [verPassword, setVerPassword] = useState(false);
       nombre: nombrePerfil,
       nombre_equipo: codigoEquipo,
       logo_equipo: logoEquipo,
+      avatar_url: avatarUrlInput,
       updated_at: new Date(),
     });
     setGuardandoPerfil(false);
@@ -9096,6 +9097,41 @@ const [verPassword, setVerPassword] = useState(false);
                         )}
                       </div>
 
+                      <div>
+                        <label className="block text-[#002244] font-bold mb-1">
+                          URL del Avatar
+                        </label>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={avatarUrlInput}
+                            readOnly={campoPerfilEditando !== "avatar"}
+                            onChange={(e) => setAvatarUrlInput(e.target.value)}
+                            placeholder="https://..."
+                            className={`w-full bg-[#9e0101] text-white placeholder-red-200 border border-red-700 rounded-lg p-2.5 pr-12 font-mono focus:outline-none ${
+                              campoPerfilEditando === "avatar"
+                                ? "ring-2 ring-white"
+                                : "cursor-default"
+                            }`}
+                          />
+
+                          <button
+                            type="button"
+                            aria-label="Editar URL del avatar"
+                            onClick={() =>
+                              setCampoPerfilEditando(
+                                campoPerfilEditando === "avatar"
+                                  ? null
+                                  : "avatar",
+                              )
+                            }
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md hover:bg-black/20 text-white cursor-pointer"
+                          >
+                            ✎
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
                     <button
