@@ -2226,6 +2226,214 @@ const [verPassword, setVerPassword] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [errorLogin, setErrorLogin] = useState("");
 
+  // ============================================================
+  // PUSH PWA
+  // ============================================================
+  // Durante la fase inicial solamente se habilita para IVAN.
+  const [estadoPush, setEstadoPush] = useState<
+    "comprobando" | "disponible" | "activando" | "activo" | "denegado" | "no-soportado" | "error"
+  >("comprobando");
+
+  const [diagnosticoPush, setDiagnosticoPush] = useState({
+    permission: "sin comprobar",
+    serviceWorker: false,
+    pushManager: false,
+    notificationApi: false,
+  });
+
+  const [mensajeErrorPush, setMensajeErrorPush] = useState("");
+
+  const esIvanPush =
+    usuarioLogueado?.email?.toLowerCase() === "ivansc80@gmail.com";
+
+  const urlBase64AUint8Array = (base64String: string) => {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const rawData = window.atob(base64);
+
+    return Uint8Array.from(
+      [...rawData].map((caracter) => caracter.charCodeAt(0)),
+    );
+  };
+
+  const guardarSuscripcionPush = async (
+    suscripcion: PushSubscription,
+  ) => {
+    if (!usuarioLogueado?.id) {
+      throw new Error("No hay usuario autenticado para guardar PUSH");
+    }
+
+    const json = suscripcion.toJSON();
+
+    const p256dh = json.keys?.p256dh;
+    const auth = json.keys?.auth;
+
+    if (!p256dh || !auth) {
+      throw new Error("La suscripción PUSH no contiene claves válidas");
+    }
+
+    const { error } = await supabase
+      .from("push_subscriptions")
+      .upsert(
+        {
+          user_id: usuarioLogueado.id,
+          endpoint: suscripcion.endpoint,
+          p256dh,
+          auth,
+          user_agent: navigator.userAgent,
+          activo: true,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "endpoint",
+        },
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(
+      "✅ PUSH REDZONE - Suscripción guardada en Supabase para IVAN",
+    );
+  };
+
+  const activarPushIvan = async () => {
+    try {
+      setMensajeErrorPush("");
+      setEstadoPush("activando");
+
+      if (
+        !("serviceWorker" in navigator) ||
+        !("PushManager" in window) ||
+        !("Notification" in window)
+      ) {
+        setEstadoPush("no-soportado");
+        return;
+      }
+
+      const permiso = await Notification.requestPermission();
+
+      if (permiso !== "granted") {
+        setEstadoPush("denegado");
+        return;
+      }
+
+      const registro = await navigator.serviceWorker.register("/sw.js");
+
+      await navigator.serviceWorker.ready;
+
+      let suscripcion = await registro.pushManager.getSubscription();
+
+      if (!suscripcion) {
+        const clavePublica =
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+        if (!clavePublica) {
+          throw new Error("Falta NEXT_PUBLIC_VAPID_PUBLIC_KEY");
+        }
+
+        suscripcion = await registro.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64AUint8Array(clavePublica),
+        });
+      }
+
+      console.log(
+        "✅ PUSH REDZONE - Suscripción creada para IVAN:",
+        suscripcion,
+      );
+
+      // Persistimos la suscripción para poder enviar PUSH
+      // aunque REDZONE no esté abierta.
+      await guardarSuscripcionPush(suscripcion);
+
+      setEstadoPush("activo");
+    } catch (error) {
+      console.error("❌ Error activando PUSH REDZONE:", error);
+
+      const mensaje =
+        error instanceof Error
+          ? `${error.name}: ${error.message}`
+          : String(error);
+
+      setMensajeErrorPush(mensaje);
+      setEstadoPush("error");
+    }
+  };
+
+  useEffect(() => {
+    const comprobarDiagnosticoPush = () => {
+      const tieneNotification =
+        typeof window !== "undefined" &&
+        "Notification" in window;
+
+      setDiagnosticoPush({
+        permission: tieneNotification
+          ? Notification.permission
+          : "sin Notification API",
+        serviceWorker:
+          typeof navigator !== "undefined" &&
+          "serviceWorker" in navigator,
+        pushManager:
+          typeof window !== "undefined" &&
+          "PushManager" in window,
+        notificationApi: tieneNotification,
+      });
+    };
+
+    comprobarDiagnosticoPush();
+
+    if (!usuarioLogueado?.id || !esIvanPush) {
+      setEstadoPush("comprobando");
+      return;
+    }
+
+    const comprobarPush = async () => {
+      try {
+        if (
+          !("serviceWorker" in navigator) ||
+          !("PushManager" in window) ||
+          !("Notification" in window)
+        ) {
+          setEstadoPush("no-soportado");
+          return;
+        }
+
+        if (Notification.permission === "denied") {
+          setEstadoPush("denegado");
+          return;
+        }
+
+        const registro = await navigator.serviceWorker.getRegistration();
+
+        if (registro) {
+          const suscripcion =
+            await registro.pushManager.getSubscription();
+
+          if (suscripcion) {
+            // Puede existir en el navegador pero todavía no
+            // estar persistida en Supabase.
+            await guardarSuscripcionPush(suscripcion);
+
+            setEstadoPush("activo");
+            return;
+          }
+        }
+
+        setEstadoPush("disponible");
+      } catch (error) {
+        console.error("Error comprobando PUSH:", error);
+        setEstadoPush("error");
+      }
+    };
+
+    comprobarPush();
+  }, [usuarioLogueado?.id, esIvanPush]);
+
   const [estadoDesempate, setEstadoDesempate] = useState<any>(null);
   const [tiradasDesempate, setTiradasDesempate] = useState<any[]>([]);
   const [girandoRuleta, setGirandoRuleta] = useState(false);
@@ -9535,6 +9743,95 @@ const [verPassword, setVerPassword] = useState(false);
                     >
                       {guardandoPerfil ? "Guardando..." : "Guardar Cambios"}
                     </button>
+
+                    {esIvanPush && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={activarPushIvan}
+                          disabled={
+                            estadoPush === "activando" ||
+                            estadoPush === "activo" ||
+                            estadoPush === "no-soportado"
+                          }
+                          className={`w-full py-2.5 text-white text-xs font-bold rounded-lg uppercase transition-colors shadow-lg ${
+                            estadoPush === "activo"
+                              ? "bg-emerald-600 cursor-default"
+                              : estadoPush === "denegado" ||
+                                  estadoPush === "error"
+                                ? "bg-red-700 hover:bg-red-800 cursor-pointer"
+                                : estadoPush === "no-soportado"
+                                  ? "bg-zinc-500 cursor-default"
+                                  : "bg-[#002244] hover:bg-[#003a70] cursor-pointer"
+                          }`}
+                        >
+                          {estadoPush === "activando"
+                            ? "Activando notificaciones..."
+                            : estadoPush === "activo"
+                              ? "🔔 Notificaciones activadas"
+                              : estadoPush === "denegado"
+                                ? "🔕 Permiso de notificaciones bloqueado"
+                                : estadoPush === "no-soportado"
+                                  ? "Notificaciones no disponibles"
+                                  : estadoPush === "error"
+                                    ? "⚠️ Reintentar notificaciones"
+                                    : "🔔 Activar notificaciones"}
+                        </button>
+
+                        <p className="mt-1.5 text-center text-[9px] text-zinc-500">
+                          Prueba PUSH REDZONE · IVAN
+                        </p>
+
+                        <div className="mt-3 rounded-lg border border-zinc-300 bg-zinc-100 p-3 text-[10px] text-zinc-800 font-mono">
+                          <p>
+                            Notification.permission:
+                            {" "}
+                            <strong>{diagnosticoPush.permission}</strong>
+                          </p>
+
+                          <p>
+                            Notification API:
+                            {" "}
+                            <strong>
+                              {diagnosticoPush.notificationApi ? "SI" : "NO"}
+                            </strong>
+                          </p>
+
+                          <p>
+                            Service Worker:
+                            {" "}
+                            <strong>
+                              {diagnosticoPush.serviceWorker ? "SI" : "NO"}
+                            </strong>
+                          </p>
+
+                          <p>
+                            PushManager:
+                            {" "}
+                            <strong>
+                              {diagnosticoPush.pushManager ? "SI" : "NO"}
+                            </strong>
+                          </p>
+
+                          <p>
+                            estadoPush:
+                            {" "}
+                            <strong>{estadoPush}</strong>
+                          </p>
+
+                          {mensajeErrorPush && (
+                            <div className="mt-2 border-t border-zinc-300 pt-2">
+                              <p className="font-bold text-red-700">
+                                ERROR PUSH:
+                              </p>
+                              <p className="mt-1 break-all text-red-700">
+                                {mensajeErrorPush}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <button
                       onClick={handleLogout}

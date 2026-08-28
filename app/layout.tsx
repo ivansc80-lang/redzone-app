@@ -3,6 +3,7 @@ import './globals.css';
 export const metadata = {
   title: 'REDZONE',
   description: 'NFL Pick\'em App',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
