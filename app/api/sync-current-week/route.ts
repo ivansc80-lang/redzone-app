@@ -4,6 +4,9 @@ import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
 import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
 import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
+import {
+  pushInicioTemporadaSiProcede,
+} from '@/lib/pushAutomatic';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,7 +121,7 @@ export async function GET(request: NextRequest) {
     // finalizada y sincronizamos únicamente esa jornada.
     const { data: jornadaActiva, error: jornadaActivaError } = await supabase
       .from('jornadas_eventos')
-      .select('jornada, estado')
+      .select('jornada, estado, cierre_pronosticos')
       .neq('estado', 'finalizada')
       .order('jornada', { ascending: true })
       .limit(1)
@@ -141,6 +144,25 @@ export async function GET(request: NextRequest) {
 
     const jornada = Number(jornadaActiva.jornada);
 
+    // ========================================================
+    // PUSH 1 - INICIO TEMPORADA / APERTURA PORRA J1
+    // ========================================================
+    //
+    // Mientras Modo TEST siga activo nunca llegamos aquí,
+    // porque syncPreseasonTest devuelve antes.
+    //
+    // Cuando REDZONE entra realmente en Temporada Regular,
+    // J1 está pendiente y su PORRA abierta.
+    //
+    const pushInicioTemporada =
+      await pushInicioTemporadaSiProcede({
+        temporada: 2026,
+        jornada,
+        estado: jornadaActiva.estado,
+        cierrePronosticos:
+          jornadaActiva.cierre_pronosticos,
+      });
+
     await sincronizarTemporadaCompleta(2026, jornada, jornada);
 
     return NextResponse.json({
@@ -149,6 +171,7 @@ export async function GET(request: NextRequest) {
       debug,
       jornada,
       estado: jornadaActiva.estado,
+      pushInicioTemporada,
       message: `Jornada ${jornada} sincronizada correctamente desde ESPN.`,
     });
   } catch (error: any) {

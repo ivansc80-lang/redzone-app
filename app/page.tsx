@@ -2033,6 +2033,22 @@ export default function Home() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   
   const [vistaPerfilPalmares, setVistaPerfilPalmares] = useState(false);
+
+  // ==========================================================
+  // PALMARÉS DE REDZONE - LOGROS DINÁMICOS
+  // ==========================================================
+  const [logrosPalmares, setLogrosPalmares] = useState<Array<{
+    id: string;
+    temporada: number;
+    jornada: number;
+    tipo_competicion: string;
+    tipo_logro: "PLENO_REDZONE" | "PLENO_MAGICO";
+    detalle: string | null;
+    conseguido_at: string;
+  }>>([]);
+
+  const [cargandoLogrosPalmares, setCargandoLogrosPalmares] =
+    useState(false);
 const [verPassword, setVerPassword] = useState(false);
   const [campoPerfilEditando, setCampoPerfilEditando] = useState<
     "nombre" | "equipo" | "avatar" | null
@@ -2229,7 +2245,7 @@ const [verPassword, setVerPassword] = useState(false);
   // ============================================================
   // PUSH PWA
   // ============================================================
-  // Durante la fase inicial solamente se habilita para IVAN.
+  // PUSH disponible para cualquier usuario autenticado.
   const [estadoPush, setEstadoPush] = useState<
     "comprobando" | "disponible" | "activando" | "activo" | "denegado" | "no-soportado" | "error"
   >("comprobando");
@@ -2242,9 +2258,6 @@ const [verPassword, setVerPassword] = useState(false);
   });
 
   const [mensajeErrorPush, setMensajeErrorPush] = useState("");
-
-  const esIvanPush =
-    usuarioLogueado?.email?.toLowerCase() === "ivansc80@gmail.com";
 
   const urlBase64AUint8Array = (base64String: string) => {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -2297,11 +2310,11 @@ const [verPassword, setVerPassword] = useState(false);
     }
 
     console.log(
-      "✅ PUSH REDZONE - Suscripción guardada en Supabase para IVAN",
+      "✅ PUSH REDZONE - Suscripción guardada en Supabase para usuario:", usuarioLogueado?.id,
     );
   };
 
-  const activarPushIvan = async () => {
+  const activarPushUsuario = async () => {
     try {
       setMensajeErrorPush("");
       setEstadoPush("activando");
@@ -2343,7 +2356,7 @@ const [verPassword, setVerPassword] = useState(false);
       }
 
       console.log(
-        "✅ PUSH REDZONE - Suscripción creada para IVAN:",
+        "✅ PUSH REDZONE - Suscripción creada para usuario:",
         suscripcion,
       );
 
@@ -2387,7 +2400,7 @@ const [verPassword, setVerPassword] = useState(false);
 
     comprobarDiagnosticoPush();
 
-    if (!usuarioLogueado?.id || !esIvanPush) {
+    if (!usuarioLogueado?.id) {
       setEstadoPush("comprobando");
       return;
     }
@@ -2432,7 +2445,7 @@ const [verPassword, setVerPassword] = useState(false);
     };
 
     comprobarPush();
-  }, [usuarioLogueado?.id, esIvanPush]);
+  }, [usuarioLogueado?.id]);
 
   const [estadoDesempate, setEstadoDesempate] = useState<any>(null);
   const [tiradasDesempate, setTiradasDesempate] = useState<any[]>([]);
@@ -2885,6 +2898,50 @@ const [verPassword, setVerPassword] = useState(false);
     usuarios,
     usuarioActivoId,
   ]);
+
+  // ==========================================================
+  // PALMARÉS - CARGAR LOGROS DEL USUARIO
+  // ==========================================================
+  useEffect(() => {
+    let activo = true;
+
+    const cargarLogrosPalmares = async () => {
+      if (!vistaPerfilPalmares || !usuarioLogueado?.id) {
+        if (activo) setLogrosPalmares([]);
+        return;
+      }
+
+      if (activo) setCargandoLogrosPalmares(true);
+
+      const { data, error } = await supabase
+        .from("logros")
+        .select(
+          "id, temporada, jornada, tipo_competicion, tipo_logro, detalle, conseguido_at"
+        )
+        .eq("user_id", usuarioLogueado.id)
+        .in("tipo_logro", ["PLENO_REDZONE", "PLENO_MAGICO"])
+        // Orden cronológico: los logros nuevos se añaden al final.
+        .order("conseguido_at", { ascending: true });
+
+      if (!activo) return;
+
+      if (error) {
+        console.error("❌ Error cargando PALMARÉS:", error);
+        setLogrosPalmares([]);
+      } else {
+        setLogrosPalmares((data || []) as any);
+      }
+
+      setCargandoLogrosPalmares(false);
+    };
+
+    cargarLogrosPalmares();
+
+    return () => {
+      activo = false;
+    };
+  }, [vistaPerfilPalmares, usuarioLogueado?.id]);
+
 
   const handleLogin = async () => {
     setErrorLogin("");
@@ -9744,11 +9801,11 @@ const [verPassword, setVerPassword] = useState(false);
                       {guardandoPerfil ? "Guardando..." : "Guardar Cambios"}
                     </button>
 
-                    {esIvanPush && (
+                    {usuarioLogueado?.id && (
                       <div className="pt-1">
                         <button
                           type="button"
-                          onClick={activarPushIvan}
+                          onClick={activarPushUsuario}
                           disabled={
                             estadoPush === "activando" ||
                             estadoPush === "activo" ||
@@ -9778,58 +9835,6 @@ const [verPassword, setVerPassword] = useState(false);
                                     : "🔔 Activar notificaciones"}
                         </button>
 
-                        <p className="mt-1.5 text-center text-[9px] text-zinc-500">
-                          Prueba PUSH REDZONE · IVAN
-                        </p>
-
-                        <div className="mt-3 rounded-lg border border-zinc-300 bg-zinc-100 p-3 text-[10px] text-zinc-800 font-mono">
-                          <p>
-                            Notification.permission:
-                            {" "}
-                            <strong>{diagnosticoPush.permission}</strong>
-                          </p>
-
-                          <p>
-                            Notification API:
-                            {" "}
-                            <strong>
-                              {diagnosticoPush.notificationApi ? "SI" : "NO"}
-                            </strong>
-                          </p>
-
-                          <p>
-                            Service Worker:
-                            {" "}
-                            <strong>
-                              {diagnosticoPush.serviceWorker ? "SI" : "NO"}
-                            </strong>
-                          </p>
-
-                          <p>
-                            PushManager:
-                            {" "}
-                            <strong>
-                              {diagnosticoPush.pushManager ? "SI" : "NO"}
-                            </strong>
-                          </p>
-
-                          <p>
-                            estadoPush:
-                            {" "}
-                            <strong>{estadoPush}</strong>
-                          </p>
-
-                          {mensajeErrorPush && (
-                            <div className="mt-2 border-t border-zinc-300 pt-2">
-                              <p className="font-bold text-red-700">
-                                ERROR PUSH:
-                              </p>
-                              <p className="mt-1 break-all text-red-700">
-                                {mensajeErrorPush}
-                              </p>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     )}
 
@@ -9875,11 +9880,101 @@ const [verPassword, setVerPassword] = useState(false);
                       const imagenPalmares = `/palmares_${nombrePalmares}.png`;
 
                       return (
-                        <img
+                        <div className="w-full">
+                          <img
                           src={imagenPalmares}
                           alt={`Palmarés de ${usuarioPerfilActual?.nombre ?? nombrePerfil ?? "REDZONE"}`}
                           className="block w-full h-auto object-contain"
                         />
+
+                          {/* ==================================================
+                              PALMARÉS DE REDZONE - LOGROS DINÁMICOS
+                              ================================================== */}
+                          <div className="w-[92%] max-w-[1536px] mx-auto mt-6 mb-8 bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden">
+                            <div className="px-4 md:px-8 py-5 border-b border-gray-200">
+                              <div className="flex items-center justify-center gap-3">
+                                <span className="text-2xl md:text-3xl">🏆</span>
+                                <h2 className="font-['Orbitron'] font-black text-[#002244] text-sm md:text-xl uppercase tracking-wide text-center">
+                                  PALMARÉS DE REDZONE
+                                </h2>
+                              </div>
+                            </div>
+
+                            <div className="p-4 md:p-6 space-y-3">
+                              {cargandoLogrosPalmares ? (
+                                <div className="py-8 text-center font-['Orbitron'] text-xs md:text-sm text-gray-500">
+                                  Cargando logros...
+                                </div>
+                              ) : logrosPalmares.length === 0 ? (
+                                <div className="py-10 text-center">
+                                  <div className="text-3xl mb-3">🏆</div>
+                                  <p className="font-['Orbitron'] font-black text-[#002244] text-xs md:text-sm uppercase">
+                                    AÚN NO HAY LOGROS
+                                  </p>
+                                </div>
+                              ) : (
+                                logrosPalmares.map((logro) => {
+                                  const esMagico =
+                                    logro.tipo_logro === "PLENO_MAGICO";
+
+                                  const icono = esMagico ? "✨" : "🏆";
+
+                                  const tituloLogro = esMagico
+                                    ? "PLENO MÁGICO"
+                                    : "PLENO REDZONE";
+
+                                  const competicion =
+                                    logro.tipo_competicion === "regular"
+                                      ? `TR ${String(logro.temporada).slice(-2)}`
+                                      : `${String(logro.tipo_competicion || "").toUpperCase()} ${logro.temporada}`;
+
+                                  const fecha = logro.conseguido_at
+                                    ? new Date(
+                                        logro.conseguido_at
+                                      ).toLocaleDateString("es-ES", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      })
+                                    : "";
+
+                                  return (
+                                    <div
+                                      key={logro.id}
+                                      className="flex items-center justify-between gap-3 md:gap-6 rounded-xl border border-gray-200 bg-[#fafafa] px-3 md:px-5 py-3 md:py-4 shadow-sm"
+                                    >
+                                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                                        <div className="w-11 h-11 md:w-14 md:h-14 shrink-0 rounded-full bg-[#9e0101] flex items-center justify-center text-xl md:text-2xl shadow-md">
+                                          {icono}
+                                        </div>
+
+                                        <div className="min-w-0">
+                                          <div className="font-['Orbitron'] font-black text-[#002244] text-[10px] md:text-sm uppercase">
+                                            {tituloLogro}
+                                          </div>
+
+                                          <div className="font-['Orbitron'] font-bold text-gray-700 text-[9px] md:text-xs uppercase mt-1">
+                                            JORNADA {logro.jornada} · {competicion}
+                                          </div>
+
+                                          {logro.detalle && (
+                                            <div className="text-gray-500 text-[9px] md:text-xs mt-1 truncate">
+                                              {logro.detalle}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="shrink-0 font-['Orbitron'] text-gray-500 text-[8px] md:text-xs whitespace-nowrap">
+                                        📅 {fecha}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       );
                     })()}
                   </div>
