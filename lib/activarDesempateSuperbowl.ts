@@ -1,109 +1,173 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import {
+  calcularRankingCompeticion,
+  PARTICIPANTES_REDZONE,
+} from '@/lib/rankingCompetition';
 
-const TEMPORADA = 2026;
-
-const PARTICIPANTES = [
-  '088072d0-0782-409f-b5e4-f8a558f27b4f', // Cace
-  'dadb359a-8bc1-442e-8202-62fa2f8ddab9', // Juanjo
-  '351a81a5-86f9-4d6d-a567-f49ed5959e57', // Iván
-];
-
+/**
+ * Activa el único desempate de REDZONE exclusivamente DESPUÉS de la Super Bowl.
+ *
+ * Flujo definitivo:
+ * - la Super Bowl se pronostica y valida como cualquier otro partido;
+ * - después se calcula el ranking real;
+ * - si hay líder único, no existe desempate;
+ * - si hay 2 o 3 empatados en cabeza, solo ellos realizan una tirada;
+ * - si el valor máximo vuelve a empatar, únicamente esos empatados repiten;
+ * - el ganador recibe el punto extra a través del estado resuelto del desempate.
+ *
+ * La función es idempotente: jamás reinicia un desempate activo o ya resuelto.
+ */
 export async function activarDesempateSuperbowlSiProcede() {
-  // No reiniciar un desempate que ya esté activo o resuelto.
+  const { data: config, error: configError } = await supabase
+    .from('app_config')
+    .select('temporada, fase_competicion')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (configError || !config?.temporada) {
+    throw new Error(
+      `No se pudo obtener la temporada activa: ${configError?.message || 'app_config vacío'}`,
+    );
+  }
+
+  const temporada = Number(config.temporada);
+
   const { data: estadoActual, error: estadoError } = await supabase
     .from('desempate_superbowl_estado')
     .select('*')
-    .eq('temporada', TEMPORADA)
+    .eq('temporada', temporada)
     .maybeSingle();
 
   if (estadoError) {
     throw new Error(
-      `Error al consultar estado de desempate: ${estadoError.message}`
+      `Error al consultar estado de desempate: ${estadoError.message}`,
     );
   }
 
-  if (
-    estadoActual &&
-    estadoActual.estado !== 'inactivo'
-  ) {
+  if (estadoActual?.estado === 'resuelto') {
     return {
       activado: true,
-      estado: estadoActual.estado,
+      resuelto: true,
+      estado: 'resuelto',
+      participantes: estadoActual.participantes || [],
+      ganador: estadoActual.ganador_eleccion || null,
       yaExistia: true,
     };
   }
 
-  // Obtener todos los pronósticos ya validados antes de la Super Bowl.
-  const { data: pronosticos, error: pronosticosError } = await supabase
-    .from('pronosticos')
-    .select(`
-      user_id,
-      acierto,
-      partido:partidos!inner (
-        tipo_competicion
-      )
-    `)
-    .in('user_id', PARTICIPANTES)
-    .in('partido.tipo_competicion', ['regular', 'playoffs'])
-    .not('acierto', 'is', null);
-
-  if (pronosticosError) {
-    throw new Error(
-      `Error al calcular clasificación previa a Super Bowl: ${pronosticosError.message}`
-    );
-  }
-
-  const puntos: Record<string, number> = {};
-
-  PARTICIPANTES.forEach((id) => {
-    puntos[id] = 0;
-  });
-
-  for (const pronostico of pronosticos || []) {
-    if (
-      pronostico.acierto === true &&
-      PARTICIPANTES.includes(pronostico.user_id)
-    ) {
-      puntos[pronostico.user_id]++;
-    }
-  }
-
-  const maxPuntos = Math.max(...Object.values(puntos));
-
-  const empatados = PARTICIPANTES.filter(
-    (id) => puntos[id] === maxPuntos
-  );
-
-  // Un único líder: no hace falta desempate.
-  if (empatados.length < 2) {
-    await supabase
-      .from('desempate_superbowl_estado')
-      .upsert({
-        temporada: TEMPORADA,
-        estado: 'inactivo',
-        ronda_actual: 1,
-        participantes: [],
-        finalista_1: null,
-        finalista_2: null,
-        ganador_eleccion: null,
-        eliminado: null,
-        updated_at: new Date().toISOString(),
-      });
-
+  if (estadoActual && estadoActual.estado !== 'inactivo') {
     return {
-      activado: false,
-      puntos,
-      empatados,
+      activado: true,
+      resuelto: false,
+      estado: estadoActual.estado,
+      participantes: estadoActual.participantes || [],
+      ronda: Number(estadoActual.ronda_actual || 1),
+      yaExistia: true,
     };
   }
 
-  // Triple empate: primera tirada entre los tres.
-  if (empatados.length === 3) {
-    const { error: activarError } = await supabase
+  // No se puede activar nada hasta que la Super Bowl esté FINAL y validada.
+  const { data: superBowl, error: superBowlError } = await supabase
+    .from('partidos')
+    .select('id, estado, resultado_oficial')
+    .eq('temporada', temporada)
+    .eq('tipo_competicion', 'superbowl')
+    .limit(1)
+    .maybeSingle();
+
+  if (superBowlError) {
+    throw new Error(`Error comprobando la Super Bowl: ${superBowlError.message}`);
+  }
+
+  if (
+    !superBowl ||
+    superBowl.estado !== 'STATUS_FINAL' ||
+    superBowl.resultado_oficial == null
+  ) {
+    return {
+      activado: false,
+      resuelto: false,
+      motivo: 'La Super Bowl todavía no está finalizada.',
+    };
+  }
+
+  const { data: pronosticosSb, error: pronosticosError } = await supabase
+    .from('pronosticos')
+    .select('user_id, eleccion, acierto')
+    .eq('partido_id', superBowl.id)
+    .in('user_id', [...PARTICIPANTES_REDZONE]);
+
+  if (pronosticosError) {
+    throw new Error(
+      `Error comprobando pronósticos de Super Bowl: ${pronosticosError.message}`,
+    );
+  }
+
+  const pendientes = (pronosticosSb || []).filter(
+    (p: any) =>
+      p.eleccion !== null &&
+      p.eleccion !== undefined &&
+      typeof p.acierto !== 'boolean',
+  );
+
+  if (pendientes.length > 0) {
+    return {
+      activado: false,
+      resuelto: false,
+      motivo: 'La Super Bowl todavía tiene pronósticos sin validar.',
+    };
+  }
+
+  const ranking = await calcularRankingCompeticion(temporada);
+  const empatados = ranking.lideres.map((p) => p.userId);
+
+  if (empatados.length <= 1) {
+    const { error: guardarInactivoError } = await supabase
       .from('desempate_superbowl_estado')
-      .upsert({
-        temporada: TEMPORADA,
-        estado: 'clasificatoria',
+      .upsert(
+        {
+          temporada,
+          estado: 'inactivo',
+          ronda_actual: 1,
+          participantes: [],
+          finalista_1: null,
+          finalista_2: null,
+          ganador_eleccion: null,
+          eliminado: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'temporada' },
+      );
+
+    if (guardarInactivoError) {
+      throw new Error(
+        `Error guardando estado sin desempate: ${guardarInactivoError.message}`,
+      );
+    }
+
+    return {
+      activado: false,
+      resuelto: true,
+      motivo: 'La Super Bowl dejó un líder único.',
+      participantes: empatados,
+      puntosMaximos: ranking.maxPuntos,
+    };
+  }
+
+  if (empatados.length !== 2 && empatados.length !== 3) {
+    throw new Error(
+      `Número inesperado de participantes empatados: ${empatados.length}`,
+    );
+  }
+
+  const { error: activarError } = await supabase
+    .from('desempate_superbowl_estado')
+    .upsert(
+      {
+        temporada,
+        // Reutilizamos el estado permitido existente. Ya no significa
+        // "elección de equipo": significa "tirada final de desempate".
+        estado: 'eleccion_final',
         ronda_actual: 1,
         participantes: empatados,
         finalista_1: null,
@@ -111,49 +175,20 @@ export async function activarDesempateSuperbowlSiProcede() {
         ganador_eleccion: null,
         eliminado: null,
         updated_at: new Date().toISOString(),
-      });
-
-    if (activarError) {
-      throw new Error(
-        `Error al activar triple desempate: ${activarError.message}`
-      );
-    }
-
-    return {
-      activado: true,
-      tipo: 'triple',
-      puntos,
-      participantes: empatados,
-    };
-  }
-
-  // Doble empate: directamente a la tirada para decidir quién elige.
-  const [finalista1, finalista2] = empatados;
-
-  const { error: activarError } = await supabase
-    .from('desempate_superbowl_estado')
-    .upsert({
-      temporada: TEMPORADA,
-      estado: 'eleccion_final',
-      ronda_actual: 1,
-      participantes: empatados,
-      finalista_1: finalista1,
-      finalista_2: finalista2,
-      ganador_eleccion: null,
-      eliminado: null,
-      updated_at: new Date().toISOString(),
-    });
+      },
+      { onConflict: 'temporada' },
+    );
 
   if (activarError) {
-    throw new Error(
-      `Error al activar doble desempate: ${activarError.message}`
-    );
+    throw new Error(`Error activando desempate final: ${activarError.message}`);
   }
 
   return {
     activado: true,
-    tipo: 'doble',
-    puntos,
+    resuelto: false,
+    tipo: empatados.length === 3 ? 'triple' : 'doble',
     participantes: empatados,
+    puntosMaximos: ranking.maxPuntos,
+    ronda: 1,
   };
 }
