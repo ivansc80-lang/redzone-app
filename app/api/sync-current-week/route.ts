@@ -3,6 +3,7 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
 import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
+import { intentarTransicionSiguienteRondaPlayoff } from '@/lib/playoffTransition';
 import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
 import { gestionarCicloAnual } from '@/lib/seasonLifecycle';
 import { prepararNuevaTemporadaDesdeEspn } from '@/lib/newSeasonCalendar';
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     const { data: config, error: configError } = await supabase
       .from('app_config')
-      .select('temporada, temporada_objetivo, modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
+      .select('temporada, temporada_objetivo, jornada_actual, modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
       .eq('id', 1)
       .maybeSingle();
 
@@ -125,6 +126,7 @@ export async function GET(request: NextRequest) {
 
     if (config?.fase_competicion === 'playoffs') {
       const semanaPostemporada = Number(config.semana_postemporada || 1);
+      const jornadaActual = Number(config.jornada_actual);
 
       await sincronizarPostemporada(
         temporada,
@@ -132,12 +134,23 @@ export async function GET(request: NextRequest) {
         semanaPostemporada
       );
 
+      const transicion = await intentarTransicionSiguienteRondaPlayoff({
+        temporada,
+        jornadaActual,
+        semanaPostemporada,
+      });
+
       return NextResponse.json({
         success: true,
-        mode: 'playoffs',
+        mode: transicion.transicion
+          ? transicion.faseCompeticion
+          : 'playoffs',
         debug,
         semana: semanaPostemporada,
-        message: `Playoffs semana ${semanaPostemporada} sincronizados correctamente desde ESPN.`,
+        transicion,
+        message: transicion.transicion
+          ? `Transición segura completada hacia ${transicion.rondaNueva}.`
+          : `Playoffs sincronizados. ${transicion.motivo || 'La ronda actual continúa activa.'}`,
       });
     }
 
@@ -149,7 +162,7 @@ export async function GET(request: NextRequest) {
         success: true,
         mode: 'superbowl',
         debug,
-        semana: 4,
+        semana: config.semana_postemporada,
         desempate,
         message: desempate.activado
           ? 'Super Bowl sincronizada. Desempate activo.'
