@@ -51,6 +51,18 @@ export function clasificarFranjaNFL(fechaIso: string): FranjaNFL | null {
   return null;
 }
 
+function agruparPorFranja<T extends { fecha_partido: string }>(partidos: T[]) {
+  const grupos = new Map<FranjaNFL, T[]>();
+  for (const franja of FRANJAS_NFL) grupos.set(franja, []);
+
+  for (const partido of partidos) {
+    const franja = clasificarFranjaNFL(partido.fecha_partido);
+    if (franja) grupos.get(franja)?.push(partido);
+  }
+
+  return grupos;
+}
+
 export function calcularRelojAdministrativo(
   partidos: Array<{ fecha_partido: string }>
 ) {
@@ -64,19 +76,11 @@ export function calcularRelojAdministrativo(
   );
 
   const primerKickoff = new Date(ordenados[0].fecha_partido);
-
   const cierrePronosticos = new Date(
     primerKickoff.getTime() - PICK_CLOSE_MINUTES * 60 * 1000
   );
 
-  const grupos = new Map<FranjaNFL, Array<{ fecha_partido: string }>>();
-  for (const franja of FRANJAS_NFL) grupos.set(franja, []);
-
-  for (const partido of ordenados) {
-    const franja = clasificarFranjaNFL(partido.fecha_partido);
-    if (franja) grupos.get(franja)?.push(partido);
-  }
-
+  const grupos = agruparPorFranja(ordenados);
   const franjas: Record<string, string | boolean | null> = {};
 
   for (const franja of FRANJAS_NFL) {
@@ -98,18 +102,55 @@ export function calcularRelojAdministrativo(
     franjas[`${franja}_validado`] = null;
   }
 
-  // fin_jornada NO se calcula como una hora fija derivada del último kickoff.
-  // Igual que en TR/TEST, la jornada solo podrá finalizar administrativamente
-  // cuando se cumplan todas las condiciones del ciclo:
-  // - todos los partidos actuales están FINAL;
-  // - todos los checkpoints de las franjas utilizadas están validados;
-  // - resultados/pronósticos están validados;
-  // - la siguiente jornada existe en ESPN y ha sido validada completamente.
-  // Hasta entonces permanece cerrada y el cron vuelve a intentarlo.
   return {
     inicio_jornada: primerKickoff.toISOString(),
     cierre_pronosticos: cierrePronosticos.toISOString(),
     fin_jornada: null,
     ...franjas,
+  };
+}
+
+export function evaluarCheckpointsAdministrativos(
+  partidos: Array<{ fecha_partido: string; completado: boolean }>,
+  ahora = new Date()
+) {
+  if (partidos.length === 0) {
+    throw new Error('No se pueden evaluar checkpoints de una jornada sin partidos.');
+  }
+
+  const grupos = agruparPorFranja(partidos);
+  const cambios: Record<string, string | boolean | null> = {};
+  let todosLosCheckpointsUtilizadosOk = true;
+
+  for (const franja of FRANJAS_NFL) {
+    const partidosFranja = grupos.get(franja) || [];
+
+    if (partidosFranja.length === 0) {
+      cambios[franja] = null;
+      cambios[`${franja}_validado`] = null;
+      continue;
+    }
+
+    const ultimoKickoffFranja = Math.max(
+      ...partidosFranja.map((p) => new Date(p.fecha_partido).getTime())
+    );
+    const checkpoint = new Date(
+      ultimoKickoffFranja + CHECKPOINT_MARGIN_HOURS * 60 * 60 * 1000
+    );
+    const alcanzado = ahora.getTime() >= checkpoint.getTime();
+    const todosFinalizados = partidosFranja.every((p) => p.completado);
+    const validado = alcanzado ? todosFinalizados : null;
+
+    cambios[franja] = checkpoint.toISOString();
+    cambios[`${franja}_validado`] = validado;
+
+    if (validado !== true) {
+      todosLosCheckpointsUtilizadosOk = false;
+    }
+  }
+
+  return {
+    cambios,
+    todosLosCheckpointsUtilizadosOk,
   };
 }
