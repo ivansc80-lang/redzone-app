@@ -5,9 +5,8 @@ import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
 import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
 import { gestionarCicloAnual } from '@/lib/seasonLifecycle';
-import {
-  pushInicioTemporadaSiProcede,
-} from '@/lib/pushAutomatic';
+import { prepararNuevaTemporadaDesdeEspn } from '@/lib/newSeasonCalendar';
+import { pushInicioTemporadaSiProcede } from '@/lib/pushAutomatic';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +37,6 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error('CRON_SECRET no está configurado.');
-
       return NextResponse.json(
         { success: false, error: 'Configuración de seguridad incompleta.' },
         { status: 500 }
@@ -99,14 +97,26 @@ export async function GET(request: NextRequest) {
         faseCompeticion: config.fase_competicion,
       });
 
+      let calendario = null;
+
+      if (cicloAnual.debeBuscarCalendario) {
+        calendario = await prepararNuevaTemporadaDesdeEspn(
+          cicloAnual.temporadaObjetivo,
+          cicloAnual.faseActual === 'pretemporada' ? 'pretemporada' : 'draft'
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        mode: cicloAnual.faseActual,
+        mode: calendario?.activado ? 'nueva_temporada_preparada' : cicloAnual.faseActual,
         debug,
         cicloAnual,
-        message: cicloAnual.debeBuscarCalendario
-          ? `Temporada ${cicloAnual.temporadaObjetivo}: ventana de búsqueda del nuevo calendario activa.`
-          : `Ciclo anual en estado ${cicloAnual.faseActual}; la temporada ${temporada} continúa siendo la visible.`,
+        calendario,
+        message: calendario?.activado
+          ? `Calendario ${cicloAnual.temporadaObjetivo} validado, guardado y activado.`
+          : calendario
+            ? `Calendario ${cicloAnual.temporadaObjetivo} todavía no es válido: ${calendario.motivo}`
+            : `Ciclo anual en estado ${cicloAnual.faseActual}; la temporada ${temporada} continúa siendo la visible.`,
       });
     }
 
@@ -130,7 +140,6 @@ export async function GET(request: NextRequest) {
 
     if (config?.fase_competicion === 'superbowl') {
       const desempate = await activarDesempateSuperbowlSiProcede();
-
       await sincronizarPostemporada(temporada, 4, 4);
 
       return NextResponse.json({
