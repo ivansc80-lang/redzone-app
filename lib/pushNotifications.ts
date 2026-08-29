@@ -1,26 +1,18 @@
 import webpush from "web-push";
 import { supabaseServer as supabase } from "@/lib/supabaseServer";
 
-// ============================================================
-// CATÁLOGO DE EVENTOS PUSH REDZONE
-// ============================================================
-
 export const PUSH_EVENTOS = {
   INICIO_TEMPORADA: "INICIO_TEMPORADA",
   CIERRE_PORRA: "CIERRE_PORRA",
   RESULTADOS_APERTURA: "RESULTADOS_APERTURA",
   SUPERBOWL_FIN_TEMPORADA: "SUPERBOWL_FIN_TEMPORADA",
-
   ON_FIRE: "ON_FIRE",
   MADRE_MIA: "MADRE_MIA",
-
   PLENO_REDZONE: "PLENO_REDZONE",
   MENUDO_BANO: "MENUDO_BANO",
   SE_ESCAPA: "SE_ESCAPA",
-
   PLENO_MAGICO: "PLENO_MAGICO",
   NO_TE_COMES_EL_TURRON: "NO_TE_COMES_EL_TURRON",
-
   LIDER_SOLIDO: "LIDER_SOLIDO",
   RECORDATORIO_PRONOSTICOS: "RECORDATORIO_PRONOSTICOS",
 } as const;
@@ -83,7 +75,14 @@ export const enviarPushRedzone = async ({
   configurarWebPush();
 
   if (await eventoPushYaEnviado(claveEvento)) {
-    return { enviado: false, duplicado: true, enviados: 0 };
+    return {
+      enviado: false,
+      duplicado: true,
+      enviados: 0,
+      suscripcionesActivas: 0,
+      fallosEnvio: 0,
+      sinSuscripciones: false,
+    };
   }
 
   let query = supabase
@@ -100,11 +99,19 @@ export const enviarPushRedzone = async ({
   }
 
   if (!suscripciones?.length) {
-    return { enviado: false, duplicado: false, enviados: 0 };
+    return {
+      enviado: false,
+      duplicado: false,
+      enviados: 0,
+      suscripcionesActivas: 0,
+      fallosEnvio: 0,
+      sinSuscripciones: true,
+    };
   }
 
   const payload = JSON.stringify({ title: titulo, body: mensaje, url });
   let enviados = 0;
+  let fallosEnvio = 0;
 
   for (const suscripcion of suscripciones) {
     try {
@@ -125,6 +132,7 @@ export const enviarPushRedzone = async ({
           .eq("id", suscripcion.id);
         continue;
       }
+      fallosEnvio += 1;
       console.error("❌ Error enviando PUSH REDZONE:", error);
     }
   }
@@ -148,7 +156,14 @@ export const enviarPushRedzone = async ({
     }
   }
 
-  return { enviado: enviados > 0, duplicado: false, enviados };
+  return {
+    enviado: enviados > 0,
+    duplicado: false,
+    enviados,
+    suscripcionesActivas: suscripciones.length,
+    fallosEnvio,
+    sinSuscripciones: false,
+  };
 };
 
 export const guardarLogro = async ({
