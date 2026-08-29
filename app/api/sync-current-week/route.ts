@@ -8,6 +8,10 @@ import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperb
 import { gestionarCicloAnual } from '@/lib/seasonLifecycle';
 import { prepararNuevaTemporadaDesdeEspn } from '@/lib/newSeasonCalendar';
 import { pushInicioTemporadaSiProcede } from '@/lib/pushAutomatic';
+import {
+  pushRecordatorioPlayoffSiProcede,
+  pushResultadosAperturaPlayoffSiProcede,
+} from '@/lib/playoffPush';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +33,40 @@ function getSafeDebugInfo(config: any) {
     modo_pretemporada_test: config?.modo_pretemporada_test ?? null,
     modo_pretemporada_hasta: config?.modo_pretemporada_hasta ?? null,
   };
+}
+
+async function evaluarRecordatorioPlayoff(params: {
+  temporada: number;
+  jornada: number;
+  tipoCompeticion: 'playoffs' | 'superbowl';
+}) {
+  const { temporada, jornada, tipoCompeticion } = params;
+
+  const { data: evento, error } = await supabase
+    .from('jornadas_eventos')
+    .select('estado, cierre_pronosticos')
+    .eq('temporada', temporada)
+    .eq('jornada', jornada)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Error leyendo reloj PUSH J${jornada}: ${error.message}`);
+  }
+
+  if (!evento?.cierre_pronosticos || evento.estado !== 'pendiente') {
+    return {
+      evaluado: false,
+      motivo: 'La jornada no está pendiente o no tiene cierre_pronosticos',
+      resultados: [],
+    };
+  }
+
+  return pushRecordatorioPlayoffSiProcede({
+    temporada,
+    jornada,
+    cierrePronosticos: evento.cierre_pronosticos,
+    tipoCompeticion,
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -134,11 +172,25 @@ export async function GET(request: NextRequest) {
         semanaPostemporada
       );
 
+      const pushRecordatorio = await evaluarRecordatorioPlayoff({
+        temporada,
+        jornada: jornadaActual,
+        tipoCompeticion: 'playoffs',
+      });
+
       const transicion = await intentarTransicionSiguienteRondaPlayoff({
         temporada,
         jornadaActual,
         semanaPostemporada,
       });
+
+      const pushResultadosApertura = transicion.transicion
+        ? await pushResultadosAperturaPlayoffSiProcede({
+            temporada,
+            jornadaFinalizada: transicion.jornadaAnterior,
+            jornadaNueva: transicion.jornadaNueva,
+          })
+        : null;
 
       return NextResponse.json({
         success: true,
@@ -147,7 +199,9 @@ export async function GET(request: NextRequest) {
           : 'playoffs',
         debug,
         semana: semanaPostemporada,
+        pushRecordatorio,
         transicion,
+        pushResultadosApertura,
         message: transicion.transicion
           ? `Transición segura completada hacia ${transicion.rondaNueva}.`
           : `Playoffs sincronizados. ${transicion.motivo || 'La ronda actual continúa activa.'}`,
@@ -158,12 +212,19 @@ export async function GET(request: NextRequest) {
       const desempate = await activarDesempateSuperbowlSiProcede();
       await sincronizarPostemporada(temporada, 4, 4);
 
+      const pushRecordatorio = await evaluarRecordatorioPlayoff({
+        temporada,
+        jornada: Number(config.jornada_actual),
+        tipoCompeticion: 'superbowl',
+      });
+
       return NextResponse.json({
         success: true,
         mode: 'superbowl',
         debug,
         semana: config.semana_postemporada,
         desempate,
+        pushRecordatorio,
         message: desempate.activado
           ? 'Super Bowl sincronizada. Desempate activo.'
           : 'Super Bowl sincronizada correctamente desde ESPN.',
