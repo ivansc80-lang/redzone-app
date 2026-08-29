@@ -36,6 +36,7 @@ interface PronosticoPartido {
   id: string;
   temporada: number;
   tipo_competicion: "regular" | "pretemporada_test" | "playoffs" | "superbowl";
+  semana_competicion?: number | null;
   local: string;
   localLogo: string;
   visitante: string;
@@ -2572,6 +2573,7 @@ const [verPassword, setVerPassword] = useState(false);
           id: row.id,
           temporada: Number(row.temporada),
           tipo_competicion: row.tipo_competicion,
+          semana_competicion: row.semana_competicion ?? null,
           local: row.equipo_local,
           localLogo: row.info_local?.logo_url || "",
           visitante: row.equipo_visitante,
@@ -2602,6 +2604,7 @@ const [verPassword, setVerPassword] = useState(false);
           id: row.id,
           temporada: Number(row.temporada),
           tipo_competicion: row.tipo_competicion,
+          semana_competicion: row.semana_competicion ?? null,
           local: row.equipo_local,
           localLogo: row.info_local?.logo_url || "",
           visitante: row.equipo_visitante,
@@ -4451,13 +4454,40 @@ const [verPassword, setVerPassword] = useState(false);
     },
   ];
 
+  const nombreRondaPlayoff = (partido?: PronosticoPartido | null) => {
+    if (!partido) return "";
+
+    if (partido.tipo_competicion === "superbowl") {
+      return "SUPER BOWL";
+    }
+
+    if (partido.tipo_competicion !== "playoffs") {
+      return "";
+    }
+
+    switch (Number(partido.semana_competicion)) {
+      case 1:
+        return "WILD CARD";
+      case 2:
+        return "DIVISIONAL";
+      case 3:
+        return "CONFERENCE";
+      default:
+        return "PLAYOFFS";
+    }
+  };
+
+  const rondaJornadaActiva = nombreRondaPlayoff(
+    datosUsuarioActual.pronosticos[0] || null,
+  );
+
   const tituloBarraPrincipal =
     pestanaActiva === "clasificacion"
       ? "TABLA GENERAL DE POSICIONES"
       : pestanaActiva === "pronosticos"
-        ? `PRONÓSTICOS - JORNADA ${jornadaActual}`
+        ? `PRONÓSTICOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
         : pestanaActiva === "jornada"
-          ? `RESULTADOS JORNADA ${jornadaActual}`
+          ? `RESULTADOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
           : pestanaActiva === "perfil"
             ? vistaPerfilPalmares
               ? "🏆 PALMARÉS"
@@ -9266,10 +9296,18 @@ const [verPassword, setVerPassword] = useState(false);
                   </div>
                 ) : (
                   <div className="space-y-8">
-                    {Array.from({ length: 18 }, (_, i) => i + 1).map((jNum) => {
+                    {Object.keys(jornadasGames)
+                      .map(Number)
+                      .filter((j) => Number.isInteger(j) && j > 0)
+                      .sort((a, b) => a - b)
+                      .map((jNum) => {
                       const partidosJornada = jornadasGames[jNum] || [];
 
                       if (partidosJornada.length === 0) return null;
+
+                      const rondaGames = nombreRondaPlayoff(
+                        partidosJornada[0] || null,
+                      );
 
                       return (
                         <div
@@ -9279,7 +9317,9 @@ const [verPassword, setVerPassword] = useState(false);
                           <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-4">
                             <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
                             <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
-                              JORNADA {jNum}
+                              {rondaGames
+                                ? `J${jNum} – ${rondaGames}`
+                                : `JORNADA ${jNum}`}
                             </h3>
                           </div>
 
