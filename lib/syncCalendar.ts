@@ -1,4 +1,5 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { evaluarCheckpointsAdministrativos } from '@/lib/nflAdministrativeClock';
 import {
   pushCierrePorraSiProcede,
   pushResultadosAperturaSiProcede,
@@ -17,9 +18,28 @@ async function prepararSiguienteJornadaRegular(
   temporada: number,
   jornada: number,
 ) {
+  const { data: partidosEsperados, error: esperadosError } = await supabase
+    .from('partidos')
+    .select('espn_event_id')
+    .eq('temporada', temporada)
+    .eq('jornada', jornada)
+    .eq('tipo_competicion', 'regular');
+
+  if (esperadosError) {
+    throw new Error(
+      `Error consultando calendario esperado de Jornada ${jornada}: ${esperadosError.message}`,
+    );
+  }
+
+  if (!partidosEsperados || partidosEsperados.length === 0) {
+    throw new Error(
+      `No existe calendario regular precargado para Jornada ${jornada} de ${temporada}`,
+    );
+  }
+
   const res = await fetch(
-    `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&week=${jornada}`,
-    { cache: "no-store" },
+    `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&seasontype=2&week=${jornada}`,
+    { cache: 'no-store' },
   );
 
   if (!res.ok) {
@@ -29,26 +49,40 @@ async function prepararSiguienteJornadaRegular(
   }
 
   const data = await res.json();
-
   const eventos = (data.events || []).sort(
-    (a: any, b: any) =>
-      new Date(a.date).getTime() -
-      new Date(b.date).getTime(),
+    (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
 
   if (eventos.length === 0) {
+    throw new Error(`ESPN no devolvió partidos para preparar Jornada ${jornada}`);
+  }
+
+  const idsEsperados = new Set(
+    partidosEsperados.map((p: any) => String(p.espn_event_id)),
+  );
+  const idsEspn = new Set(eventos.map((evento: any) => String(evento.id)));
+
+  if (eventos.length !== idsEsperados.size) {
     throw new Error(
-      `ESPN no devolvió partidos para preparar Jornada ${jornada}`,
+      `Calendario incompleto para Jornada ${jornada}: BBDD espera ${idsEsperados.size} partidos y ESPN devolvió ${eventos.length}`,
     );
   }
 
-  const { data: jornadaEvento, error: jornadaEventoError } =
-    await supabase
-      .from("jornadas_eventos")
-      .select("jornada, estado")
-      .eq("temporada", temporada)
-      .eq("jornada", jornada)
-      .maybeSingle();
+  const faltanEnEspn = [...idsEsperados].filter((id) => !idsEspn.has(id));
+  const sobranEnEspn = [...idsEspn].filter((id) => !idsEsperados.has(id));
+
+  if (faltanEnEspn.length > 0 || sobranEnEspn.length > 0) {
+    throw new Error(
+      `Los partidos ESPN no coinciden con Jornada ${jornada}. Faltan: ${faltanEnEspn.join(', ') || 'ninguno'}. Sobran: ${sobranEnEspn.join(', ') || 'ninguno'}.`,
+    );
+  }
+
+  const { data: jornadaEvento, error: jornadaEventoError } = await supabase
+    .from('jornadas_eventos')
+    .select('jornada, estado')
+    .eq('temporada', temporada)
+    .eq('jornada', jornada)
+    .maybeSingle();
 
   if (jornadaEventoError) {
     throw new Error(
@@ -56,65 +90,33 @@ async function prepararSiguienteJornadaRegular(
     );
   }
 
-  if (!jornadaEvento) {
+  if (!jornadaEvento || jornadaEvento.estado !== 'pendiente') {
     throw new Error(
-      `No existe jornadas_eventos para Jornada ${jornada} de temporada ${temporada}`,
+      `La Jornada ${jornada} no existe o no está pendiente`,
     );
   }
-
-  if (jornadaEvento.estado !== "pendiente") {
-    throw new Error(
-      `La Jornada ${jornada} no está pendiente (${jornadaEvento.estado})`,
-    );
-  }
-
-  const primerPartido = new Date(eventos[0].date);
-
-  const cierrePronosticos = new Date(
-    primerPartido.getTime() - 30 * 60 * 1000,
-  );
 
   const partidosPreparados = eventos.map((evento: any) => {
     const comp = evento.competitions?.[0];
+    if (!comp) throw new Error(`ESPN ${evento.id} no contiene competition válida`);
 
-    if (!comp) {
-      throw new Error(
-        `ESPN ${evento.id} no contiene competition válida`,
-      );
+    const local = comp.competitors?.find((c: any) => c.homeAway === 'home');
+    const visitante = comp.competitors?.find((c: any) => c.homeAway === 'away');
+    const localAbrev = local?.team?.abbreviation || '';
+    const visitanteAbrev = visitante?.team?.abbreviation || '';
+
+    if (!localAbrev || !visitanteAbrev || !evento.date) {
+      throw new Error(`ESPN ${evento.id} no contiene equipos/fecha válidos`);
     }
 
-    const local = comp.competitors?.find(
-      (c: any) => c.homeAway === "home",
-    );
+    const puntosLocal = parseInt(local?.score || '0', 10);
+    const puntosVisitante = parseInt(visitante?.score || '0', 10);
+    const completado = Boolean(comp.status?.type?.completed);
 
-    const visitante = comp.competitors?.find(
-      (c: any) => c.homeAway === "away",
-    );
-
-    const localAbrev = local?.team?.abbreviation || "";
-    const visitanteAbrev = visitante?.team?.abbreviation || "";
-
-    if (!localAbrev || !visitanteAbrev) {
-      throw new Error(
-        `ESPN ${evento.id} no contiene equipos válidos`,
-      );
-    }
-
-    const estado = comp.status?.type?.name || "STATUS_SCHEDULED";
-    const puntosLocal = parseInt(local?.score || "0", 10);
-    const puntosVisitante = parseInt(visitante?.score || "0", 10);
-    const periodo = Number(comp.status?.period || 0) || null;
-    const reloj = comp.status?.displayClock || comp.status?.type?.shortDetail || null;
-
-    let resultadoOficial: "1" | "X" | "2" | null = null;
-
-    if (comp.status?.type?.completed) {
+    let resultadoOficial: '1' | 'X' | '2' | null = null;
+    if (completado) {
       resultadoOficial =
-        puntosLocal > puntosVisitante
-          ? "1"
-          : puntosLocal < puntosVisitante
-            ? "2"
-            : "X";
+        puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
     }
 
     return {
@@ -122,24 +124,25 @@ async function prepararSiguienteJornadaRegular(
       temporada,
       jornada,
       semana_competicion: jornada,
-      tipo_competicion: "regular",
+      tipo_competicion: 'regular',
       equipo_local: localAbrev,
       equipo_visitante: visitanteAbrev,
       fecha_partido: new Date(evento.date).toISOString(),
-      estado,
+      estado: comp.status?.type?.name || 'STATUS_SCHEDULED',
       puntos_local: puntosLocal,
       puntos_visitante: puntosVisitante,
-      periodo,
-      reloj,
+      periodo: Number(comp.status?.period || 0) || null,
+      reloj: comp.status?.displayClock || comp.status?.type?.shortDetail || null,
       resultado_oficial: resultadoOficial,
     };
   });
 
+  const primerPartido = new Date(partidosPreparados[0].fecha_partido);
+  const cierrePronosticos = new Date(primerPartido.getTime() - 30 * 60 * 1000);
+
   const { error: partidosError } = await supabase
-    .from("partidos")
-    .upsert(partidosPreparados, {
-      onConflict: "espn_event_id",
-    });
+    .from('partidos')
+    .upsert(partidosPreparados, { onConflict: 'espn_event_id' });
 
   if (partidosError) {
     throw new Error(
@@ -148,14 +151,14 @@ async function prepararSiguienteJornadaRegular(
   }
 
   const { error: jornadaUpdateError } = await supabase
-    .from("jornadas_eventos")
+    .from('jornadas_eventos')
     .update({
       inicio_jornada: primerPartido.toISOString(),
       cierre_pronosticos: cierrePronosticos.toISOString(),
     })
-    .eq("temporada", temporada)
-    .eq("jornada", jornada)
-    .eq("estado", "pendiente");
+    .eq('temporada', temporada)
+    .eq('jornada', jornada)
+    .eq('estado', 'pendiente');
 
   if (jornadaUpdateError) {
     throw new Error(
@@ -164,22 +167,25 @@ async function prepararSiguienteJornadaRegular(
   }
 
   const { data: partidosVerificados, error: verificarError } = await supabase
-    .from("partidos")
-    .select("id")
-    .eq("temporada", temporada)
-    .eq("jornada", jornada)
-    .eq("tipo_competicion", "regular");
+    .from('partidos')
+    .select('espn_event_id')
+    .eq('temporada', temporada)
+    .eq('jornada', jornada)
+    .eq('tipo_competicion', 'regular');
 
   if (verificarError) {
-    throw new Error(
-      `Error verificando Jornada ${jornada}: ${verificarError.message}`,
-    );
+    throw new Error(`Error verificando Jornada ${jornada}: ${verificarError.message}`);
   }
 
-  if (!partidosVerificados || partidosVerificados.length !== partidosPreparados.length) {
-    throw new Error(
-      `Jornada ${jornada} incompleta: ESPN=${partidosPreparados.length}, BBDD=${partidosVerificados?.length || 0}`,
-    );
+  const idsVerificados = new Set(
+    (partidosVerificados || []).map((p: any) => String(p.espn_event_id)),
+  );
+
+  if (
+    partidosVerificados?.length !== partidosPreparados.length ||
+    partidosPreparados.some((p) => !idsVerificados.has(String(p.espn_event_id)))
+  ) {
+    throw new Error(`Jornada ${jornada} no quedó completamente verificada en BBDD`);
   }
 
   return {
@@ -190,39 +196,45 @@ async function prepararSiguienteJornadaRegular(
   };
 }
 
+async function existeSiguienteJornadaRegular(temporada: number, jornada: number) {
+  const { data, error } = await supabase
+    .from('jornadas_eventos')
+    .select('jornada')
+    .eq('temporada', temporada)
+    .eq('jornada', jornada + 1)
+    .maybeSingle();
+
+  if (error) throw new Error(`Error buscando siguiente jornada: ${error.message}`);
+  return Boolean(data);
+}
+
 export async function sincronizarTemporadaCompleta(
   temporada: number,
   semanaInicio = 1,
-  semanaFin = 18
+  semanaFin = 18,
 ) {
   if (!Number.isInteger(temporada) || temporada < 2000) {
     throw new Error(`Temporada regular inválida: ${temporada}`);
   }
 
-  console.log(
-    `Iniciando sincronización de las 18 jornadas para la temporada ${temporada}...`
-  );
-
   for (let semana = semanaInicio; semana <= semanaFin; semana++) {
     try {
       const res = await fetch(
-        `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&week=${semana}`
+        `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&seasontype=2&week=${semana}`,
+        { cache: 'no-store' },
       );
+
+      if (!res.ok) throw new Error(`ESPN respondió HTTP ${res.status}`);
 
       const data = await res.json();
-      const eventos = data.events || [];
-
+      const eventos = (data.events || []).sort(
+        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
       if (eventos.length === 0) continue;
 
-      eventos.sort(
-        (a: any, b: any) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
-
       const primerPartidoFecha = new Date(eventos[0].date);
-      const inicioJornadaReal = primerPartidoFecha.toISOString();
       const cierrePronosticos = new Date(
-        primerPartidoFecha.getTime() - 30 * 60 * 1000
+        primerPartidoFecha.getTime() - 30 * 60 * 1000,
       ).toISOString();
 
       const { data: jornadaEvento, error: jornadaEventoError } = await supabase
@@ -233,96 +245,64 @@ export async function sincronizarTemporadaCompleta(
         .maybeSingle();
 
       if (jornadaEventoError) {
-        throw new Error(
-          `Error al consultar jornadas_eventos para la jornada ${semana}: ${jornadaEventoError.message}`
-        );
+        throw new Error(`Error leyendo Jornada ${semana}: ${jornadaEventoError.message}`);
       }
 
       if (
-        jornadaEvento &&
-        jornadaEvento.estado === 'pendiente' &&
+        jornadaEvento?.estado === 'pendiente' &&
         jornadaEvento.cierre_pronosticos &&
         new Date() >= new Date(jornadaEvento.cierre_pronosticos)
       ) {
-        const { error: cerrarPorraError } = await supabase
+        const { error } = await supabase
           .from('jornadas_eventos')
           .update({ estado: 'cerrada' })
           .eq('temporada', temporada)
           .eq('jornada', semana)
           .eq('estado', 'pendiente');
+        if (error) throw new Error(`Error cerrando Jornada ${semana}: ${error.message}`);
 
-        if (cerrarPorraError) {
-          throw new Error(
-            `Error al cerrar la porra de la jornada ${semana}: ${cerrarPorraError.message}`
-          );
-        }
-
-        const pushCierrePorra = await pushCierrePorraSiProcede({
-          temporada,
-          jornada: semana,
-          estado: 'cerrada',
-        });
-
-        console.log(`🔔 PUSH cierre Jornada ${semana}:`, pushCierrePorra);
-      } else if (jornadaEvento && jornadaEvento.estado === 'pendiente') {
+        await pushCierrePorraSiProcede({ temporada, jornada: semana, estado: 'cerrada' });
+      } else if (jornadaEvento?.estado === 'pendiente') {
         if (jornadaEvento.cierre_pronosticos) {
-          const pushRecordatorioPronosticos = await pushRecordatorioPronosticosSiProcede({
+          await pushRecordatorioPronosticosSiProcede({
             temporada,
             jornada: semana,
             cierrePronosticos: jornadaEvento.cierre_pronosticos,
           });
-
-          if (pushRecordatorioPronosticos.resultados?.some((r: any) => r.enviado)) {
-            console.log(
-              `⏰ RECORDATORIO PRONÓSTICOS Jornada ${semana}:`,
-              pushRecordatorioPronosticos
-            );
-          }
         }
 
-        const { error: actualizarJornadaError } = await supabase
+        const { error } = await supabase
           .from('jornadas_eventos')
           .update({
-            inicio_jornada: inicioJornadaReal,
+            inicio_jornada: primerPartidoFecha.toISOString(),
             cierre_pronosticos: cierrePronosticos,
           })
           .eq('temporada', temporada)
           .eq('jornada', semana)
           .eq('estado', 'pendiente');
-
-        if (actualizarJornadaError) {
-          throw new Error(
-            `Error al actualizar jornadas_eventos para la jornada ${semana}: ${actualizarJornadaError.message}`
-          );
-        }
+        if (error) throw new Error(`Error actualizando Jornada ${semana}: ${error.message}`);
       }
 
       for (const evento of eventos) {
-        const comp = evento.competitions[0];
-        const local = comp.competitors.find((c: any) => c.homeAway === 'home');
-        const visitante = comp.competitors.find((c: any) => c.homeAway === 'away');
+        const comp = evento.competitions?.[0];
+        if (!comp) continue;
 
+        const local = comp.competitors?.find((c: any) => c.homeAway === 'home');
+        const visitante = comp.competitors?.find((c: any) => c.homeAway === 'away');
         const localAbrev = local?.team?.abbreviation || '';
         const visitAbrev = visitante?.team?.abbreviation || '';
-        const fechaPartido = new Date(evento.date).toISOString();
+        const puntosLocal = parseInt(local?.score || '0', 10);
+        const puntosVisitante = parseInt(visitante?.score || '0', 10);
+        const completado = Boolean(comp.status?.type?.completed);
         const estado = comp.status?.type?.name || 'STATUS_SCHEDULED';
-        const puntosLocal = parseInt(local?.score || '0');
-        const puntosVisitante = parseInt(visitante?.score || '0');
-        const periodo = Number(comp.status?.period || 0) || null;
-        const reloj = comp.status?.displayClock || comp.status?.type?.shortDetail || null;
 
         let resultadoOficial: '1' | 'X' | '2' | null = null;
-
-        if (comp.status?.type?.completed) {
+        if (completado) {
           resultadoOficial =
-            puntosLocal > puntosVisitante
-              ? '1'
-              : puntosLocal < puntosVisitante
-                ? '2'
-                : 'X';
+            puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
         }
 
-        const { data: partidoActualizado, error: upsertError } = await supabase
+        const { data: partidoGuardado, error: upsertError } = await supabase
           .from('partidos')
           .upsert(
             {
@@ -333,197 +313,162 @@ export async function sincronizarTemporadaCompleta(
               tipo_competicion: 'regular',
               equipo_local: localAbrev,
               equipo_visitante: visitAbrev,
-              fecha_partido: fechaPartido,
+              fecha_partido: new Date(evento.date).toISOString(),
               estado,
               puntos_local: puntosLocal,
               puntos_visitante: puntosVisitante,
-              periodo,
-              reloj,
+              periodo: Number(comp.status?.period || 0) || null,
+              reloj: comp.status?.displayClock || comp.status?.type?.shortDetail || null,
               resultado_oficial: resultadoOficial,
             },
-            { onConflict: 'espn_event_id' }
+            { onConflict: 'espn_event_id' },
           )
-          .select(
-            'id, espn_event_id, estado, puntos_local, puntos_visitante, resultado_oficial'
-          )
+          .select('id')
           .single();
 
-        if (upsertError) {
-          throw new Error(
-            `Error al guardar partido ESPN ${evento.id} de la jornada ${semana}: ${upsertError.message}`
-          );
+        if (upsertError || !partidoGuardado) {
+          throw new Error(`Error guardando partido ESPN ${evento.id}: ${upsertError?.message || 'sin id'}`);
         }
 
-        const partidoGuardado = partidoActualizado;
-
-        if (!partidoGuardado) {
-          throw new Error(`No se pudo obtener el id interno del partido ESPN ${evento.id}`);
-        }
-
-        if (estado === 'STATUS_FINAL' && resultadoOficial) {
-          const { error: validarPronosticosError } = await supabase
+        if (completado && resultadoOficial) {
+          const { error: aciertosError } = await supabase
             .from('pronosticos')
             .update({ acierto: true })
             .eq('partido_id', partidoGuardado.id)
             .eq('eleccion', resultadoOficial);
+          if (aciertosError) throw new Error(`Error validando aciertos: ${aciertosError.message}`);
 
-          if (validarPronosticosError) {
-            throw new Error(
-              `Error al validar aciertos del partido ESPN ${evento.id}: ${validarPronosticosError.message}`
-            );
-          }
-
-          const { error: marcarFallosError } = await supabase
+          const { error: fallosError } = await supabase
             .from('pronosticos')
             .update({ acierto: false })
             .eq('partido_id', partidoGuardado.id)
             .neq('eleccion', resultadoOficial);
+          if (fallosError) throw new Error(`Error validando fallos: ${fallosError.message}`);
 
-          if (marcarFallosError) {
-            throw new Error(
-              `Error al validar fallos del partido ESPN ${evento.id}: ${marcarFallosError.message}`
-            );
-          }
-
-          console.log(
-            `✅ Pronósticos validados para ${localAbrev} - ${visitAbrev}. Resultado: ${resultadoOficial}`
-          );
-
-          const pushOnFire = await pushOnFireSiProcede({ temporada, jornada: semana });
-          if (pushOnFire.resultados?.some((r: any) => r.enviado)) {
-            console.log(`🔥 ON FIRE Jornada ${semana}:`, pushOnFire);
-          }
-
-          const pushMadreMia = await pushMadreMiaSiProcede({ temporada, jornada: semana });
-          if (pushMadreMia.resultados?.some((r: any) => r.enviado)) {
-            console.log(`😱 MADRE MÍA Jornada ${semana}:`, pushMadreMia);
-          }
-
-          const pushPlenoRedzone = await pushPlenoRedzoneSiProcede({ temporada, jornada: semana });
-          if (pushPlenoRedzone.resultados?.some((r: any) => r.enviado)) {
-            console.log(`🏆 PLENO REDZONE Jornada ${semana}:`, pushPlenoRedzone);
-          }
-
-          const pushMenudoBano = await pushMenudoBanoSiProcede({ temporada, jornada: semana });
-          if ('enviado' in pushMenudoBano && pushMenudoBano.enviado) {
-            console.log(`🚿 MENUDO BAÑO Jornada ${semana}:`, pushMenudoBano);
-          }
-
-          const pushSeEscapa = await pushSeEscapaSiProcede({ temporada, jornada: semana });
-          if ('enviado' in pushSeEscapa && pushSeEscapa.enviado) {
-            console.log(`🏃 VAMOS, QUE SE ESCAPA Jornada ${semana}:`, pushSeEscapa);
-          }
+          await pushOnFireSiProcede({ temporada, jornada: semana });
+          await pushMadreMiaSiProcede({ temporada, jornada: semana });
+          await pushPlenoRedzoneSiProcede({ temporada, jornada: semana });
+          await pushMenudoBanoSiProcede({ temporada, jornada: semana });
+          await pushSeEscapaSiProcede({ temporada, jornada: semana });
         } else {
-          const { error: limpiarAciertosError } = await supabase
+          const { error } = await supabase
             .from('pronosticos')
             .update({ acierto: null })
             .eq('partido_id', partidoGuardado.id);
-
-          if (limpiarAciertosError) {
-            throw new Error(
-              `Error al limpiar aciertos pendientes del partido ESPN ${evento.id}: ${limpiarAciertosError.message}`
-            );
-          }
+          if (error) throw new Error(`Error limpiando aciertos: ${error.message}`);
         }
+      }
+
+      const partidosCheckpoint = eventos.map((evento: any) => ({
+        fecha_partido: new Date(evento.date).toISOString(),
+        completado: Boolean(evento.competitions?.[0]?.status?.type?.completed),
+      }));
+
+      const checkpoints = evaluarCheckpointsAdministrativos(partidosCheckpoint);
+      const { error: checkpointError } = await supabase
+        .from('jornadas_eventos')
+        .update(checkpoints.cambios)
+        .eq('temporada', temporada)
+        .eq('jornada', semana);
+
+      if (checkpointError) {
+        throw new Error(`Error actualizando checkpoints J${semana}: ${checkpointError.message}`);
       }
 
       const { data: partidosJornada, error: partidosJornadaError } = await supabase
         .from('partidos')
-        .select('estado')
+        .select('id, estado, resultado_oficial')
         .eq('temporada', temporada)
         .eq('jornada', semana)
         .eq('tipo_competicion', 'regular');
 
       if (partidosJornadaError) {
-        throw new Error(
-          `Error al comprobar el estado de la jornada ${semana}: ${partidosJornadaError.message}`
-        );
+        throw new Error(`Error comprobando Jornada ${semana}: ${partidosJornadaError.message}`);
       }
 
       const todosFinalizados =
-        partidosJornada &&
-        partidosJornada.length > 0 &&
-        partidosJornada.every((p: any) => p.estado === 'STATUS_FINAL');
+        Boolean(partidosJornada?.length) &&
+        partidosJornada!.every(
+          (p: any) => p.estado === 'STATUS_FINAL' && p.resultado_oficial !== null,
+        );
 
+      let pronosticosValidados = false;
       if (todosFinalizados) {
-        const pushPlenoMagico = await pushPlenoMagicoSiProcede({ temporada, jornada: semana });
-        if (pushPlenoMagico.resultados?.some((r: any) => r.enviado)) {
-          console.log(`✨ PLENO MÁGICO Jornada ${semana}:`, pushPlenoMagico);
+        const idsPartidos = (partidosJornada || []).map((p: any) => p.id);
+        const { data: pronosticos, error: pronosticosError } = await supabase
+          .from('pronosticos')
+          .select('eleccion, acierto')
+          .in('partido_id', idsPartidos);
+
+        if (pronosticosError) {
+          throw new Error(`Error verificando pronósticos J${semana}: ${pronosticosError.message}`);
         }
 
-        const pushNoTeComesElTurron = await pushNoTeComesElTurronSiProcede({
-          temporada,
-          jornada: semana,
-        });
-        if (pushNoTeComesElTurron.resultados?.some((r: any) => r.enviado)) {
-          console.log(`🎄 NO TE COMES EL TURRÓN Jornada ${semana}:`, pushNoTeComesElTurron);
-        }
-
-        const pushLiderSolido = await pushLiderSolidoSiProcede({ temporada, jornada: semana });
-        if ('enviado' in pushLiderSolido && pushLiderSolido.enviado) {
-          console.log(`👑 LÍDER SÓLIDO Jornada ${semana}:`, pushLiderSolido);
-        }
-
-        if (semana < 18) {
-          const siguienteJornada = semana + 1;
-          const preparacion = await prepararSiguienteJornadaRegular(temporada, siguienteJornada);
-          const ahora = new Date().toISOString();
-
-          const { error: cerrarJornadaError } = await supabase
-            .from('jornadas_eventos')
-            .update({
-              estado: 'finalizada',
-              fin_jornada: ahora,
-            })
-            .eq('temporada', temporada)
-            .eq('jornada', semana);
-
-          if (cerrarJornadaError) {
-            throw new Error(
-              `Error al finalizar la jornada ${semana}: ${cerrarJornadaError.message}`
-            );
-          }
-
-          const { error: activarJornadaError } = await supabase
-            .from('app_config')
-            .update({ jornada_actual: siguienteJornada })
-            .eq('id', 1);
-
-          if (activarJornadaError) {
-            throw new Error(
-              `Jornada ${siguienteJornada} preparada, pero no pudo activarse: ${activarJornadaError.message}`
-            );
-          }
-
-          const pushResultadosApertura = await pushResultadosAperturaSiProcede({
-            temporada,
-            jornadaFinalizada: semana,
-            jornadaNueva: siguienteJornada,
-          });
-
-          console.log(`🏁 Transición J${semana} -> J${siguienteJornada}:`, {
-            preparacion,
-            pushResultadosApertura,
-          });
-        } else {
-          const { error: cerrarJornadaError } = await supabase
-            .from('jornadas_eventos')
-            .update({
-              estado: 'finalizada',
-              fin_jornada: new Date().toISOString(),
-            })
-            .eq('temporada', temporada)
-            .eq('jornada', semana);
-
-          if (cerrarJornadaError) {
-            throw new Error(
-              `Error al finalizar la jornada ${semana}: ${cerrarJornadaError.message}`
-            );
-          }
-        }
+        pronosticosValidados = (pronosticos || [])
+          .filter((p: any) => p.eleccion !== null)
+          .every((p: any) => typeof p.acierto === 'boolean');
       }
 
-      console.log(`Jornada ${semana} sincronizada correctamente.`);
+      const cicloActualCompleto =
+        todosFinalizados &&
+        checkpoints.todosLosCheckpointsUtilizadosOk &&
+        pronosticosValidados;
+
+      if (!cicloActualCompleto) continue;
+
+      await pushPlenoMagicoSiProcede({ temporada, jornada: semana });
+      await pushNoTeComesElTurronSiProcede({ temporada, jornada: semana });
+      await pushLiderSolidoSiProcede({ temporada, jornada: semana });
+
+      const tieneSiguienteRegular = await existeSiguienteJornadaRegular(temporada, semana);
+
+      // La última jornada regular NO se finaliza aquí: su transición a PLAYOFFS
+      // pertenece a la máquina J18/Jn -> Wild Card de FASE 2.
+      if (!tieneSiguienteRegular) {
+        console.log(
+          `J${semana} deportiva y administrativamente resuelta. Esperando transición a PLAYOFFS.`,
+        );
+        continue;
+      }
+
+      const siguienteJornada = semana + 1;
+      const preparacion = await prepararSiguienteJornadaRegular(temporada, siguienteJornada);
+      const ahoraIso = new Date().toISOString();
+
+      const { error: cerrarJornadaError } = await supabase
+        .from('jornadas_eventos')
+        .update({ estado: 'finalizada', fin_jornada: ahoraIso })
+        .eq('temporada', temporada)
+        .eq('jornada', semana)
+        .neq('estado', 'finalizada');
+
+      if (cerrarJornadaError) {
+        throw new Error(`Error finalizando Jornada ${semana}: ${cerrarJornadaError.message}`);
+      }
+
+      const { error: activarJornadaError } = await supabase
+        .from('app_config')
+        .update({ jornada_actual: siguienteJornada })
+        .eq('id', 1)
+        .eq('temporada', temporada)
+        .eq('jornada_actual', semana);
+
+      if (activarJornadaError) {
+        throw new Error(
+          `J${siguienteJornada} preparada, pero no pudo activarse: ${activarJornadaError.message}`,
+        );
+      }
+
+      const pushResultadosApertura = await pushResultadosAperturaSiProcede({
+        temporada,
+        jornadaFinalizada: semana,
+        jornadaNueva: siguienteJornada,
+      });
+
+      console.log(`🏁 Transición segura J${semana} -> J${siguienteJornada}`, {
+        preparacion,
+        pushResultadosApertura,
+      });
     } catch (error) {
       console.error(`Error al sincronizar jornada ${semana}:`, error);
     }
