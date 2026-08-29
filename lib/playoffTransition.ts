@@ -9,6 +9,7 @@ import {
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
 import { pushResultadosAperturaSiProcede } from '@/lib/pushAutomatic';
 import { pushResultadosAperturaPlayoffSiProcede } from '@/lib/playoffPush';
+import { prepararDesempateSuperBowl } from '@/lib/desempateActivation';
 
 type TransicionPlayoffOk = {
   transicion: true;
@@ -221,6 +222,22 @@ async function activarContextoSiguienteRonda(params: {
     throw new Error(
       `Error finalizando J${jornadaActual}: ${finalizarActualError.message}`,
     );
+  }
+
+  // El desempate se decide por estructura, no por número fijo de jornada:
+  // justo al pasar de Conference a Super Bowl y antes de activar app_config.
+  if (rondaNueva === 'super_bowl') {
+    try {
+      await prepararDesempateSuperBowl(temporada);
+    } catch (error) {
+      await supabase
+        .from('jornadas_eventos')
+        .update({ estado: 'cerrada', fin_jornada: null })
+        .eq('temporada', temporada)
+        .eq('jornada', jornadaActual)
+        .eq('estado', 'finalizada');
+      throw error;
+    }
   }
 
   let pushResultadosApertura: any;
