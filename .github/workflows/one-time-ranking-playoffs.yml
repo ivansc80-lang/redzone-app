@@ -5,7 +5,7 @@ on:
     branches:
       - fase2-playoffs
     paths:
-      - scripts/patch-ranking-playoffs.cjs
+      - scripts/patch-phase2-final.cjs
       - .github/workflows/one-time-ranking-playoffs.yml
 
 permissions:
@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Aplicar correcciones finales FASE 2
-        run: node scripts/patch-ranking-playoffs.cjs
+        run: node scripts/patch-phase2-final.cjs
 
       - name: Commit del cambio
         run: |
