@@ -17,10 +17,11 @@ type PartidoNuevo = {
   resultado_oficial: null;
 };
 
-const TOTAL_PARTIDOS_TR = 272;
 const TOTAL_EQUIPOS_NFL = 32;
-const PARTIDOS_POR_EQUIPO = 17;
-const TOTAL_JORNADAS = 18;
+const MIN_PARTIDOS_POR_EQUIPO = 17;
+const MIN_JORNADAS_REGULAR = 18;
+const MAX_JORNADAS_EXPLORACION = 24;
+const SEMANAS_VACIAS_PARA_CERRAR = 2;
 
 function fechaValida(valor: unknown) {
   if (typeof valor !== 'string' || !valor) return false;
@@ -40,7 +41,13 @@ export async function prepararNuevaTemporadaDesdeEspn(
   const ids = new Set<string>();
   const partidosPorEquipo = new Map<string, number>();
 
-  for (let jornada = 1; jornada <= TOTAL_JORNADAS; jornada++) {
+  let semanasVaciasConsecutivas = 0;
+  let ultimaJornadaConPartidos = 0;
+
+  // No asumimos que la NFL vaya a mantener para siempre 18 jornadas / 17 partidos.
+  // Exploramos la temporada regular de ESPN hasta encontrar dos weeks vacías
+  // consecutivas después de haber localizado al menos la estructura mínima actual.
+  for (let jornada = 1; jornada <= MAX_JORNADAS_EXPLORACION; jornada++) {
     const res = await fetch(
       `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporadaObjetivo}&seasontype=2&week=${jornada}`,
       { cache: 'no-store' }
@@ -59,14 +66,39 @@ export async function prepararNuevaTemporadaDesdeEspn(
     const eventos = Array.isArray(data?.events) ? data.events : [];
 
     if (eventos.length === 0) {
+      semanasVaciasConsecutivas += 1;
+
+      if (
+        ultimaJornadaConPartidos >= MIN_JORNADAS_REGULAR &&
+        semanasVaciasConsecutivas >= SEMANAS_VACIAS_PARA_CERRAR
+      ) {
+        break;
+      }
+
+      // Antes de completar el mínimo actual, una week vacía significa que
+      // ESPN todavía no tiene publicado un calendario regular completo.
+      if (ultimaJornadaConPartidos < MIN_JORNADAS_REGULAR) {
+        return {
+          validado: false,
+          activado: false,
+          temporadaObjetivo,
+          motivo: `ESPN todavía no devuelve un calendario completo; week ${jornada} está vacía`,
+        };
+      }
+
+      continue;
+    }
+
+    if (semanasVaciasConsecutivas > 0) {
       return {
         validado: false,
         activado: false,
         temporadaObjetivo,
-        motivo: `ESPN todavía no devuelve partidos para la jornada ${jornada}`,
+        motivo: `Calendario ESPN discontinuo: aparecen partidos después de una week vacía antes de cerrar la TR`,
       };
     }
 
+    ultimaJornadaConPartidos = jornada;
     const partidosJornada: PartidoNuevo[] = [];
 
     for (const evento of eventos) {
@@ -136,21 +168,14 @@ export async function prepararNuevaTemporadaDesdeEspn(
     jornadas.set(jornada, partidosJornada);
   }
 
-  if (jornadas.size !== TOTAL_JORNADAS) {
-    return {
-      validado: false,
-      activado: false,
-      temporadaObjetivo,
-      motivo: `Calendario incompleto: ${jornadas.size}/${TOTAL_JORNADAS} jornadas`,
-    };
-  }
+  const totalJornadas = jornadas.size;
 
-  if (partidos.length !== TOTAL_PARTIDOS_TR) {
+  if (totalJornadas < MIN_JORNADAS_REGULAR) {
     return {
       validado: false,
       activado: false,
       temporadaObjetivo,
-      motivo: `Número total de partidos incorrecto: ESPN=${partidos.length}, esperado=${TOTAL_PARTIDOS_TR}`,
+      motivo: `Calendario incompleto: ESPN solo devuelve ${totalJornadas} jornadas regulares`,
     };
   }
 
@@ -163,8 +188,20 @@ export async function prepararNuevaTemporadaDesdeEspn(
     };
   }
 
+  const cantidadesPorEquipo = [...partidosPorEquipo.values()];
+  const partidosPorEquipoEsperados = cantidadesPorEquipo[0] || 0;
+
+  if (partidosPorEquipoEsperados < MIN_PARTIDOS_POR_EQUIPO) {
+    return {
+      validado: false,
+      activado: false,
+      temporadaObjetivo,
+      motivo: `Calendario incompleto: cada equipo aparece con menos de ${MIN_PARTIDOS_POR_EQUIPO} partidos`,
+    };
+  }
+
   const equiposConCalendarioIncorrecto = [...partidosPorEquipo.entries()].filter(
-    ([, total]) => total !== PARTIDOS_POR_EQUIPO
+    ([, total]) => total !== partidosPorEquipoEsperados
   );
 
   if (equiposConCalendarioIncorrecto.length > 0) {
@@ -172,8 +209,21 @@ export async function prepararNuevaTemporadaDesdeEspn(
       validado: false,
       activado: false,
       temporadaObjetivo,
-      motivo: `Hay equipos que no tienen exactamente ${PARTIDOS_POR_EQUIPO} partidos`,
+      motivo: `Los 32 equipos no tienen el mismo número de partidos de temporada regular`,
+      partidosPorEquipoEsperados,
       equiposConCalendarioIncorrecto,
+    };
+  }
+
+  const totalPartidosEsperados =
+    (TOTAL_EQUIPOS_NFL * partidosPorEquipoEsperados) / 2;
+
+  if (!Number.isInteger(totalPartidosEsperados) || partidos.length !== totalPartidosEsperados) {
+    return {
+      validado: false,
+      activado: false,
+      temporadaObjetivo,
+      motivo: `Número total de partidos incoherente: ESPN=${partidos.length}, calculado=${totalPartidosEsperados}`,
     };
   }
 
@@ -244,12 +294,15 @@ export async function prepararNuevaTemporadaDesdeEspn(
     throw new Error(`Error verificando jornadas ${temporadaObjetivo}: ${verificarJornadasError.message}`);
   }
 
-  if (verificacionPartidos?.length !== TOTAL_PARTIDOS_TR || verificacionJornadas?.length !== TOTAL_JORNADAS) {
+  if (
+    verificacionPartidos?.length !== totalPartidosEsperados ||
+    verificacionJornadas?.length !== totalJornadas
+  ) {
     return {
       validado: false,
       activado: false,
       temporadaObjetivo,
-      motivo: `Escritura incompleta en BBDD: partidos=${verificacionPartidos?.length || 0}/${TOTAL_PARTIDOS_TR}, jornadas=${verificacionJornadas?.length || 0}/${TOTAL_JORNADAS}`,
+      motivo: `Escritura incompleta en BBDD: partidos=${verificacionPartidos?.length || 0}/${totalPartidosEsperados}, jornadas=${verificacionJornadas?.length || 0}/${totalJornadas}`,
     };
   }
 
@@ -288,9 +341,9 @@ export async function prepararNuevaTemporadaDesdeEspn(
     validado: true,
     activado: true,
     temporadaObjetivo,
-    jornadas: TOTAL_JORNADAS,
-    partidos: TOTAL_PARTIDOS_TR,
+    jornadas: totalJornadas,
+    partidos: totalPartidosEsperados,
     equipos: TOTAL_EQUIPOS_NFL,
-    partidosPorEquipo: PARTIDOS_POR_EQUIPO,
+    partidosPorEquipo: partidosPorEquipoEsperados,
   };
 }
