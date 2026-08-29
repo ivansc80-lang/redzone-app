@@ -1,6 +1,18 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
+import {
+  jornadaRedzoneParaRonda,
+  localizarSemanaEspnDeRonda,
+  RONDAS_PLAYOFF,
+  type RondaPlayoff,
+} from '@/lib/playoffStructure';
 
-type FasePostemporada = 'playoffs' | 'superbowl';
+function rondaDesdeSemanaSolicitada(semana: number): RondaPlayoff {
+  if (semana === 1) return 'wild_card';
+  if (semana === 2) return 'divisional';
+  if (semana === 3) return 'conference';
+  return 'super_bowl';
+}
 
 export async function sincronizarPostemporada(
   temporada: number,
@@ -11,67 +23,100 @@ export async function sincronizarPostemporada(
     throw new Error(`Temporada inválida para playoffs: ${temporada}`);
   }
 
+  const estructura = await descubrirEstructuraTemporadaNFL(temporada);
+
   console.log(
-    `Iniciando sincronización de playoffs ${temporada}, semanas ${semanaInicio}-${semanaFin}...`
+    `Iniciando sincronización de playoffs ${temporada}, solicitudes ${semanaInicio}-${semanaFin}...`
   );
 
-  for (let semana = semanaInicio; semana <= semanaFin; semana++) {
+  for (let semanaSolicitada = semanaInicio; semanaSolicitada <= semanaFin; semanaSolicitada++) {
     try {
-      const res = await fetch(
-        `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&seasontype=3&week=${semana}`,
-        { cache: 'no-store' }
-      );
+      const ronda = rondaDesdeSemanaSolicitada(semanaSolicitada);
+      const definicion = RONDAS_PLAYOFF[ronda];
+      const localizacion = await localizarSemanaEspnDeRonda(temporada, ronda);
 
-      if (!res.ok) {
-        throw new Error(`ESPN respondió con HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      const eventos = data.events || [];
-
-      if (eventos.length === 0) {
+      if (!localizacion.encontrada || localizacion.week === null) {
+        console.log(
+          `${definicion.nombre}: ESPN todavía no publica una ronda válida para ${temporada}.`
+        );
         continue;
       }
 
-      eventos.sort(
+      const eventos = [...localizacion.eventos].sort(
         (a: any, b: any) =>
           new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
-      // La identificación definitiva de las rondas y de la Super Bowl
-      // se completará en FASE 2. Aquí solo conservamos la lógica actual.
-      const tipoCompeticion: FasePostemporada =
-        semana === 4 ? 'superbowl' : 'playoffs';
+      if (eventos.length !== definicion.partidosEsperados) {
+        throw new Error(
+          `${definicion.nombre} incompleta: ESPN devuelve ${eventos.length} partidos y REDZONE espera ${definicion.partidosEsperados}.`
+        );
+      }
+
+      const ids = new Set<string>();
 
       for (const evento of eventos) {
-        const comp = evento.competitions?.[0];
-        if (!comp) continue;
-
-        const local = comp.competitors?.find(
+        const comp = evento?.competitions?.[0];
+        const local = comp?.competitors?.find(
           (c: any) => c.homeAway === 'home'
         );
-
-        const visitante = comp.competitors?.find(
+        const visitante = comp?.competitors?.find(
           (c: any) => c.homeAway === 'away'
         );
 
-        const localAbrev = local?.team?.abbreviation || '';
-        const visitAbrev = visitante?.team?.abbreviation || '';
+        const id = String(evento?.id || '');
+        const localAbrev = String(local?.team?.abbreviation || '');
+        const visitAbrev = String(visitante?.team?.abbreviation || '');
+        const fecha = new Date(evento?.date);
 
-        if (!localAbrev || !visitAbrev) {
-          continue;
+        if (
+          !comp ||
+          !id ||
+          !localAbrev ||
+          !visitAbrev ||
+          Number.isNaN(fecha.getTime())
+        ) {
+          throw new Error(
+            `${definicion.nombre} contiene un partido sin id, equipos o fecha/hora válidos.`
+          );
         }
 
-        const fechaPartido = new Date(evento.date).toISOString();
-        const estado =
-          comp.status?.type?.name || 'STATUS_SCHEDULED';
+        if (localAbrev === visitAbrev) {
+          throw new Error(
+            `${definicion.nombre}: ESPN devuelve el mismo equipo como local y visitante en ${id}.`
+          );
+        }
 
+        if (ids.has(id)) {
+          throw new Error(
+            `${definicion.nombre}: espn_event_id duplicado ${id}.`
+          );
+        }
+
+        ids.add(id);
+      }
+
+      const jornada = jornadaRedzoneParaRonda(
+        estructura.ultimaJornadaRegular,
+        ronda,
+      );
+
+      for (const evento of eventos) {
+        const comp = evento.competitions[0];
+        const local = comp.competitors.find(
+          (c: any) => c.homeAway === 'home'
+        );
+        const visitante = comp.competitors.find(
+          (c: any) => c.homeAway === 'away'
+        );
+
+        const localAbrev = local.team.abbreviation;
+        const visitAbrev = visitante.team.abbreviation;
+        const fechaPartido = new Date(evento.date).toISOString();
+        const estado = comp.status?.type?.name || 'STATUS_SCHEDULED';
         const puntosLocal = parseInt(local?.score || '0', 10);
         const puntosVisitante = parseInt(visitante?.score || '0', 10);
-
-        const periodo =
-          Number(comp.status?.period || 0) || null;
-
+        const periodo = Number(comp.status?.period || 0) || null;
         const reloj =
           comp.status?.displayClock ||
           comp.status?.type?.shortDetail ||
@@ -93,11 +138,11 @@ export async function sincronizarPostemporada(
             .from('partidos')
             .upsert(
               {
-                espn_event_id: evento.id,
+                espn_event_id: String(evento.id),
                 temporada,
-                jornada: 18 + semana,
-                semana_competicion: semana,
-                tipo_competicion: tipoCompeticion,
+                jornada,
+                semana_competicion: localizacion.week,
+                tipo_competicion: definicion.faseCompeticion,
                 equipo_local: localAbrev,
                 equipo_visitante: visitAbrev,
                 fecha_partido: fechaPartido,
@@ -115,18 +160,13 @@ export async function sincronizarPostemporada(
 
         if (upsertError) {
           throw new Error(
-            `Error al guardar partido de playoffs ESPN ${evento.id}: ${upsertError.message}`
+            `Error al guardar partido ${definicion.nombre} ESPN ${evento.id}: ${upsertError.message}`
           );
         }
 
-        if (!partidoGuardado) {
-          continue;
-        }
+        if (!partidoGuardado) continue;
 
-        if (
-          comp.status?.type?.completed &&
-          resultadoOficial
-        ) {
+        if (comp.status?.type?.completed && resultadoOficial) {
           const { error: aciertosError } = await supabase
             .from('pronosticos')
             .update({ acierto: true })
@@ -135,7 +175,7 @@ export async function sincronizarPostemporada(
 
           if (aciertosError) {
             throw new Error(
-              `Error al validar aciertos de playoffs: ${aciertosError.message}`
+              `Error al validar aciertos de ${definicion.nombre}: ${aciertosError.message}`
             );
           }
 
@@ -147,7 +187,7 @@ export async function sincronizarPostemporada(
 
           if (fallosError) {
             throw new Error(
-              `Error al validar fallos de playoffs: ${fallosError.message}`
+              `Error al validar fallos de ${definicion.nombre}: ${fallosError.message}`
             );
           }
         } else {
@@ -158,18 +198,44 @@ export async function sincronizarPostemporada(
 
           if (limpiarError) {
             throw new Error(
-              `Error al limpiar aciertos pendientes de playoffs: ${limpiarError.message}`
+              `Error al limpiar aciertos pendientes de ${definicion.nombre}: ${limpiarError.message}`
             );
           }
         }
       }
 
+      const { data: verificados, error: verificarError } = await supabase
+        .from('partidos')
+        .select('espn_event_id')
+        .eq('temporada', temporada)
+        .eq('jornada', jornada)
+        .eq('tipo_competicion', definicion.faseCompeticion);
+
+      if (verificarError) {
+        throw new Error(
+          `Error verificando ${definicion.nombre}: ${verificarError.message}`
+        );
+      }
+
+      const idsVerificados = new Set<string>(
+        (verificados || []).map((p: any) => String(p.espn_event_id))
+      );
+
+      if (
+        verificados?.length !== definicion.partidosEsperados ||
+        eventos.some((evento: any) => !idsVerificados.has(String(evento.id)))
+      ) {
+        throw new Error(
+          `${definicion.nombre} no quedó completamente verificada en BBDD.`
+        );
+      }
+
       console.log(
-        `Playoffs semana ${semana} sincronizada correctamente para temporada ${temporada}.`
+        `${definicion.nombre} sincronizada: REDZONE J${jornada}, ESPN Week ${localizacion.week}, ${eventos.length}/${definicion.partidosEsperados} partidos.`
       );
     } catch (error) {
       console.error(
-        `Error al sincronizar playoffs semana ${semana}:`,
+        `Error al sincronizar playoffs solicitud ${semanaSolicitada}:`,
         error
       );
     }
