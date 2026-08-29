@@ -4,6 +4,7 @@ import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
 import { intentarTransicionRegularAWildCard } from '@/lib/playoffTransition';
 import {
   pushCierrePorraSiProcede,
+  pushResultadosAperturaSiProcede,
   pushOnFireSiProcede,
   pushMadreMiaSiProcede,
   pushPlenoRedzoneSiProcede,
@@ -360,21 +361,32 @@ export async function sincronizarTemporadaCompleta(
           await pushPlenoRedzoneSiProcede({ temporada, jornada: semana });
           await pushMenudoBanoSiProcede({ temporada, jornada: semana });
           await pushSeEscapaSiProcede({ temporada, jornada: semana });
-        } else {
-          const { error } = await supabase
-            .from('pronosticos')
-            .update({ acierto: null })
-            .eq('partido_id', partidoGuardado.id);
-          if (error) throw new Error(`Error limpiando aciertos: ${error.message}`);
+          await pushPlenoMagicoSiProcede({ temporada, jornada: semana });
+          await pushNoTeComesElTurronSiProcede({ temporada, jornada: semana });
+          await pushLiderSolidoSiProcede({ temporada, jornada: semana });
         }
       }
 
-      const partidosCheckpoint = eventos.map((evento: any) => ({
-        fecha_partido: new Date(evento.date).toISOString(),
-        completado: Boolean(evento.competitions?.[0]?.status?.type?.completed),
-      }));
+      const { data: partidosSemana, error: partidosSemanaError } = await supabase
+        .from('partidos')
+        .select('id, estado, resultado_oficial, fecha_partido')
+        .eq('temporada', temporada)
+        .eq('jornada', semana)
+        .eq('tipo_competicion', 'regular');
 
-      const checkpoints = evaluarCheckpointsAdministrativos(partidosCheckpoint);
+      if (partidosSemanaError) {
+        throw new Error(`Error verificando Jornada ${semana}: ${partidosSemanaError.message}`);
+      }
+
+      if (!partidosSemana || partidosSemana.length === 0) continue;
+
+      const checkpoints = evaluarCheckpointsAdministrativos(
+        partidosSemana.map((p: any) => ({
+          fecha_partido: p.fecha_partido,
+          completado: p.estado === 'STATUS_FINAL' && p.resultado_oficial !== null,
+        })),
+      );
+
       const { error: checkpointError } = await supabase
         .from('jornadas_eventos')
         .update(checkpoints.cambios)
@@ -382,57 +394,32 @@ export async function sincronizarTemporadaCompleta(
         .eq('jornada', semana);
 
       if (checkpointError) {
-        throw new Error(`Error actualizando checkpoints J${semana}: ${checkpointError.message}`);
+        throw new Error(`Error actualizando checkpoints Jornada ${semana}: ${checkpointError.message}`);
       }
 
-      const { data: partidosJornada, error: partidosJornadaError } = await supabase
-        .from('partidos')
-        .select('id, estado, resultado_oficial')
-        .eq('temporada', temporada)
-        .eq('jornada', semana)
-        .eq('tipo_competicion', 'regular');
+      const todosFinalizados = partidosSemana.every(
+        (p: any) => p.estado === 'STATUS_FINAL' && p.resultado_oficial !== null,
+      );
+      if (!todosFinalizados || !checkpoints.todosLosCheckpointsUtilizadosOk) continue;
 
-      if (partidosJornadaError) {
-        throw new Error(`Error comprobando Jornada ${semana}: ${partidosJornadaError.message}`);
+      const idsPartidos = partidosSemana.map((p: any) => p.id);
+      const { data: pronosticos, error: pronosticosError } = await supabase
+        .from('pronosticos')
+        .select('eleccion, acierto')
+        .in('partido_id', idsPartidos);
+
+      if (pronosticosError) {
+        throw new Error(`Error verificando pronósticos Jornada ${semana}: ${pronosticosError.message}`);
       }
 
-      const todosFinalizados =
-        Boolean(partidosJornada?.length) &&
-        partidosJornada!.every(
-          (p: any) => p.estado === 'STATUS_FINAL' && p.resultado_oficial !== null,
-        );
+      const pronosticosValidados = (pronosticos || [])
+        .filter((p: any) => p.eleccion !== null)
+        .every((p: any) => typeof p.acierto === 'boolean');
+      if (!pronosticosValidados) continue;
 
-      let pronosticosValidados = false;
-      if (todosFinalizados) {
-        const idsPartidos = (partidosJornada || []).map((p: any) => p.id);
-        const { data: pronosticos, error: pronosticosError } = await supabase
-          .from('pronosticos')
-          .select('eleccion, acierto')
-          .in('partido_id', idsPartidos);
+      const haySiguienteJornada = await existeSiguienteJornadaRegular(temporada, semana);
 
-        if (pronosticosError) {
-          throw new Error(`Error verificando pronósticos J${semana}: ${pronosticosError.message}`);
-        }
-
-        pronosticosValidados = (pronosticos || [])
-          .filter((p: any) => p.eleccion !== null)
-          .every((p: any) => typeof p.acierto === 'boolean');
-      }
-
-      const cicloActualCompleto =
-        todosFinalizados &&
-        checkpoints.todosLosCheckpointsUtilizadosOk &&
-        pronosticosValidados;
-
-      if (!cicloActualCompleto) continue;
-
-      await pushPlenoMagicoSiProcede({ temporada, jornada: semana });
-      await pushNoTeComesElTurronSiProcede({ temporada, jornada: semana });
-      await pushLiderSolidoSiProcede({ temporada, jornada: semana });
-
-      const tieneSiguienteRegular = await existeSiguienteJornadaRegular(temporada, semana);
-
-      if (!tieneSiguienteRegular) {
+      if (!haySiguienteJornada) {
         const transicionPlayoffs = await intentarTransicionRegularAWildCard(
           temporada,
           semana,
@@ -455,32 +442,10 @@ export async function sincronizarTemporadaCompleta(
       }
 
       const siguienteJornada = semana + 1;
-      const preparacion = await prepararSiguienteJornadaRegular(temporada, siguienteJornada);
-      const ahoraIso = new Date().toISOString();
-
-      const { error: cerrarJornadaError } = await supabase
-        .from('jornadas_eventos')
-        .update({ estado: 'finalizada', fin_jornada: ahoraIso })
-        .eq('temporada', temporada)
-        .eq('jornada', semana)
-        .neq('estado', 'finalizada');
-
-      if (cerrarJornadaError) {
-        throw new Error(`Error finalizando Jornada ${semana}: ${cerrarJornadaError.message}`);
-      }
-
-      const { error: activarJornadaError } = await supabase
-        .from('app_config')
-        .update({ jornada_actual: siguienteJornada })
-        .eq('id', 1)
-        .eq('temporada', temporada)
-        .eq('jornada_actual', semana);
-
-      if (activarJornadaError) {
-        throw new Error(
-          `J${siguienteJornada} preparada, pero no pudo activarse: ${activarJornadaError.message}`,
-        );
-      }
+      const siguientePreparada = await prepararSiguienteJornadaRegular(
+        temporada,
+        siguienteJornada,
+      );
 
       const pushResultadosApertura = await pushResultadosAperturaSiProcede({
         temporada,
@@ -488,12 +453,33 @@ export async function sincronizarTemporadaCompleta(
         jornadaNueva: siguienteJornada,
       });
 
-      console.log(`🏁 Transición segura J${semana} -> J${siguienteJornada}`, {
-        preparacion,
+      const { error: finalizarError } = await supabase
+        .from('jornadas_eventos')
+        .update({ estado: 'finalizada', fin_jornada: new Date().toISOString() })
+        .eq('temporada', temporada)
+        .eq('jornada', semana);
+
+      if (finalizarError) {
+        throw new Error(`Error finalizando Jornada ${semana}: ${finalizarError.message}`);
+      }
+
+      const { error: activarError } = await supabase
+        .from('app_config')
+        .update({ jornada_actual: siguienteJornada })
+        .eq('id', 1)
+        .eq('temporada', temporada)
+        .eq('jornada_actual', semana);
+
+      if (activarError) {
+        throw new Error(`Error activando Jornada ${siguienteJornada}: ${activarError.message}`);
+      }
+
+      console.log(`✅ Transición segura J${semana} -> J${siguienteJornada}`, {
+        siguientePreparada,
         pushResultadosApertura,
       });
-    } catch (error) {
-      console.error(`Error al sincronizar jornada ${semana}:`, error);
+    } catch (err) {
+      console.error(`Error sincronizando jornada ${semana}:`, err);
     }
   }
 }
