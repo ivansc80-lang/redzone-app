@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
 
 export async function GET(request: NextRequest) {
@@ -29,13 +30,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Sincroniza la temporada actual (2026).
-    await sincronizarTemporadaCompleta(2026);
+    const { data: config, error: configError } = await supabase
+      .from('app_config')
+      .select('temporada')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (configError) {
+      throw new Error(`Error al leer app_config: ${configError.message}`);
+    }
+
+    const temporada = Number(config?.temporada);
+
+    if (!Number.isInteger(temporada) || temporada < 2000) {
+      throw new Error(
+        `Temporada activa inválida en app_config: ${config?.temporada ?? 'null'}`
+      );
+    }
+
+    // Sincroniza las 18 jornadas de la temporada activa configurada en Supabase.
+    await sincronizarTemporadaCompleta(temporada);
 
     return NextResponse.json({
       success: true,
+      temporada,
       message:
-        'Las 18 jornadas de la temporada regular se han sincronizado con éxito desde la API de ESPN.',
+        `Las 18 jornadas de la temporada regular ${temporada} se han sincronizado con éxito desde la API de ESPN.`,
     });
   } catch (error: any) {
     return NextResponse.json(
