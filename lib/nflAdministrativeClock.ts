@@ -1,6 +1,5 @@
 export const PICK_CLOSE_MINUTES = 30;
 export const CHECKPOINT_MARGIN_HOURS = 4;
-export const FIN_JORNADA_MARGIN_HOURS = 24;
 
 export type FranjaNFL =
   | 'tnf'
@@ -65,7 +64,6 @@ export function calcularRelojAdministrativo(
   );
 
   const primerKickoff = new Date(ordenados[0].fecha_partido);
-  const ultimoKickoff = new Date(ordenados[ordenados.length - 1].fecha_partido);
 
   const cierrePronosticos = new Date(
     primerKickoff.getTime() - PICK_CLOSE_MINUTES * 60 * 1000
@@ -100,17 +98,18 @@ export function calcularRelojAdministrativo(
     franjas[`${franja}_validado`] = null;
   }
 
-  // Mantenemos un hito administrativo separado de ESPN FINAL.
-  // Se sitúa 24 h después del último kickoff, dando margen a ESPN,
-  // validaciones y PUSH antes de preparar la jornada siguiente.
-  const finJornada = new Date(
-    ultimoKickoff.getTime() + FIN_JORNADA_MARGIN_HOURS * 60 * 60 * 1000
-  );
-
+  // fin_jornada NO se calcula como una hora fija derivada del último kickoff.
+  // Igual que en TR/TEST, la jornada solo podrá finalizar administrativamente
+  // cuando se cumplan todas las condiciones del ciclo:
+  // - todos los partidos actuales están FINAL;
+  // - todos los checkpoints de las franjas utilizadas están validados;
+  // - resultados/pronósticos están validados;
+  // - la siguiente jornada existe en ESPN y ha sido validada completamente.
+  // Hasta entonces permanece cerrada y el cron vuelve a intentarlo.
   return {
     inicio_jornada: primerKickoff.toISOString(),
     cierre_pronosticos: cierrePronosticos.toISOString(),
-    fin_jornada: finJornada.toISOString(),
+    fin_jornada: null,
     ...franjas,
   };
 }
