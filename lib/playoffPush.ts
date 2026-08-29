@@ -42,15 +42,10 @@ export async function pushResultadosAperturaPlayoffSiProcede({
   }
 
   const aciertos: Record<string, number> = {};
-  for (const participante of PARTICIPANTES_REDZONE) {
-    aciertos[participante.id] = 0;
-  }
+  for (const participante of PARTICIPANTES_REDZONE) aciertos[participante.id] = 0;
 
   for (const pronostico of pronosticos || []) {
-    if (
-      pronostico.acierto === true &&
-      aciertos[pronostico.user_id] !== undefined
-    ) {
+    if (pronostico.acierto === true && aciertos[pronostico.user_id] !== undefined) {
       aciertos[pronostico.user_id] += 1;
     }
   }
@@ -60,14 +55,12 @@ export async function pushResultadosAperturaPlayoffSiProcede({
     .join(' · ');
 
   const resultado = await enviarPushRedzone({
-    claveEvento:
-      `resultados_apertura_${temporada}_j${jornadaFinalizada}_j${jornadaNueva}`,
+    claveEvento: `resultados_apertura_${temporada}_j${jornadaFinalizada}_j${jornadaNueva}`,
     tipoEvento: PUSH_EVENTOS.RESULTADOS_APERTURA,
     temporada,
     jornada: jornadaNueva,
     titulo: `🏁 RESULTADOS J${jornadaFinalizada} · PORRA J${jornadaNueva} ABIERTA`,
-    mensaje:
-      `${marcador} · Ya puedes hacer tus pronósticos de la Jornada ${jornadaNueva}.`,
+    mensaje: `${marcador} · Ya puedes hacer tus pronósticos de la Jornada ${jornadaNueva}.`,
     url: '/',
     metadata: {
       evento: 'resultados_apertura',
@@ -89,6 +82,52 @@ export async function pushResultadosAperturaPlayoffSiProcede({
       ? `El PUSH J${jornadaFinalizada} → J${jornadaNueva} ya fue enviado`
       : resultado.enviado
         ? `Resultados J${jornadaFinalizada} y apertura J${jornadaNueva} enviados`
+        : 'No existen suscripciones PUSH activas',
+  };
+}
+
+/**
+ * PUSH final de temporada 100% ANTI-SPOILER.
+ *
+ * REGLA PERMANENTE:
+ * Nunca incluir en título, mensaje ni metadata visible del PUSH:
+ * - resultado o marcador NFL de la Super Bowl;
+ * - ganador/perdedor o nombres de equipos;
+ * - elecciones de los participantes;
+ * - aciertos/fallos de la Super Bowl;
+ * - campeón/clasificación final de REDZONE.
+ *
+ * El usuario debe entrar voluntariamente en REDZONE para consultar esos datos.
+ */
+export async function pushSuperBowlFinTemporadaSiProcede({
+  temporada,
+  jornadaSuperBowl,
+}: {
+  temporada: number;
+  jornadaSuperBowl: number;
+}) {
+  const resultado = await enviarPushRedzone({
+    claveEvento: `superbowl_fin_temporada_${temporada}`,
+    tipoEvento: PUSH_EVENTOS.SUPERBOWL_FIN_TEMPORADA,
+    temporada,
+    jornada: jornadaSuperBowl,
+    titulo: '🏆 SUPER BOWL · FIN DE TEMPORADA',
+    mensaje:
+      'La temporada de REDZONE ha terminado. Entra para consultar los resultados y la clasificación final.',
+    url: '/',
+    metadata: {
+      evento: 'superbowl_fin_temporada',
+      tipo_competicion: 'superbowl',
+      anti_spoiler: true,
+    },
+  });
+
+  return {
+    ...resultado,
+    motivo: resultado.duplicado
+      ? `El PUSH de fin de temporada ${temporada} ya fue enviado`
+      : resultado.enviado
+        ? `PUSH anti-spoiler de fin de temporada ${temporada} enviado`
         : 'No existen suscripciones PUSH activas',
   };
 }
@@ -170,15 +209,13 @@ export async function pushRecordatorioPlayoffSiProcede({
 
     const faltan = idsPartidos.length - completados;
     const resultado = await enviarPushRedzone({
-      claveEvento:
-        `recordatorio_pronosticos_${temporada}_j${jornada}_${participante.id}`,
+      claveEvento: `recordatorio_pronosticos_${temporada}_j${jornada}_${participante.id}`,
       tipoEvento: PUSH_EVENTOS.RECORDATORIO_PRONOSTICOS,
       temporada,
       jornada,
       userId: participante.id,
       titulo: '⏰ ¡Que se te acaba el tiempo!',
-      mensaje:
-        `Te faltan pronósticos de la Jornada ${jornada}. La porra se cierra en unas 6 horas.`,
+      mensaje: `Te faltan pronósticos de la Jornada ${jornada}. La porra se cierra en unas 6 horas.`,
       url: '/',
       metadata: {
         evento: 'recordatorio_pronosticos',
@@ -192,13 +229,7 @@ export async function pushRecordatorioPlayoffSiProcede({
       },
     });
 
-    resultados.push({
-      nombre: participante.nombre,
-      completados,
-      faltan,
-      total: idsPartidos.length,
-      ...resultado,
-    });
+    resultados.push({ nombre: participante.nombre, completados, faltan, total: idsPartidos.length, ...resultado });
   }
 
   return {
