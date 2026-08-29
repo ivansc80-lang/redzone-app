@@ -1,6 +1,7 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { evaluarCheckpointsAdministrativos } from '@/lib/nflAdministrativeClock';
 import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
+import { intentarTransicionRegularAWildCard } from '@/lib/playoffTransition';
 import {
   pushCierrePorraSiProcede,
   pushResultadosAperturaSiProcede,
@@ -433,9 +434,28 @@ export async function sincronizarTemporadaCompleta(
       const tieneSiguienteRegular = await existeSiguienteJornadaRegular(temporada, semana);
 
       if (!tieneSiguienteRegular) {
-        console.log(
-          `J${semana} deportiva y administrativamente resuelta. Esperando transición a PLAYOFFS.`,
+        const transicionPlayoffs = await intentarTransicionRegularAWildCard(
+          temporada,
+          semana,
         );
+
+        if (!transicionPlayoffs.transicion) {
+          console.log(
+            `J${semana} resuelta. REDZONE permanece en J${semana}: ${transicionPlayoffs.motivo}`,
+          );
+          continue;
+        }
+
+        const pushResultadosApertura = await pushResultadosAperturaSiProcede({
+          temporada,
+          jornadaFinalizada: semana,
+          jornadaNueva: transicionPlayoffs.jornadaNueva!,
+        });
+
+        console.log(`🏁 Transición segura J${semana} -> WILD CARD`, {
+          transicionPlayoffs,
+          pushResultadosApertura,
+        });
         continue;
       }
 
