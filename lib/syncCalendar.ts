@@ -57,10 +57,12 @@ async function prepararSiguienteJornadaRegular(
     throw new Error(`ESPN no devolvió partidos para preparar Jornada ${jornada}`);
   }
 
-  const idsEsperados = new Set(
+  const idsEsperados = new Set<string>(
     partidosEsperados.map((p: any) => String(p.espn_event_id)),
   );
-  const idsEspn = new Set(eventos.map((evento: any) => String(evento.id)));
+  const idsEspn = new Set<string>(
+    eventos.map((evento: any) => String(evento.id)),
+  );
 
   if (eventos.length !== idsEsperados.size) {
     throw new Error(
@@ -177,7 +179,7 @@ async function prepararSiguienteJornadaRegular(
     throw new Error(`Error verificando Jornada ${jornada}: ${verificarError.message}`);
   }
 
-  const idsVerificados = new Set(
+  const idsVerificados = new Set<string>(
     (partidosVerificados || []).map((p: any) => String(p.espn_event_id)),
   );
 
