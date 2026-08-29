@@ -185,7 +185,7 @@ async function prepararSiguienteJornadaRegular(
 
   if (
     partidosVerificados?.length !== partidosPreparados.length ||
-    partidosPreparados.some((p) => !idsVerificados.has(String(p.espn_event_id)))
+    partidosPreparados.some((p: any) => !idsVerificados.has(String(p.espn_event_id)))
   ) {
     throw new Error(`Jornada ${jornada} no quedó completamente verificada en BBDD`);
   }
