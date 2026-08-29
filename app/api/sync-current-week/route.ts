@@ -99,7 +99,10 @@ export async function GET(request: NextRequest) {
 
       let calendario = null;
 
-      if (cicloAnual.debeBuscarCalendario) {
+      if (
+        cicloAnual.debeBuscarCalendario &&
+        cicloAnual.temporadaObjetivo !== null
+      ) {
         calendario = await prepararNuevaTemporadaDesdeEspn(
           cicloAnual.temporadaObjetivo,
           cicloAnual.faseActual === 'pretemporada' ? 'pretemporada' : 'draft'
