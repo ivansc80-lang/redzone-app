@@ -1,0 +1,67 @@
+name: One-time ranking playoffs patch
+
+on:
+  push:
+    branches:
+      - fase2-playoffs
+    paths:
+      - .github/workflows/one-time-ranking-playoffs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-ranking:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fase2-playoffs
+          fetch-depth: 0
+
+      - name: Patch ranking dinámico
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/page.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          old_objgames = '''      for (let j = 1; j <= 18; j++) {
+        objGames[j] = {'''
+          new_objgames = '''      const jornadasGamesDisponibles = Object.keys(agrupadasGames)
+        .map(Number)
+        .filter((j) => Number.isInteger(j) && j > 0)
+        .sort((a, b) => a - b);
+
+      for (const j of jornadasGamesDisponibles) {
+        objGames[j] = {'''
+
+          old_ranking = '''        for (let jNum = 1; jNum <= 18; jNum++) {
+          // RANKING y Total Acumulado deben conservar el histórico'''
+          new_ranking = '''        const jornadasRanking = Object.keys(pronosticosGames)
+          .map(Number)
+          .filter((j) => Number.isInteger(j) && j > 0)
+          .sort((a, b) => a - b);
+
+        for (const jNum of jornadasRanking) {
+          // RANKING y Total Acumulado deben conservar el histórico'''
+
+          if old_objgames not in text:
+              raise SystemExit('No se encontró el bloque objGames esperado')
+          if old_ranking not in text:
+              raise SystemExit('No se encontró el bloque RANKING esperado')
+
+          text = text.replace(old_objgames, new_objgames, 1)
+          text = text.replace(old_ranking, new_ranking, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit del cambio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx
+          git commit -m "fix: hacer ranking dinámico con playoffs"
+          git push origin HEAD:fase2-playoffs
