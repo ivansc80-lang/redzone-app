@@ -2698,7 +2698,12 @@ const [verPassword, setVerPassword] = useState(false);
         >
       > = {};
 
-      for (let j = 1; j <= 18; j++) {
+      const jornadasGamesDisponibles = Object.keys(agrupadasGames)
+        .map(Number)
+        .filter((j) => Number.isInteger(j) && j > 0)
+        .sort((a, b) => a - b);
+
+      for (const j of jornadasGamesDisponibles) {
         objGames[j] = {
           cace: {
             pronosticos: JSON.parse(JSON.stringify(agrupadasGames[j] || [])),
@@ -3475,7 +3480,12 @@ const [verPassword, setVerPassword] = useState(false);
         let totalPuntos = 0;
         let totalAciertosPartidos = 0;
         let totalValidados = 0;
-        for (let jNum = 1; jNum <= 18; jNum++) {
+        const jornadasRanking = Object.keys(pronosticosGames)
+          .map(Number)
+          .filter((j) => Number.isInteger(j) && j > 0)
+          .sort((a, b) => a - b);
+
+        for (const jNum of jornadasRanking) {
           // RANKING y Total Acumulado deben conservar el histórico
           // completo de la competición, no solo la jornada activa.
           const jData = pronosticosGames[jNum]?.[usr.id];
