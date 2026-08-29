@@ -3450,6 +3450,15 @@ const [verPassword, setVerPassword] = useState(false);
       const partidos = jornadasGames[j] || [];
 
       partidos.forEach((p) => {
+        // Las rachas de GAMES pertenecen exclusivamente a la TR.
+        // Wild Card, Divisional, Conference y Super Bowl nunca las modifican.
+        if (
+          p.tipo_competicion === "playoffs" ||
+          p.tipo_competicion === "superbowl"
+        ) {
+          return;
+        }
+
         const local = String(p.local || "").toUpperCase();
         const visitante = String(p.visitante || "").toUpperCase();
 
