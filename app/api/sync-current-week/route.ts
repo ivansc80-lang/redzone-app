@@ -4,6 +4,7 @@ import { sincronizarTemporadaCompleta } from '@/lib/syncCalendar';
 import { sincronizarPretemporadaTest } from '@/lib/syncPreseasonTest';
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
 import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
+import { gestionarCicloAnual } from '@/lib/seasonLifecycle';
 import {
   pushInicioTemporadaSiProcede,
 } from '@/lib/pushAutomatic';
@@ -23,6 +24,8 @@ function getSafeDebugInfo(config: any) {
   return {
     projectRef,
     temporada: config?.temporada ?? null,
+    temporada_objetivo: config?.temporada_objetivo ?? null,
+    fase_competicion: config?.fase_competicion ?? null,
     modo_pretemporada_test: config?.modo_pretemporada_test ?? null,
     modo_pretemporada_hasta: config?.modo_pretemporada_hasta ?? null,
   };
@@ -37,27 +40,21 @@ export async function GET(request: NextRequest) {
       console.error('CRON_SECRET no está configurado.');
 
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Configuración de seguridad incompleta.',
-        },
+        { success: false, error: 'Configuración de seguridad incompleta.' },
         { status: 500 }
       );
     }
 
     if (authorization !== `Bearer ${cronSecret}`) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'No autorizado.',
-        },
+        { success: false, error: 'No autorizado.' },
         { status: 401 }
       );
     }
 
     const { data: config, error: configError } = await supabase
       .from('app_config')
-      .select('temporada, modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
+      .select('temporada, temporada_objetivo, modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
       .eq('id', 1)
       .maybeSingle();
 
@@ -86,9 +83,31 @@ export async function GET(request: NextRequest) {
           ...resultadoPretemporada,
         });
       }
+    }
 
-      // Si acaba de caducar, en esta misma ejecución continuamos con
-      // temporada regular para que la PWA vuelva a su estado normal.
+    if (
+      config?.fase_competicion === 'finalizada' ||
+      config?.fase_competicion === 'draft' ||
+      config?.fase_competicion === 'pretemporada'
+    ) {
+      const cicloAnual = await gestionarCicloAnual({
+        temporada,
+        temporadaObjetivo:
+          config?.temporada_objetivo == null
+            ? null
+            : Number(config.temporada_objetivo),
+        faseCompeticion: config.fase_competicion,
+      });
+
+      return NextResponse.json({
+        success: true,
+        mode: cicloAnual.faseActual,
+        debug,
+        cicloAnual,
+        message: cicloAnual.debeBuscarCalendario
+          ? `Temporada ${cicloAnual.temporadaObjetivo}: ventana de búsqueda del nuevo calendario activa.`
+          : `Ciclo anual en estado ${cicloAnual.faseActual}; la temporada ${temporada} continúa siendo la visible.`,
+      });
     }
 
     if (config?.fase_competicion === 'playoffs') {
@@ -126,11 +145,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // En temporada regular tomamos la primera jornada que todavía no está
-    // finalizada y sincronizamos únicamente esa jornada.
     const { data: jornadaActiva, error: jornadaActivaError } = await supabase
       .from('jornadas_eventos')
       .select('jornada, estado, cierre_pronosticos')
+      .eq('temporada', temporada)
       .neq('estado', 'finalizada')
       .order('jornada', { ascending: true })
       .limit(1)
@@ -153,24 +171,12 @@ export async function GET(request: NextRequest) {
 
     const jornada = Number(jornadaActiva.jornada);
 
-    // ========================================================
-    // PUSH 1 - INICIO TEMPORADA / APERTURA PORRA J1
-    // ========================================================
-    //
-    // Mientras Modo TEST siga activo nunca llegamos aquí,
-    // porque syncPreseasonTest devuelve antes.
-    //
-    // Cuando REDZONE entra realmente en Temporada Regular,
-    // J1 está pendiente y su PORRA abierta.
-    //
-    const pushInicioTemporada =
-      await pushInicioTemporadaSiProcede({
-        temporada,
-        jornada,
-        estado: jornadaActiva.estado,
-        cierrePronosticos:
-          jornadaActiva.cierre_pronosticos,
-      });
+    const pushInicioTemporada = await pushInicioTemporadaSiProcede({
+      temporada,
+      jornada,
+      estado: jornadaActiva.estado,
+      cierrePronosticos: jornadaActiva.cierre_pronosticos,
+    });
 
     await sincronizarTemporadaCompleta(temporada, jornada, jornada);
 
@@ -187,10 +193,7 @@ export async function GET(request: NextRequest) {
     console.error('Error en sync-current-week:', error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error: error.message,
-      },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
