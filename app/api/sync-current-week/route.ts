@@ -23,13 +23,11 @@ export const dynamic = 'force-dynamic';
 function getSafeDebugInfo(config: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   let projectRef = 'unknown';
-
   try {
     projectRef = new URL(supabaseUrl).hostname.split('.')[0] || 'unknown';
   } catch {
     projectRef = 'invalid-url';
   }
-
   return {
     projectRef,
     temporada: config?.temporada ?? null,
@@ -46,7 +44,6 @@ async function evaluarRecordatorioPlayoff(params: {
   tipoCompeticion: 'playoffs' | 'superbowl';
 }) {
   const { temporada, jornada, tipoCompeticion } = params;
-
   const { data: evento, error } = await supabase
     .from('jornadas_eventos')
     .select('estado, cierre_pronosticos')
@@ -54,9 +51,7 @@ async function evaluarRecordatorioPlayoff(params: {
     .eq('jornada', jornada)
     .maybeSingle();
 
-  if (error) {
-    throw new Error(`Error leyendo reloj PUSH J${jornada}: ${error.message}`);
-  }
+  if (error) throw new Error(`Error leyendo reloj PUSH J${jornada}: ${error.message}`);
 
   if (!evento?.cierre_pronosticos || evento.estado !== 'pendiente') {
     return {
@@ -81,17 +76,10 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error('CRON_SECRET no está configurado.');
-      return NextResponse.json(
-        { success: false, error: 'Configuración de seguridad incompleta.' },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: false, error: 'Configuración de seguridad incompleta.' }, { status: 500 });
     }
-
     if (authorization !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'No autorizado.' }, { status: 401 });
     }
 
     const { data: config, error: configError } = await supabase
@@ -100,30 +88,19 @@ export async function GET(request: NextRequest) {
       .eq('id', 1)
       .maybeSingle();
 
-    if (configError) {
-      throw new Error(`Error al leer app_config: ${configError.message}`);
-    }
+    if (configError) throw new Error(`Error al leer app_config: ${configError.message}`);
 
     const temporada = Number(config?.temporada);
-
     if (!Number.isInteger(temporada) || temporada < 2000) {
-      throw new Error(
-        `Temporada activa inválida en app_config: ${config?.temporada ?? 'null'}`
-      );
+      throw new Error(`Temporada activa inválida en app_config: ${config?.temporada ?? 'null'}`);
     }
 
     const debug = getSafeDebugInfo(config);
 
     if (config?.modo_pretemporada_test) {
       const resultadoPretemporada = await sincronizarPretemporadaTest();
-
       if (resultadoPretemporada.active) {
-        return NextResponse.json({
-          success: true,
-          mode: 'pretemporada_test',
-          debug,
-          ...resultadoPretemporada,
-        });
+        return NextResponse.json({ success: true, mode: 'pretemporada_test', debug, ...resultadoPretemporada });
       }
     }
 
@@ -134,19 +111,12 @@ export async function GET(request: NextRequest) {
     ) {
       const cicloAnual = await gestionarCicloAnual({
         temporada,
-        temporadaObjetivo:
-          config?.temporada_objetivo == null
-            ? null
-            : Number(config.temporada_objetivo),
+        temporadaObjetivo: config?.temporada_objetivo == null ? null : Number(config.temporada_objetivo),
         faseCompeticion: config.fase_competicion,
       });
 
       let calendario = null;
-
-      if (
-        cicloAnual.debeBuscarCalendario &&
-        cicloAnual.temporadaObjetivo !== null
-      ) {
+      if (cicloAnual.debeBuscarCalendario && cicloAnual.temporadaObjetivo !== null) {
         calendario = await prepararNuevaTemporadaDesdeEspn(
           cicloAnual.temporadaObjetivo,
           cicloAnual.faseActual === 'pretemporada' ? 'pretemporada' : 'draft'
@@ -171,11 +141,7 @@ export async function GET(request: NextRequest) {
       const semanaPostemporada = Number(config.semana_postemporada || 1);
       const jornadaActual = Number(config.jornada_actual);
 
-      await sincronizarPostemporada(
-        temporada,
-        semanaPostemporada,
-        semanaPostemporada
-      );
+      await sincronizarPostemporada(temporada, semanaPostemporada, semanaPostemporada);
 
       const pushRecordatorio = await evaluarRecordatorioPlayoff({
         temporada,
@@ -199,9 +165,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        mode: transicion.transicion
-          ? transicion.faseCompeticion
-          : 'playoffs',
+        mode: transicion.transicion ? transicion.faseCompeticion : 'playoffs',
         debug,
         semana: semanaPostemporada,
         pushRecordatorio,
@@ -242,13 +206,33 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // El PUSH final es deliberadamente anti-spoiler. Se intenta antes de
-      // abandonar fase=superbowl para que, si falla, el siguiente cron pueda
-      // reintentarlo. La clave_evento lo hace idempotente si ya fue enviado.
       const pushFinTemporada = await pushSuperBowlFinTemporadaSiProcede({
         temporada,
         jornadaSuperBowl,
       });
+
+      // Solo bloqueamos el cierre cuando había suscripciones activas y ninguna
+      // recibió el PUSH por un fallo real de envío. Si no hay suscripciones,
+      // si ya estaba deduplicado o si al menos una entrega tuvo éxito, podemos cerrar.
+      const falloRealPush =
+        !pushFinTemporada.enviado &&
+        !pushFinTemporada.duplicado &&
+        !pushFinTemporada.sinSuscripciones &&
+        pushFinTemporada.suscripcionesActivas > 0;
+
+      if (falloRealPush) {
+        return NextResponse.json({
+          success: true,
+          mode: 'superbowl',
+          debug,
+          semana: config.semana_postemporada,
+          desempate,
+          pushRecordatorio,
+          cierreSuperBowl,
+          pushFinTemporada,
+          message: 'Super Bowl finalizada, pero el PUSH final falló. Se mantiene fase=superbowl para reintentar en el siguiente cron.',
+        });
+      }
 
       const cierreTemporada = await finalizarTemporadaTrasSuperBowl({
         temporada,
@@ -278,23 +262,13 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    if (jornadaActivaError) {
-      throw new Error(
-        `Error al obtener la jornada activa: ${jornadaActivaError.message}`
-      );
-    }
+    if (jornadaActivaError) throw new Error(`Error al obtener la jornada activa: ${jornadaActivaError.message}`);
 
     if (!jornadaActiva) {
-      return NextResponse.json({
-        success: true,
-        mode: 'regular',
-        debug,
-        message: 'No hay jornadas pendientes de sincronización.',
-      });
+      return NextResponse.json({ success: true, mode: 'regular', debug, message: 'No hay jornadas pendientes de sincronización.' });
     }
 
     const jornada = Number(jornadaActiva.jornada);
-
     const pushInicioTemporada = await pushInicioTemporadaSiProcede({
       temporada,
       jornada,
@@ -315,10 +289,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error en sync-current-week:', error);
-
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
