@@ -1,5 +1,6 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { evaluarCheckpointsAdministrativos } from '@/lib/nflAdministrativeClock';
+import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
 import {
   pushCierrePorraSiProcede,
   pushResultadosAperturaSiProcede,
@@ -93,9 +94,7 @@ async function prepararSiguienteJornadaRegular(
   }
 
   if (!jornadaEvento || jornadaEvento.estado !== 'pendiente') {
-    throw new Error(
-      `La Jornada ${jornada} no existe o no está pendiente`,
-    );
+    throw new Error(`La Jornada ${jornada} no existe o no está pendiente`);
   }
 
   const partidosPreparados = eventos.map((evento: any) => {
@@ -213,13 +212,22 @@ async function existeSiguienteJornadaRegular(temporada: number, jornada: number)
 export async function sincronizarTemporadaCompleta(
   temporada: number,
   semanaInicio = 1,
-  semanaFin = 18,
+  semanaFin?: number,
 ) {
   if (!Number.isInteger(temporada) || temporada < 2000) {
     throw new Error(`Temporada regular inválida: ${temporada}`);
   }
 
-  for (let semana = semanaInicio; semana <= semanaFin; semana++) {
+  const semanaFinal =
+    semanaFin ?? (await descubrirEstructuraTemporadaNFL(temporada)).ultimaJornadaRegular;
+
+  if (!Number.isInteger(semanaFinal) || semanaFinal < semanaInicio) {
+    throw new Error(
+      `Rango de jornadas inválido para ${temporada}: inicio=${semanaInicio}, fin=${semanaFinal}`,
+    );
+  }
+
+  for (let semana = semanaInicio; semana <= semanaFinal; semana++) {
     try {
       const res = await fetch(
         `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${temporada}&seasontype=2&week=${semana}`,
@@ -424,8 +432,6 @@ export async function sincronizarTemporadaCompleta(
 
       const tieneSiguienteRegular = await existeSiguienteJornadaRegular(temporada, semana);
 
-      // La última jornada regular NO se finaliza aquí: su transición a PLAYOFFS
-      // pertenece a la máquina J18/Jn -> Wild Card de FASE 2.
       if (!tieneSiguienteRegular) {
         console.log(
           `J${semana} deportiva y administrativamente resuelta. Esperando transición a PLAYOFFS.`,
