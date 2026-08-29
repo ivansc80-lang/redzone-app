@@ -7,6 +7,8 @@ import {
   type RondaPlayoff,
 } from '@/lib/playoffStructure';
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
+import { pushResultadosAperturaSiProcede } from '@/lib/pushAutomatic';
+import { pushResultadosAperturaPlayoffSiProcede } from '@/lib/playoffPush';
 
 type TransicionPlayoffOk = {
   transicion: true;
@@ -15,6 +17,7 @@ type TransicionPlayoffOk = {
   rondaNueva: RondaPlayoff;
   faseCompeticion: FaseCompeticionPlayoff;
   semanaPostemporada: number;
+  pushResultadosApertura: any;
 };
 
 type TransicionPlayoffPendiente = {
@@ -199,8 +202,10 @@ async function activarContextoSiguienteRonda(params: {
   jornadaActual: number;
   jornadaNueva: number;
   rondaNueva: RondaPlayoff;
+  origen: 'regular' | 'playoffs';
+  semanaAnterior?: number | null;
 }): Promise<TransicionPlayoffOk> {
-  const { temporada, jornadaActual, jornadaNueva, rondaNueva } = params;
+  const { temporada, jornadaActual, jornadaNueva, rondaNueva, origen, semanaAnterior = null } = params;
   const definicionNueva = RONDAS_PLAYOFF[rondaNueva];
   const indiceNuevo = indiceDesdeRonda(rondaNueva);
   const ahoraIso = new Date().toISOString();
@@ -244,6 +249,54 @@ async function activarContextoSiguienteRonda(params: {
     );
   }
 
+  let pushResultadosApertura: any;
+  try {
+    pushResultadosApertura = origen === 'regular'
+      ? await pushResultadosAperturaSiProcede({
+          temporada,
+          jornadaFinalizada: jornadaActual,
+          jornadaNueva,
+        })
+      : await pushResultadosAperturaPlayoffSiProcede({
+          temporada,
+          jornadaFinalizada: jornadaActual,
+          jornadaNueva,
+        });
+  } catch (error) {
+    await supabase.from('app_config').update({
+      fase_competicion: origen,
+      semana_postemporada: origen === 'playoffs' ? semanaAnterior : null,
+      jornada_actual: jornadaActual,
+    }).eq('id', 1).eq('temporada', temporada).eq('jornada_actual', jornadaNueva);
+
+    await supabase.from('jornadas_eventos').update({ estado: 'cerrada', fin_jornada: null })
+      .eq('temporada', temporada).eq('jornada', jornadaActual).eq('estado', 'finalizada');
+    throw error;
+  }
+
+  const falloRealPush =
+    !pushResultadosApertura.enviado &&
+    !pushResultadosApertura.duplicado &&
+    !pushResultadosApertura.sinSuscripciones &&
+    pushResultadosApertura.suscripcionesActivas > 0;
+
+  if (falloRealPush) {
+    const { error: rollbackConfigError } = await supabase.from('app_config').update({
+      fase_competicion: origen,
+      semana_postemporada: origen === 'playoffs' ? semanaAnterior : null,
+      jornada_actual: jornadaActual,
+    }).eq('id', 1).eq('temporada', temporada).eq('jornada_actual', jornadaNueva);
+
+    const { error: rollbackJornadaError } = await supabase.from('jornadas_eventos')
+      .update({ estado: 'cerrada', fin_jornada: null })
+      .eq('temporada', temporada).eq('jornada', jornadaActual).eq('estado', 'finalizada');
+
+    if (rollbackConfigError || rollbackJornadaError) {
+      throw new Error('Falló el PUSH de transición y también el rollback: ' + (rollbackConfigError?.message || rollbackJornadaError?.message));
+    }
+    throw new Error('Falló el PUSH de transición J' + jornadaActual + ' → J' + jornadaNueva + '; contexto restaurado para reintentar.');
+  }
+
   return {
     transicion: true,
     jornadaAnterior: jornadaActual,
@@ -251,6 +304,7 @@ async function activarContextoSiguienteRonda(params: {
     rondaNueva,
     faseCompeticion: definicionNueva.faseCompeticion,
     semanaPostemporada: indiceNuevo,
+    pushResultadosApertura,
   };
 }
 
@@ -291,6 +345,7 @@ export async function intentarTransicionRegularAWildCard(
     jornadaActual: jornadaRegular,
     jornadaNueva: jornadaWildCard,
     rondaNueva: 'wild_card',
+    origen: 'regular',
   });
 }
 
@@ -373,5 +428,7 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
     jornadaActual,
     jornadaNueva,
     rondaNueva: siguiente,
+    origen: 'playoffs',
+    semanaAnterior: semanaPostemporada,
   });
 }

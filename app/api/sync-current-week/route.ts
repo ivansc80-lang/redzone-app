@@ -10,7 +10,6 @@ import { prepararNuevaTemporadaDesdeEspn } from '@/lib/newSeasonCalendar';
 import { pushInicioTemporadaSiProcede } from '@/lib/pushAutomatic';
 import {
   pushRecordatorioPlayoffSiProcede,
-  pushResultadosAperturaPlayoffSiProcede,
   pushSuperBowlFinTemporadaSiProcede,
 } from '@/lib/playoffPush';
 import {
@@ -156,11 +155,7 @@ export async function GET(request: NextRequest) {
       });
 
       const pushResultadosApertura = transicion.transicion
-        ? await pushResultadosAperturaPlayoffSiProcede({
-            temporada,
-            jornadaFinalizada: transicion.jornadaAnterior,
-            jornadaNueva: transicion.jornadaNueva,
-          })
+        ? transicion.pushResultadosApertura
         : null;
 
       return NextResponse.json({

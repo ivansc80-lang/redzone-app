@@ -195,10 +195,12 @@ export async function pushResultadosAperturaSiProcede({
         acierto,
         partido:partidos!inner (
           jornada,
+          temporada,
           tipo_competicion
         )
       `)
       .in("user_id", ids)
+      .eq("partido.temporada", temporada)
       .eq("partido.jornada", jornadaFinalizada)
       .eq("partido.tipo_competicion", "regular")
       .not("acierto", "is", null);

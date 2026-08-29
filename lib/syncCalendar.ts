@@ -4,7 +4,6 @@ import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
 import { intentarTransicionRegularAWildCard } from '@/lib/playoffTransition';
 import {
   pushCierrePorraSiProcede,
-  pushResultadosAperturaSiProcede,
   pushOnFireSiProcede,
   pushMadreMiaSiProcede,
   pushPlenoRedzoneSiProcede,
@@ -446,11 +445,7 @@ export async function sincronizarTemporadaCompleta(
           continue;
         }
 
-        const pushResultadosApertura = await pushResultadosAperturaSiProcede({
-          temporada,
-          jornadaFinalizada: semana,
-          jornadaNueva: transicionPlayoffs.jornadaNueva!,
-        });
+        const pushResultadosApertura = transicionPlayoffs.pushResultadosApertura;
 
         console.log(`🏁 Transición segura J${semana} -> WILD CARD`, {
           transicionPlayoffs,
