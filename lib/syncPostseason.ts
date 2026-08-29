@@ -3,12 +3,16 @@ import { supabaseServer as supabase } from '@/lib/supabaseServer';
 type FasePostemporada = 'playoffs' | 'superbowl';
 
 export async function sincronizarPostemporada(
-  temporada = 2026,
+  temporada: number,
   semanaInicio = 1,
   semanaFin = 4
 ) {
+  if (!Number.isInteger(temporada) || temporada < 2000) {
+    throw new Error(`Temporada inválida para playoffs: ${temporada}`);
+  }
+
   console.log(
-    `Iniciando sincronización de postemporada ${temporada}, semanas ${semanaInicio}-${semanaFin}...`
+    `Iniciando sincronización de playoffs ${temporada}, semanas ${semanaInicio}-${semanaFin}...`
   );
 
   for (let semana = semanaInicio; semana <= semanaFin; semana++) {
@@ -34,6 +38,8 @@ export async function sincronizarPostemporada(
           new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
+      // La identificación definitiva de las rondas y de la Super Bowl
+      // se completará en FASE 2. Aquí solo conservamos la lógica actual.
       const tipoCompeticion: FasePostemporada =
         semana === 4 ? 'superbowl' : 'playoffs';
 
@@ -88,6 +94,7 @@ export async function sincronizarPostemporada(
             .upsert(
               {
                 espn_event_id: evento.id,
+                temporada,
                 jornada: 18 + semana,
                 semana_competicion: semana,
                 tipo_competicion: tipoCompeticion,
@@ -108,7 +115,7 @@ export async function sincronizarPostemporada(
 
         if (upsertError) {
           throw new Error(
-            `Error al guardar partido de postemporada ESPN ${evento.id}: ${upsertError.message}`
+            `Error al guardar partido de playoffs ESPN ${evento.id}: ${upsertError.message}`
           );
         }
 
@@ -128,7 +135,7 @@ export async function sincronizarPostemporada(
 
           if (aciertosError) {
             throw new Error(
-              `Error al validar aciertos de postemporada: ${aciertosError.message}`
+              `Error al validar aciertos de playoffs: ${aciertosError.message}`
             );
           }
 
@@ -140,7 +147,7 @@ export async function sincronizarPostemporada(
 
           if (fallosError) {
             throw new Error(
-              `Error al validar fallos de postemporada: ${fallosError.message}`
+              `Error al validar fallos de playoffs: ${fallosError.message}`
             );
           }
         } else {
@@ -151,18 +158,18 @@ export async function sincronizarPostemporada(
 
           if (limpiarError) {
             throw new Error(
-              `Error al limpiar aciertos pendientes de postemporada: ${limpiarError.message}`
+              `Error al limpiar aciertos pendientes de playoffs: ${limpiarError.message}`
             );
           }
         }
       }
 
       console.log(
-        `Postemporada semana ${semana} sincronizada correctamente.`
+        `Playoffs semana ${semana} sincronizada correctamente para temporada ${temporada}.`
       );
     } catch (error) {
       console.error(
-        `Error al sincronizar postemporada semana ${semana}:`,
+        `Error al sincronizar playoffs semana ${semana}:`,
         error
       );
     }
