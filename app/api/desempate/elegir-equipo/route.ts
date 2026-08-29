@@ -1,10 +1,25 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
-const TEMPORADA = 2026;
+async function obtenerTemporadaActiva() {
+  const { data, error } = await supabaseServer
+    .from('app_config')
+    .select('temporada')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (error || !data?.temporada) {
+    throw new Error(
+      `No se pudo obtener la temporada activa: ${error?.message || 'app_config vacío'}`,
+    );
+  }
+
+  return Number(data.temporada);
+}
 
 export async function POST(request: Request) {
   try {
+    const TEMPORADA = await obtenerTemporadaActiva();
     const authorization = request.headers.get('authorization');
 
     if (!authorization?.startsWith('Bearer ')) {
@@ -79,7 +94,8 @@ export async function POST(request: Request) {
 
     const { data: partido, error: partidoError } = await supabaseServer
       .from('partidos')
-      .select('equipo_local, equipo_visitante')
+      .select('equipo_local, equipo_visitante, espn_event_id')
+      .eq('temporada', TEMPORADA)
       .eq('tipo_competicion', 'superbowl')
       .order('fecha_partido', { ascending: true })
       .limit(1)
@@ -91,11 +107,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!partido) {
+    if (!partido || !partido.espn_event_id) {
       return NextResponse.json(
         {
           success: false,
-          error: 'La Super Bowl todavía no está cargada.',
+          error: 'La Super Bowl todavía no está cargada o validada.',
         },
         { status: 409 }
       );
@@ -166,6 +182,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      temporada: TEMPORADA,
       ganadorEleccion: user.id,
       equipoElegido,
       rival: rivalId,
