@@ -11,7 +11,12 @@ import { pushInicioTemporadaSiProcede } from '@/lib/pushAutomatic';
 import {
   pushRecordatorioPlayoffSiProcede,
   pushResultadosAperturaPlayoffSiProcede,
+  pushSuperBowlFinTemporadaSiProcede,
 } from '@/lib/playoffPush';
+import {
+  prepararCierreSuperBowl,
+  finalizarTemporadaTrasSuperBowl,
+} from '@/lib/superBowlClosure';
 
 export const dynamic = 'force-dynamic';
 
@@ -209,25 +214,58 @@ export async function GET(request: NextRequest) {
     }
 
     if (config?.fase_competicion === 'superbowl') {
+      const jornadaSuperBowl = Number(config.jornada_actual);
       const desempate = await activarDesempateSuperbowlSiProcede();
       await sincronizarPostemporada(temporada, 4, 4);
 
       const pushRecordatorio = await evaluarRecordatorioPlayoff({
         temporada,
-        jornada: Number(config.jornada_actual),
+        jornada: jornadaSuperBowl,
         tipoCompeticion: 'superbowl',
+      });
+
+      const cierreSuperBowl = await prepararCierreSuperBowl({
+        temporada,
+        jornada: jornadaSuperBowl,
+      });
+
+      if (!cierreSuperBowl.listaParaCerrar) {
+        return NextResponse.json({
+          success: true,
+          mode: 'superbowl',
+          debug,
+          semana: config.semana_postemporada,
+          desempate,
+          pushRecordatorio,
+          cierreSuperBowl,
+          message: `Super Bowl sincronizada. ${cierreSuperBowl.motivo}`,
+        });
+      }
+
+      // El PUSH final es deliberadamente anti-spoiler. Se intenta antes de
+      // abandonar fase=superbowl para que, si falla, el siguiente cron pueda
+      // reintentarlo. La clave_evento lo hace idempotente si ya fue enviado.
+      const pushFinTemporada = await pushSuperBowlFinTemporadaSiProcede({
+        temporada,
+        jornadaSuperBowl,
+      });
+
+      const cierreTemporada = await finalizarTemporadaTrasSuperBowl({
+        temporada,
+        jornada: jornadaSuperBowl,
       });
 
       return NextResponse.json({
         success: true,
-        mode: 'superbowl',
+        mode: 'finalizada',
         debug,
         semana: config.semana_postemporada,
         desempate,
         pushRecordatorio,
-        message: desempate.activado
-          ? 'Super Bowl sincronizada. Desempate activo.'
-          : 'Super Bowl sincronizada correctamente desde ESPN.',
+        cierreSuperBowl,
+        pushFinTemporada,
+        cierreTemporada,
+        message: 'Super Bowl y temporada REDZONE finalizadas correctamente.',
       });
     }
 
