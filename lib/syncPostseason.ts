@@ -1,4 +1,5 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { calcularRelojAdministrativo } from '@/lib/nflAdministrativeClock';
 import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
 import {
   jornadaRedzoneParaRonda,
@@ -24,6 +25,7 @@ export async function sincronizarPostemporada(
   }
 
   const estructura = await descubrirEstructuraTemporadaNFL(temporada);
+  const resultados: any[] = [];
 
   console.log(
     `Iniciando sincronización de playoffs ${temporada}, solicitudes ${semanaInicio}-${semanaFin}...`
@@ -36,9 +38,11 @@ export async function sincronizarPostemporada(
       const localizacion = await localizarSemanaEspnDeRonda(temporada, ronda);
 
       if (!localizacion.encontrada || localizacion.week === null) {
-        console.log(
-          `${definicion.nombre}: ESPN todavía no publica una ronda válida para ${temporada}.`
-        );
+        resultados.push({
+          ronda,
+          preparada: false,
+          motivo: 'ESPN todavía no publica una ronda válida',
+        });
         continue;
       }
 
@@ -57,42 +61,26 @@ export async function sincronizarPostemporada(
 
       for (const evento of eventos) {
         const comp = evento?.competitions?.[0];
-        const local = comp?.competitors?.find(
-          (c: any) => c.homeAway === 'home'
-        );
-        const visitante = comp?.competitors?.find(
-          (c: any) => c.homeAway === 'away'
-        );
-
+        const local = comp?.competitors?.find((c: any) => c.homeAway === 'home');
+        const visitante = comp?.competitors?.find((c: any) => c.homeAway === 'away');
         const id = String(evento?.id || '');
         const localAbrev = String(local?.team?.abbreviation || '');
         const visitAbrev = String(visitante?.team?.abbreviation || '');
         const fecha = new Date(evento?.date);
 
-        if (
-          !comp ||
-          !id ||
-          !localAbrev ||
-          !visitAbrev ||
-          Number.isNaN(fecha.getTime())
-        ) {
+        if (!comp || !id || !localAbrev || !visitAbrev || Number.isNaN(fecha.getTime())) {
           throw new Error(
             `${definicion.nombre} contiene un partido sin id, equipos o fecha/hora válidos.`
           );
         }
-
         if (localAbrev === visitAbrev) {
           throw new Error(
             `${definicion.nombre}: ESPN devuelve el mismo equipo como local y visitante en ${id}.`
           );
         }
-
         if (ids.has(id)) {
-          throw new Error(
-            `${definicion.nombre}: espn_event_id duplicado ${id}.`
-          );
+          throw new Error(`${definicion.nombre}: espn_event_id duplicado ${id}.`);
         }
-
         ids.add(id);
       }
 
@@ -101,15 +89,12 @@ export async function sincronizarPostemporada(
         ronda,
       );
 
+      const partidosParaReloj: Array<{ fecha_partido: string }> = [];
+
       for (const evento of eventos) {
         const comp = evento.competitions[0];
-        const local = comp.competitors.find(
-          (c: any) => c.homeAway === 'home'
-        );
-        const visitante = comp.competitors.find(
-          (c: any) => c.homeAway === 'away'
-        );
-
+        const local = comp.competitors.find((c: any) => c.homeAway === 'home');
+        const visitante = comp.competitors.find((c: any) => c.homeAway === 'away');
         const localAbrev = local.team.abbreviation;
         const visitAbrev = visitante.team.abbreviation;
         const fechaPartido = new Date(evento.date).toISOString();
@@ -117,46 +102,39 @@ export async function sincronizarPostemporada(
         const puntosLocal = parseInt(local?.score || '0', 10);
         const puntosVisitante = parseInt(visitante?.score || '0', 10);
         const periodo = Number(comp.status?.period || 0) || null;
-        const reloj =
-          comp.status?.displayClock ||
-          comp.status?.type?.shortDetail ||
-          null;
+        const reloj = comp.status?.displayClock || comp.status?.type?.shortDetail || null;
 
         let resultadoOficial: '1' | 'X' | '2' | null = null;
-
         if (comp.status?.type?.completed) {
           resultadoOficial =
-            puntosLocal > puntosVisitante
-              ? '1'
-              : puntosLocal < puntosVisitante
-                ? '2'
-                : 'X';
+            puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
         }
 
-        const { data: partidoGuardado, error: upsertError } =
-          await supabase
-            .from('partidos')
-            .upsert(
-              {
-                espn_event_id: String(evento.id),
-                temporada,
-                jornada,
-                semana_competicion: localizacion.week,
-                tipo_competicion: definicion.faseCompeticion,
-                equipo_local: localAbrev,
-                equipo_visitante: visitAbrev,
-                fecha_partido: fechaPartido,
-                estado,
-                puntos_local: puntosLocal,
-                puntos_visitante: puntosVisitante,
-                periodo,
-                reloj,
-                resultado_oficial: resultadoOficial,
-              },
-              { onConflict: 'espn_event_id' }
-            )
-            .select('id')
-            .single();
+        partidosParaReloj.push({ fecha_partido: fechaPartido });
+
+        const { data: partidoGuardado, error: upsertError } = await supabase
+          .from('partidos')
+          .upsert(
+            {
+              espn_event_id: String(evento.id),
+              temporada,
+              jornada,
+              semana_competicion: localizacion.week,
+              tipo_competicion: definicion.faseCompeticion,
+              equipo_local: localAbrev,
+              equipo_visitante: visitAbrev,
+              fecha_partido: fechaPartido,
+              estado,
+              puntos_local: puntosLocal,
+              puntos_visitante: puntosVisitante,
+              periodo,
+              reloj,
+              resultado_oficial: resultadoOficial,
+            },
+            { onConflict: 'espn_event_id' }
+          )
+          .select('id')
+          .single();
 
         if (upsertError) {
           throw new Error(
@@ -225,19 +203,97 @@ export async function sincronizarPostemporada(
         verificados?.length !== definicion.partidosEsperados ||
         eventos.some((evento: any) => !idsVerificados.has(String(evento.id)))
       ) {
+        throw new Error(`${definicion.nombre} no quedó completamente verificada en BBDD.`);
+      }
+
+      const relojAdministrativo = calcularRelojAdministrativo(partidosParaReloj);
+
+      const { data: jornadaExistente, error: jornadaExistenteError } = await supabase
+        .from('jornadas_eventos')
+        .select('jornada, estado')
+        .eq('temporada', temporada)
+        .eq('jornada', jornada)
+        .maybeSingle();
+
+      if (jornadaExistenteError) {
         throw new Error(
-          `${definicion.nombre} no quedó completamente verificada en BBDD.`
+          `Error consultando reloj de ${definicion.nombre}: ${jornadaExistenteError.message}`
         );
       }
 
+      if (!jornadaExistente) {
+        const { error: insertarJornadaError } = await supabase
+          .from('jornadas_eventos')
+          .insert({
+            temporada,
+            jornada,
+            ...relojAdministrativo,
+            estado: 'pendiente',
+          });
+
+        if (insertarJornadaError) {
+          throw new Error(
+            `Error creando jornada administrativa ${definicion.nombre}: ${insertarJornadaError.message}`
+          );
+        }
+      } else if (jornadaExistente.estado === 'pendiente') {
+        const { error: actualizarJornadaError } = await supabase
+          .from('jornadas_eventos')
+          .update(relojAdministrativo)
+          .eq('temporada', temporada)
+          .eq('jornada', jornada)
+          .eq('estado', 'pendiente');
+
+        if (actualizarJornadaError) {
+          throw new Error(
+            `Error actualizando reloj de ${definicion.nombre}: ${actualizarJornadaError.message}`
+          );
+        }
+      }
+
+      const { data: jornadaVerificada, error: jornadaVerificadaError } = await supabase
+        .from('jornadas_eventos')
+        .select('jornada, estado, inicio_jornada, cierre_pronosticos')
+        .eq('temporada', temporada)
+        .eq('jornada', jornada)
+        .maybeSingle();
+
+      if (jornadaVerificadaError || !jornadaVerificada) {
+        throw new Error(
+          `No se pudo verificar la jornada administrativa ${definicion.nombre}: ${jornadaVerificadaError?.message || 'sin registro'}`
+        );
+      }
+
+      if (!jornadaVerificada.inicio_jornada || !jornadaVerificada.cierre_pronosticos) {
+        throw new Error(
+          `${definicion.nombre} no quedó con inicio_jornada/cierre_pronosticos válidos.`
+        );
+      }
+
+      resultados.push({
+        ronda,
+        nombre: definicion.nombre,
+        preparada: true,
+        jornada,
+        semanaEspn: localizacion.week,
+        partidos: eventos.length,
+        estado: jornadaVerificada.estado,
+        inicioJornada: jornadaVerificada.inicio_jornada,
+        cierrePronosticos: jornadaVerificada.cierre_pronosticos,
+      });
+
       console.log(
-        `${definicion.nombre} sincronizada: REDZONE J${jornada}, ESPN Week ${localizacion.week}, ${eventos.length}/${definicion.partidosEsperados} partidos.`
+        `${definicion.nombre} preparada: REDZONE J${jornada}, ESPN Week ${localizacion.week}, ${eventos.length}/${definicion.partidosEsperados} partidos + reloj administrativo.`
       );
-    } catch (error) {
-      console.error(
-        `Error al sincronizar playoffs solicitud ${semanaSolicitada}:`,
-        error
-      );
+    } catch (error: any) {
+      resultados.push({
+        solicitud: semanaSolicitada,
+        preparada: false,
+        motivo: error?.message || String(error),
+      });
+      console.error(`Error al sincronizar playoffs solicitud ${semanaSolicitada}:`, error);
     }
   }
+
+  return resultados;
 }
