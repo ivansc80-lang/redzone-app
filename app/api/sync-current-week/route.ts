@@ -22,6 +22,7 @@ function getSafeDebugInfo(config: any) {
 
   return {
     projectRef,
+    temporada: config?.temporada ?? null,
     modo_pretemporada_test: config?.modo_pretemporada_test ?? null,
     modo_pretemporada_hasta: config?.modo_pretemporada_hasta ?? null,
   };
@@ -56,12 +57,20 @@ export async function GET(request: NextRequest) {
 
     const { data: config, error: configError } = await supabase
       .from('app_config')
-      .select('modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
+      .select('temporada, modo_pretemporada_test, modo_pretemporada_hasta, fase_competicion, semana_postemporada')
       .eq('id', 1)
       .maybeSingle();
 
     if (configError) {
       throw new Error(`Error al leer app_config: ${configError.message}`);
+    }
+
+    const temporada = Number(config?.temporada);
+
+    if (!Number.isInteger(temporada) || temporada < 2000) {
+      throw new Error(
+        `Temporada activa inválida en app_config: ${config?.temporada ?? 'null'}`
+      );
     }
 
     const debug = getSafeDebugInfo(config);
@@ -86,7 +95,7 @@ export async function GET(request: NextRequest) {
       const semanaPostemporada = Number(config.semana_postemporada || 1);
 
       await sincronizarPostemporada(
-        2026,
+        temporada,
         semanaPostemporada,
         semanaPostemporada
       );
@@ -103,7 +112,7 @@ export async function GET(request: NextRequest) {
     if (config?.fase_competicion === 'superbowl') {
       const desempate = await activarDesempateSuperbowlSiProcede();
 
-      await sincronizarPostemporada(2026, 4, 4);
+      await sincronizarPostemporada(temporada, 4, 4);
 
       return NextResponse.json({
         success: true,
@@ -156,14 +165,14 @@ export async function GET(request: NextRequest) {
     //
     const pushInicioTemporada =
       await pushInicioTemporadaSiProcede({
-        temporada: 2026,
+        temporada,
         jornada,
         estado: jornadaActiva.estado,
         cierrePronosticos:
           jornadaActiva.cierre_pronosticos,
       });
 
-    await sincronizarTemporadaCompleta(2026, jornada, jornada);
+    await sincronizarTemporadaCompleta(temporada, jornada, jornada);
 
     return NextResponse.json({
       success: true,
