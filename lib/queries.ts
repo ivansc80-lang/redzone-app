@@ -182,8 +182,8 @@ export async function getPartidosPorJornada(
  * TEST:
  *   temporada_test + pretemporada_test → todas las jornadas TEST disponibles.
  *
- * REGULAR:
- *   temporada activa + regular → todas las jornadas de la temporada.
+ * COMPETICIÓN REAL:
+ *   temporada activa → temporada regular + playoffs + Super Bowl.
  *
  * Esta consulta es independiente de PORRA/JORNADA, que continúan utilizando
  * getPartidosPorJornada() y por tanto solamente trabajan con la jornada activa.
@@ -219,7 +219,7 @@ export async function getPartidosGames(): Promise<PartidoTemporada[]> {
     } else {
       query = query
         .eq("temporada", contexto.temporadaRegular)
-        .eq("tipo_competicion", "regular");
+        .in("tipo_competicion", ["regular", "playoffs", "superbowl"]);
     }
 
     const { data, error } = await query;
