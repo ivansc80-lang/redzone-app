@@ -3,9 +3,38 @@ import { evaluarCheckpointsAdministrativos } from '@/lib/nflAdministrativeClock'
 import {
   RONDAS_PLAYOFF,
   siguienteRondaPlayoff,
+  type FaseCompeticionPlayoff,
   type RondaPlayoff,
 } from '@/lib/playoffStructure';
 import { sincronizarPostemporada } from '@/lib/syncPostseason';
+
+type TransicionPlayoffOk = {
+  transicion: true;
+  jornadaAnterior: number;
+  jornadaNueva: number;
+  rondaNueva: RondaPlayoff;
+  faseCompeticion: FaseCompeticionPlayoff;
+  semanaPostemporada: number;
+};
+
+type TransicionPlayoffPendiente = {
+  transicion: false;
+  finPlayoffs?: false;
+  motivo: string;
+  rondaActual?: RondaPlayoff;
+  rondaSiguiente?: RondaPlayoff;
+};
+
+type FinPlayoffs = {
+  transicion: false;
+  finPlayoffs: true;
+  motivo: string;
+};
+
+export type ResultadoTransicionPlayoff =
+  | TransicionPlayoffOk
+  | TransicionPlayoffPendiente
+  | FinPlayoffs;
 
 function rondaDesdeIndice(indice: number): RondaPlayoff {
   if (indice === 1) return 'wild_card';
@@ -170,7 +199,7 @@ async function activarContextoSiguienteRonda(params: {
   jornadaActual: number;
   jornadaNueva: number;
   rondaNueva: RondaPlayoff;
-}) {
+}): Promise<TransicionPlayoffOk> {
   const { temporada, jornadaActual, jornadaNueva, rondaNueva } = params;
   const definicionNueva = RONDAS_PLAYOFF[rondaNueva];
   const indiceNuevo = indiceDesdeRonda(rondaNueva);
@@ -228,7 +257,7 @@ async function activarContextoSiguienteRonda(params: {
 export async function intentarTransicionRegularAWildCard(
   temporada: number,
   jornadaRegular: number,
-) {
+): Promise<ResultadoTransicionPlayoff> {
   const resultados = await sincronizarPostemporada(temporada, 1, 1);
   const wildCard = resultados.find(
     (resultado: any) => resultado?.ronda === 'wild_card',
@@ -269,7 +298,7 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
   temporada: number;
   jornadaActual: number;
   semanaPostemporada: number;
-}) {
+}): Promise<ResultadoTransicionPlayoff> {
   const { temporada, jornadaActual, semanaPostemporada } = params;
   const rondaActual = rondaDesdeIndice(semanaPostemporada);
   const siguiente = siguienteRondaPlayoff(rondaActual);
@@ -282,7 +311,6 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
     };
   }
 
-  // Primero actualizamos resultados ESPN de la ronda actual.
   await sincronizarPostemporada(
     temporada,
     semanaPostemporada,
@@ -299,7 +327,7 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
     return {
       transicion: false,
       rondaActual,
-      motivo: cicloActual.motivo,
+      motivo: cicloActual.motivo || 'La ronda actual todavía no está completa.',
     };
   }
 
