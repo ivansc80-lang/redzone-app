@@ -174,7 +174,9 @@ export async function GET(request: NextRequest) {
 
     if (config?.fase_competicion === 'superbowl') {
       const jornadaSuperBowl = Number(config.jornada_actual);
-      const desempate = await activarDesempateSuperbowlSiProcede();
+
+      // Primero la Super Bowl funciona exactamente como cualquier jornada:
+      // sincronización, resultado oficial y validación de pronósticos.
       await sincronizarPostemporada(temporada, 4, 4);
 
       const pushRecordatorio = await evaluarRecordatorioPlayoff({
@@ -194,10 +196,28 @@ export async function GET(request: NextRequest) {
           mode: 'superbowl',
           debug,
           semana: config.semana_postemporada,
-          desempate,
           pushRecordatorio,
           cierreSuperBowl,
           message: `Super Bowl sincronizada. ${cierreSuperBowl.motivo}`,
+        });
+      }
+
+      // Solo DESPUÉS de validar la Super Bowl comprobamos el ranking final.
+      const desempate = await activarDesempateSuperbowlSiProcede();
+
+      // Si continúa empate por el liderato, la temporada permanece en Super Bowl
+      // hasta que los empatados terminen la tirada. El cron no cierra ni envía
+      // el PUSH final mientras el desempate esté pendiente.
+      if (desempate.activado && !desempate.resuelto) {
+        return NextResponse.json({
+          success: true,
+          mode: 'desempate_superbowl',
+          debug,
+          semana: config.semana_postemporada,
+          pushRecordatorio,
+          cierreSuperBowl,
+          desempate,
+          message: 'Super Bowl validada con empate en el liderato. Desempate pendiente.',
         });
       }
 
@@ -206,9 +226,6 @@ export async function GET(request: NextRequest) {
         jornadaSuperBowl,
       });
 
-      // Solo bloqueamos el cierre cuando había suscripciones activas y ninguna
-      // recibió el PUSH por un fallo real de envío. Si no hay suscripciones,
-      // si ya estaba deduplicado o si al menos una entrega tuvo éxito, podemos cerrar.
       const falloRealPush =
         !pushFinTemporada.enviado &&
         !pushFinTemporada.duplicado &&
