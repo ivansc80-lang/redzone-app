@@ -23,14 +23,12 @@ export interface RankingCompeticionServidor {
 }
 
 /**
- * Reproduce en servidor la misma regla usada por RANKING en la PWA:
- * - competición real de la temporada: regular + playoffs + Super Bowl;
- * - un pronóstico validado es aquel cuyo acierto es true/false;
- * - cada acierto === true suma exactamente 1 punto;
- * - el liderazgo depende exclusivamente de la puntuación total.
- *
- * En la transición Conference -> Super Bowl, la Super Bowl todavía no tiene
- * resultados, por lo que incluirla en el conjunto no altera la clasificación.
+ * Fuente servidor de RANKING REDZONE.
+ * - regular + playoffs + Super Bowl;
+ * - cada acierto validado suma 1 punto;
+ * - si el desempate posterior a la Super Bowl está resuelto, su ganador
+ *   recibe exactamente 1 punto adicional de clasificación;
+ * - el bonus no altera validados ni efectividad porque no es un pronóstico.
  */
 export async function calcularRankingCompeticion(
   temporada: number,
@@ -74,7 +72,6 @@ export async function calcularRankingCompeticion(
       const actual = acumulado.get(userId);
       if (!actual) continue;
 
-      // Igual que el frontend: solo cuentan para efectividad los ya validados.
       if (pronostico.acierto === true || pronostico.acierto === false) {
         actual.validados += 1;
         if (pronostico.acierto === true) {
@@ -82,6 +79,25 @@ export async function calcularRankingCompeticion(
         }
       }
     }
+  }
+
+  // El desempate no crea un pronóstico artificial: suma un bonus independiente.
+  const { data: desempate, error: desempateError } = await supabase
+    .from('desempate_superbowl_estado')
+    .select('estado, ganador_eleccion')
+    .eq('temporada', temporada)
+    .maybeSingle();
+
+  if (desempateError) {
+    throw new Error(`Error leyendo bonus de desempate: ${desempateError.message}`);
+  }
+
+  if (
+    desempate?.estado === 'resuelto' &&
+    desempate.ganador_eleccion &&
+    acumulado.has(String(desempate.ganador_eleccion))
+  ) {
+    acumulado.get(String(desempate.ganador_eleccion))!.puntos += 1;
   }
 
   const ranking: RankingParticipanteServidor[] = PARTICIPANTES_REDZONE.map(
@@ -93,14 +109,21 @@ export async function calcularRankingCompeticion(
         validados: datos.validados,
         efectividad:
           datos.validados > 0
-            ? Math.round((datos.puntos / datos.validados) * 100)
+            ? Math.round(((datos.puntos - (
+                desempate?.estado === 'resuelto' &&
+                desempate.ganador_eleccion === userId
+                  ? 1
+                  : 0
+              )) / datos.validados) * 100)
             : 0,
       };
     },
   ).sort((a, b) => b.puntos - a.puntos);
 
   const maxPuntos = ranking[0]?.puntos ?? 0;
-  const lideres = ranking.filter((participante) => participante.puntos === maxPuntos);
+  const lideres = ranking.filter(
+    (participante) => participante.puntos === maxPuntos,
+  );
 
   return {
     temporada,
