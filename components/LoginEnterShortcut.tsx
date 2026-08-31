@@ -7,12 +7,25 @@ export default function LoginEnterShortcut() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Enter") return;
 
-      const target = event.target;
-      if (!(target instanceof HTMLInputElement)) return;
-      if (target.placeholder !== "Contraseña") return;
+      const passwordInput = document.querySelector<HTMLInputElement>(
+        'input[placeholder="Contraseña"]',
+      );
+      const emailInput = document.querySelector<HTMLInputElement>(
+        'input[placeholder="Correo electrónico"]',
+      );
 
-      const loginCard = target.closest("div.bg-black\\/90");
-      if (!loginCard) return;
+      if (!passwordInput || !emailInput) return;
+
+      const loginCard = passwordInput.closest("div.bg-black\\/90");
+      if (!loginCard || !loginCard.contains(emailInput)) return;
+
+      const activeElement = document.activeElement;
+      if (
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement instanceof HTMLButtonElement
+      ) {
+        return;
+      }
 
       const entrarButton = Array.from(
         loginCard.querySelectorAll<HTMLButtonElement>("button"),
