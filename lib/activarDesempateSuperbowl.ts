@@ -13,9 +13,13 @@ import {
  * - si hay líder único, no existe desempate;
  * - si hay 2 o 3 empatados en cabeza, solo ellos realizan una tirada;
  * - si el valor máximo vuelve a empatar, únicamente esos empatados repiten;
- * - el ganador recibe el punto extra a través del estado resuelto del desempate.
+ * - el ganador recibe exactamente 1 punto extra de clasificación.
  *
- * La función es idempotente: jamás reinicia un desempate activo o ya resuelto.
+ * Para no reutilizar en la interfaz el antiguo flujo de "elegir equipo":
+ * - `clasificatoria` significa tirada activa;
+ * - `inactivo` + `ganador_eleccion` significa desempate ya resuelto.
+ *
+ * Es idempotente: jamás reinicia un desempate ya resuelto.
  */
 export async function activarDesempateSuperbowlSiProcede() {
   const { data: config, error: configError } = await supabase
@@ -44,13 +48,15 @@ export async function activarDesempateSuperbowlSiProcede() {
     );
   }
 
-  if (estadoActual?.estado === 'resuelto') {
+  // Resuelto: queda inactivo para que la antigua UI de elección de equipo
+  // no pueda aparecer, pero conservamos el ganador para el punto extra.
+  if (estadoActual?.estado === 'inactivo' && estadoActual.ganador_eleccion) {
     return {
-      activado: true,
+      activado: false,
       resuelto: true,
-      estado: 'resuelto',
+      estado: 'inactivo',
       participantes: estadoActual.participantes || [],
-      ganador: estadoActual.ganador_eleccion || null,
+      ganador: estadoActual.ganador_eleccion,
       yaExistia: true,
     };
   }
@@ -165,9 +171,7 @@ export async function activarDesempateSuperbowlSiProcede() {
     .upsert(
       {
         temporada,
-        // Reutilizamos el estado permitido existente. Ya no significa
-        // "elección de equipo": significa "tirada final de desempate".
-        estado: 'eleccion_final',
+        estado: 'clasificatoria',
         ronda_actual: 1,
         participantes: empatados,
         finalista_1: null,
