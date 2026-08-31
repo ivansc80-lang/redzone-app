@@ -1,4 +1,5 @@
 import './globals.css';
+import LoginEnterShortcut from '@/components/LoginEnterShortcut';
 
 export const metadata = {
   title: 'REDZONE',
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="bg-black text-white min-h-screen">
+        <LoginEnterShortcut />
         {children}
       </body>
     </html>
