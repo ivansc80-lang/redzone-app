@@ -26,8 +26,8 @@ export interface RankingCompeticionServidor {
  * Fuente servidor de RANKING REDZONE.
  * - regular + playoffs + Super Bowl;
  * - cada acierto validado suma 1 punto;
- * - si el desempate posterior a la Super Bowl está resuelto, su ganador
- *   recibe exactamente 1 punto adicional de clasificación;
+ * - si existe ganador del desempate post-Super Bowl, recibe exactamente
+ *   1 punto adicional aunque el estado ya esté cerrado/inactivo;
  * - el bonus no altera validados ni efectividad porque no es un pronóstico.
  */
 export async function calcularRankingCompeticion(
@@ -50,10 +50,7 @@ export async function calcularRankingCompeticion(
   const idsPartidos = (partidos || []).map((p: any) => p.id);
 
   const acumulado = new Map<string, { puntos: number; validados: number }>(
-    PARTICIPANTES_REDZONE.map((userId) => [
-      userId,
-      { puntos: 0, validados: 0 },
-    ]),
+    PARTICIPANTES_REDZONE.map((userId) => [userId, { puntos: 0, validados: 0 }]),
   );
 
   if (idsPartidos.length > 0) {
@@ -74,14 +71,11 @@ export async function calcularRankingCompeticion(
 
       if (pronostico.acierto === true || pronostico.acierto === false) {
         actual.validados += 1;
-        if (pronostico.acierto === true) {
-          actual.puntos += 1;
-        }
+        if (pronostico.acierto === true) actual.puntos += 1;
       }
     }
   }
 
-  // El desempate no crea un pronóstico artificial: suma un bonus independiente.
   const { data: desempate, error: desempateError } = await supabase
     .from('desempate_superbowl_estado')
     .select('estado, ganador_eleccion')
@@ -92,43 +86,33 @@ export async function calcularRankingCompeticion(
     throw new Error(`Error leyendo bonus de desempate: ${desempateError.message}`);
   }
 
-  if (
-    desempate?.estado === 'resuelto' &&
-    desempate.ganador_eleccion &&
-    acumulado.has(String(desempate.ganador_eleccion))
-  ) {
-    acumulado.get(String(desempate.ganador_eleccion))!.puntos += 1;
+  const ganadorBonus = desempate?.ganador_eleccion
+    ? String(desempate.ganador_eleccion)
+    : null;
+
+  if (ganadorBonus && acumulado.has(ganadorBonus)) {
+    acumulado.get(ganadorBonus)!.puntos += 1;
   }
 
   const ranking: RankingParticipanteServidor[] = PARTICIPANTES_REDZONE.map(
     (userId) => {
       const datos = acumulado.get(userId) || { puntos: 0, validados: 0 };
+      const bonus = ganadorBonus === userId ? 1 : 0;
+
       return {
         userId,
         puntos: datos.puntos,
         validados: datos.validados,
         efectividad:
           datos.validados > 0
-            ? Math.round(((datos.puntos - (
-                desempate?.estado === 'resuelto' &&
-                desempate.ganador_eleccion === userId
-                  ? 1
-                  : 0
-              )) / datos.validados) * 100)
+            ? Math.round(((datos.puntos - bonus) / datos.validados) * 100)
             : 0,
       };
     },
   ).sort((a, b) => b.puntos - a.puntos);
 
   const maxPuntos = ranking[0]?.puntos ?? 0;
-  const lideres = ranking.filter(
-    (participante) => participante.puntos === maxPuntos,
-  );
+  const lideres = ranking.filter((participante) => participante.puntos === maxPuntos);
 
-  return {
-    temporada,
-    ranking,
-    maxPuntos,
-    lideres,
-  };
+  return { temporada, ranking, maxPuntos, lideres };
 }
