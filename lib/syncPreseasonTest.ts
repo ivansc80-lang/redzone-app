@@ -189,14 +189,11 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
   }
 
   const primerPartidoFecha = new Date(eventos[0].date);
-  const ultimoPartidoFecha = new Date(eventos[eventos.length - 1].date);
   const estadoFranjas = calcularEstadoFranjas(eventos);
 
   const cierrePronosticos = new Date(
     primerPartidoFecha.getTime() - PICK_CLOSE_MINUTES * 60 * 1000,
   );
-
-  let todosFinalizados = true;
 
   for (const evento of eventos) {
     const comp = evento.competitions?.[0];
@@ -217,8 +214,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
     const periodo = Number(comp.status?.period || 0) || null;
     const reloj =
       comp.status?.displayClock || comp.status?.type?.shortDetail || null;
-
-    if (!completado) todosFinalizados = false;
 
     let resultadoOficial: "1" | "X" | "2" | null = null;
     if (completado) {
@@ -391,17 +386,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
 
   // ==========================================================
   // TRANSICIÓN SEGURA A LA SIGUIENTE JORNADA TEST
-  //
-  // fin_jornada es un hito administrativo configurado por REDZONE.
-  // No representa el kickoff del último partido.
-  //
-  // Al alcanzarlo:
-  // 1. buscamos la siguiente jornada TEST configurada;
-  // 2. verificamos que ESPN publica esa semana;
-  // 3. sincronizamos sus partidos;
-  // 4. solo después activamos la nueva jornada.
-  //
-  // Si cualquier paso falla, jornada_test_actual NO cambia.
   // ==========================================================
 
   const finJornada = new Date(jornadaTest.fin_jornada);
@@ -454,9 +438,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         );
       }
 
-      // La BBDD define cuántos partidos pertenecen a esta jornada.
-      // ESPN debe confirmar exactamente ese calendario antes de que
-      // podamos activar la nueva jornada.
       const { data: partidosEsperados, error: partidosEsperadosError } =
         await supabase
           .from("partidos")
@@ -504,8 +485,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         siguientePrimerPartido.getTime() - PICK_CLOSE_MINUTES * 60 * 1000,
       );
 
-      // Primero construimos y validamos TODOS los partidos en memoria.
-      // No escribimos nada hasta comprobar que los 16 eventos son procesables.
       const partidosSiguienteJornada = siguientesEventos.map((evento: any) => {
         const comp = evento.competitions?.[0];
 
@@ -516,7 +495,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         }
 
         const local = comp.competitors?.find((c: any) => c.homeAway === "home");
-
         const visitante = comp.competitors?.find(
           (c: any) => c.homeAway === "away",
         );
@@ -535,9 +513,7 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
 
         const puntosLocal = parseInt(local?.score || "0", 10);
         const puntosVisitante = parseInt(visitante?.score || "0", 10);
-
         const periodo = Number(comp.status?.period || 0) || null;
-
         const reloj =
           comp.status?.displayClock || comp.status?.type?.shortDetail || null;
 
@@ -577,8 +553,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         );
       }
 
-      // Los 16 partidos se envían juntos a Supabase.
-      // Si esta operación falla, NO continuamos hacia la activación de J2.
       const { error: siguienteUpsertError } = await supabase
         .from("partidos")
         .upsert(partidosSiguienteJornada, {
@@ -591,8 +565,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         );
       }
 
-      // Actualizamos únicamente fechas derivadas de ESPN.
-      // fin_jornada se conserva porque es configuración administrativa.
       const { error: siguienteEventoUpdateError } = await supabase
         .from("jornadas_eventos_test")
         .update({
@@ -609,13 +581,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         );
       }
 
-      // La siguiente jornada ya está completamente preparada.
-      //
-      // Solo ahora podemos dar por finalizada administrativamente
-      // la jornada TEST anterior.
-      //
-      // Si cualquier validación o escritura de J2 hubiera fallado antes,
-      // nunca llegaríamos aquí y J1 permanecería cerrada y activa.
       const { error: finalizarActualError } = await supabase
         .from("jornadas_eventos_test")
         .update({
@@ -630,9 +595,6 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
         );
       }
 
-      // Este es deliberadamente el ÚLTIMO paso.
-      // Solo activamos la nueva jornada después de haberla preparado
-      // y de haber finalizado administrativamente la anterior.
       const { error: activarSiguienteError } = await supabase
         .from("app_config")
         .update({
@@ -663,9 +625,83 @@ export async function sincronizarPretemporadaTest(): Promise<PreseasonSyncResult
       };
     }
 
-    // Si no existe siguiente TEST, NO desactivamos nada aquí.
-    // Este será el punto de entrada de la transición TEST -> REGULAR,
-    // que implementaremos y validaremos por separado.
+    // No existe siguiente TEST. Solo interpretamos esto como final real del
+    // modo de prueba cuando también ha vencido su límite explícito. Así una
+    // fila ausente por error nunca cierra accidentalmente la competición TEST.
+    const limiteTest = config.modo_pretemporada_hasta
+      ? new Date(config.modo_pretemporada_hasta)
+      : null;
+    const limiteTestAlcanzado =
+      limiteTest !== null && ahora.getTime() >= limiteTest.getTime();
+
+    const todosEventosFinalizados = eventos.every((evento: any) =>
+      Boolean(evento.competitions?.[0]?.status?.type?.completed),
+    );
+
+    const checkpointsUtilizadosOk = FRANJAS_NFL.every((franja) => {
+      const checkpoint = estadoFranjas[franja];
+      const validado = estadoFranjas[`${franja}_validado`];
+      return checkpoint === null || validado === true;
+    });
+
+    if (!limiteTestAlcanzado) {
+      return {
+        active: true,
+        games: eventos.length,
+        estado: "cerrada",
+        message:
+          `TEST ${jornadaTestActual} es la última jornada configurada, ` +
+          `pero el límite global del modo TEST todavía no ha vencido.`,
+      };
+    }
+
+    if (!todosEventosFinalizados || !checkpointsUtilizadosOk) {
+      return {
+        active: true,
+        games: eventos.length,
+        estado: "cerrada",
+        message:
+          `TEST ${jornadaTestActual} alcanzó su fin administrativo, pero ` +
+          `todavía no están validados todos los partidos/checkpoints.`,
+      };
+    }
+
+    const { error: finalizarUltimaError } = await supabase
+      .from("jornadas_eventos_test")
+      .update({ estado: "finalizada" })
+      .eq("temporada", temporadaTest)
+      .eq("jornada_test", jornadaTestActual);
+
+    if (finalizarUltimaError) {
+      throw new Error(
+        `No se pudo finalizar la última jornada TEST ${jornadaTestActual}: ${finalizarUltimaError.message}`,
+      );
+    }
+
+    const { error: cerrarModoTestError } = await supabase
+      .from("app_config")
+      .update({
+        modo_pretemporada_test: false,
+        pretemporada_estado: "finalizada",
+        pretemporada_fin: jornadaTest.fin_jornada,
+      })
+      .eq("id", 1);
+
+    if (cerrarModoTestError) {
+      throw new Error(
+        `TEST ${jornadaTestActual} finalizó, pero no pudo desactivarse el modo TEST: ${cerrarModoTestError.message}`,
+      );
+    }
+
+    return {
+      active: false,
+      expired: true,
+      games: eventos.length,
+      estado: "finalizada",
+      message:
+        `Modo TEST finalizado correctamente tras TEST ${jornadaTestActual}. ` +
+        `No existe una jornada TEST posterior y todos los partidos/checkpoints están validados.`,
+    };
   }
 
   return {
