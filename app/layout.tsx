@@ -1,6 +1,5 @@
 import './globals.css';
 import LoginEnterShortcut from '@/components/LoginEnterShortcut';
-import PushErrorMarker from '@/components/PushErrorMarker';
 
 export const metadata = {
   title: 'REDZONE',
@@ -17,7 +16,6 @@ export default function RootLayout({
     <html lang="es">
       <body className="bg-black text-white min-h-screen">
         <LoginEnterShortcut />
-        <PushErrorMarker />
         {children}
       </body>
     </html>
