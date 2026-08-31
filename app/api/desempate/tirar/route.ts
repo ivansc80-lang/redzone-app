@@ -16,10 +16,7 @@ async function obtenerTemporadaActiva() {
     );
   }
 
-  return {
-    temporada: Number(data.temporada),
-    faseCompeticion: String(data.fase_competicion || ''),
-  };
+  return { temporada: Number(data.temporada) };
 }
 
 export async function POST(request: Request) {
@@ -28,30 +25,18 @@ export async function POST(request: Request) {
     const authorization = request.headers.get('authorization');
 
     if (!authorization?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado.' },
-        { status: 401 },
-      );
+      return NextResponse.json({ success: false, error: 'No autorizado.' }, { status: 401 });
     }
 
     const token = authorization.slice(7);
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseServer.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabaseServer.auth.getUser(token);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Sesión no válida.' },
-        { status: 401 },
-      );
+      return NextResponse.json({ success: false, error: 'Sesión no válida.' }, { status: 401 });
     }
 
     if (!(PARTICIPANTES_REDZONE as readonly string[]).includes(user.id)) {
-      return NextResponse.json(
-        { success: false, error: 'Usuario no participante.' },
-        { status: 403 },
-      );
+      return NextResponse.json({ success: false, error: 'Usuario no participante.' }, { status: 403 });
     }
 
     const { data: estado, error: estadoError } = await supabaseServer
@@ -60,11 +45,9 @@ export async function POST(request: Request) {
       .eq('temporada', temporada)
       .maybeSingle();
 
-    if (estadoError) {
-      throw new Error(`Error al consultar el desempate: ${estadoError.message}`);
-    }
+    if (estadoError) throw new Error(`Error al consultar el desempate: ${estadoError.message}`);
 
-    if (!estado || estado.estado !== 'eleccion_final') {
+    if (!estado || estado.estado !== 'clasificatoria') {
       return NextResponse.json(
         { success: false, error: 'No hay una tirada de desempate activa.' },
         { status: 409 },
@@ -75,44 +58,32 @@ export async function POST(request: Request) {
       ? estado.participantes
       : [];
     const ronda = Number(estado.ronda_actual || 1);
-    const fase = 'eleccion_final';
+    const fase = 'clasificatoria';
 
     if (participantes.length < 2 || participantes.length > 3) {
-      throw new Error(
-        `Número inválido de participantes en desempate: ${participantes.length}`,
-      );
+      throw new Error(`Número inválido de participantes en desempate: ${participantes.length}`);
     }
 
     if (!participantes.includes(user.id)) {
-      return NextResponse.json(
-        { success: false, error: 'No participas en este desempate.' },
-        { status: 403 },
-      );
+      return NextResponse.json({ success: false, error: 'No participas en este desempate.' }, { status: 403 });
     }
 
-    const { data: tiradaExistente, error: tiradaExistenteError } =
-      await supabaseServer
-        .from('desempates_superbowl')
-        .select('id, valor')
-        .eq('temporada', temporada)
-        .eq('fase', fase)
-        .eq('ronda', ronda)
-        .eq('user_id', user.id)
-        .maybeSingle();
+    const { data: tiradaExistente, error: tiradaExistenteError } = await supabaseServer
+      .from('desempates_superbowl')
+      .select('id, valor')
+      .eq('temporada', temporada)
+      .eq('fase', fase)
+      .eq('ronda', ronda)
+      .eq('user_id', user.id)
+      .maybeSingle();
 
     if (tiradaExistenteError) {
-      throw new Error(
-        `Error al comprobar la tirada: ${tiradaExistenteError.message}`,
-      );
+      throw new Error(`Error al comprobar la tirada: ${tiradaExistenteError.message}`);
     }
 
     if (tiradaExistente) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Ya has realizado tu tirada.',
-          valor: tiradaExistente.valor,
-        },
+        { success: false, error: 'Ya has realizado tu tirada.', valor: tiradaExistente.valor },
         { status: 409 },
       );
     }
@@ -121,17 +92,9 @@ export async function POST(request: Request) {
 
     const { error: guardarError } = await supabaseServer
       .from('desempates_superbowl')
-      .insert({
-        temporada,
-        fase,
-        ronda,
-        user_id: user.id,
-        valor,
-      });
+      .insert({ temporada, fase, ronda, user_id: user.id, valor });
 
-    if (guardarError) {
-      throw new Error(`Error al guardar la tirada: ${guardarError.message}`);
-    }
+    if (guardarError) throw new Error(`Error al guardar la tirada: ${guardarError.message}`);
 
     const { data: tiradasData, error: tiradasError } = await supabaseServer
       .from('desempates_superbowl')
@@ -142,9 +105,7 @@ export async function POST(request: Request) {
       .in('user_id', participantes);
 
     if (tiradasError) {
-      throw new Error(
-        `Error al leer las tiradas de la ronda: ${tiradasError.message}`,
-      );
+      throw new Error(`Error al leer las tiradas de la ronda: ${tiradasError.message}`);
     }
 
     const tiradas = tiradasData || [];
@@ -166,7 +127,7 @@ export async function POST(request: Request) {
       .filter((t: any) => Number(t.valor) === maximo)
       .map((t: any) => String(t.user_id));
 
-    // Solo repiten quienes hayan empatado con el valor más alto.
+    // Si empatan en el máximo, solo ellos repiten. Seguimos en la misma fase.
     if (empatadosMaximo.length > 1) {
       const nuevaRonda = ronda + 1;
       const { error: repetirError } = await supabaseServer
@@ -177,12 +138,10 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq('temporada', temporada)
-        .eq('estado', 'eleccion_final');
+        .eq('estado', 'clasificatoria');
 
       if (repetirError) {
-        throw new Error(
-          `Error preparando repetición del desempate: ${repetirError.message}`,
-        );
+        throw new Error(`Error preparando repetición del desempate: ${repetirError.message}`);
       }
 
       return NextResponse.json({
@@ -200,23 +159,21 @@ export async function POST(request: Request) {
 
     const ganador = empatadosMaximo[0];
 
-    // El ganador del desempate recibe el punto adicional en el RANKING a través
-    // de ganador_eleccion. rankingCompetition lo incorpora como bonus únicamente
-    // cuando el estado está resuelto, evitando modificar pronósticos históricos.
+    // El desempate termina aquí. No existe elección posterior de equipo.
+    // Guardamos el ganador para que rankingCompetition sume exactamente +1,
+    // y dejamos el estado inactivo para cerrar la interfaz de desempate.
     const { error: resolverError } = await supabaseServer
       .from('desempate_superbowl_estado')
       .update({
-        estado: 'resuelto',
+        estado: 'inactivo',
         participantes,
         ganador_eleccion: ganador,
         updated_at: new Date().toISOString(),
       })
       .eq('temporada', temporada)
-      .eq('estado', 'eleccion_final');
+      .eq('estado', 'clasificatoria');
 
-    if (resolverError) {
-      throw new Error(`Error resolviendo desempate: ${resolverError.message}`);
-    }
+    if (resolverError) throw new Error(`Error resolviendo desempate: ${resolverError.message}`);
 
     return NextResponse.json({
       success: true,
