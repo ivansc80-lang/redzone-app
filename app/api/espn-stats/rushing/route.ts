@@ -13,6 +13,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(jugadores);
   } catch (error) {
+    if (error instanceof Error && error.message.includes("ESPN API error 404")) {
+      return NextResponse.json([]);
+    }
+
     console.error("Error ESPN STATS CORRIENDO:", error);
 
     return NextResponse.json(
