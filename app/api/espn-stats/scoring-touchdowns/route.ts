@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
     const jugadores = await getScoringTouchdownsLeaders(temporada, seasonType);
     return NextResponse.json(jugadores);
   } catch (error) {
+    if (error instanceof Error && error.message.includes("ESPN API error 404")) {
+      return NextResponse.json([]);
+    }
+
     console.error("Error ESPN STATS TOUCHDOWNS:", error);
     return NextResponse.json(
       { error: "No se pudieron cargar las estadísticas de ESPN." },
