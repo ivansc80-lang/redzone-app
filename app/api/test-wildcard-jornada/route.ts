@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
-import { calcularRelojAdministrativo } from '@/lib/nflAdministrativeClock';
+import {
+  calcularRelojAdministrativo,
+  CHECKPOINT_MARGIN_HOURS,
+} from '@/lib/nflAdministrativeClock';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,11 +48,24 @@ export async function GET() {
       }
     }
 
-    const relojAdministrativo = calcularRelojAdministrativo(
+    const relojBase = calcularRelojAdministrativo(
       partidos.map((partido) => ({
         fecha_partido: partido.fecha_partido,
       })),
     );
+
+    const ultimoKickoffMs = Math.max(
+      ...partidos.map((partido) => new Date(partido.fecha_partido).getTime()),
+    );
+
+    const finJornada = new Date(
+      ultimoKickoffMs + CHECKPOINT_MARGIN_HOURS * 60 * 60 * 1000,
+    ).toISOString();
+
+    const relojAdministrativo = {
+      ...relojBase,
+      fin_jornada: finJornada,
+    };
 
     const { data: existente, error: existenteError } = await supabase
       .from('jornadas_eventos_test')
