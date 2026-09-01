@@ -1,7 +1,6 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
 import { calcularRelojAdministrativo } from '@/lib/nflAdministrativeClock';
 import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
-import { pushCierrePorraSiProcede } from '@/lib/pushAutomatic';
 import {
   jornadaRedzoneParaRonda,
   localizarSemanaEspnDeRonda,
@@ -52,26 +51,6 @@ async function obtenerUltimaJornadaRegular(temporada: number) {
     .eq('id', 1);
   if (marcarError) console.warn(`No se pudo guardar la última comprobación de estructura playoffs: ${marcarError.message}`);
   return estructura.ultimaJornadaRegular;
-}
-
-async function cerrarPorraPlayoffSiProcede(params: { temporada: number; jornada: number; estado: string | null; cierrePronosticos: string | null; }) {
-  const { temporada, jornada, estado, cierrePronosticos } = params;
-  if (estado !== 'pendiente' || !cierrePronosticos || Date.now() < new Date(cierrePronosticos).getTime()) return estado;
-
-  const { data: cerrada, error } = await supabase
-    .from('jornadas_eventos_test')
-    .update({ estado: 'cerrada' })
-    .eq('temporada', temporada)
-    .eq('jornada_test', jornada)
-    .eq('estado', 'pendiente')
-    .select('estado')
-    .maybeSingle();
-  if (error) throw new Error(`Error cerrando PORRA J${jornada} de playoffs: ${error.message}`);
-  if (cerrada?.estado === 'cerrada') {
-    await pushCierrePorraSiProcede({ temporada, jornada, estado: 'cerrada' });
-    return 'cerrada';
-  }
-  return estado;
 }
 
 export async function sincronizarPostemporada(temporada: number, semanaInicio = 1, semanaFin = 4) {
@@ -149,21 +128,19 @@ export async function sincronizarPostemporada(temporada: number, semanaInicio = 
         }
       }
 
-      const { data: verificados, error: verificarError } = await supabase
-        .from('partidos_test').select('espn_event_id')
-        .eq('temporada', temporada).eq('jornada', jornada).eq('tipo_competicion', definicion.faseCompeticion);
-      if (verificarError) throw new Error(`Error verificando ${definicion.nombre}: ${verificarError.message}`);
-      const idsVerificados = new Set<string>((verificados || []).map((p: any) => String(p.espn_event_id)));
-      if (verificados?.length !== definicion.partidosEsperados || eventos.some((e: any) => !idsVerificados.has(String(e.id)))) throw new Error(`${definicion.nombre} no quedó completamente verificada en BBDD.`);
-
+      // En cuanto ESPN deja preparada la ronda y sus partidos se guardan,
+      // garantizamos inmediatamente su jornada administrativa.
       const relojAdministrativo = calcularRelojAdministrativo(partidosParaReloj);
       const { data: jornadaExistente, error: jornadaExistenteError } = await supabase
-        .from('jornadas_eventos_test').select('jornada_test, estado, fase_temporada')
-        .eq('temporada', temporada).eq('jornada_test', jornada).maybeSingle();
-      if (jornadaExistenteError) throw new Error(`Error consultando reloj de ${definicion.nombre}: ${jornadaExistenteError.message}`);
+        .from('jornadas_eventos_test')
+        .select('jornada_test')
+        .eq('temporada', temporada)
+        .eq('jornada_test', jornada)
+        .maybeSingle();
+      if (jornadaExistenteError) throw new Error(`Error consultando jornada administrativa ${definicion.nombre}: ${jornadaExistenteError.message}`);
 
       if (!jornadaExistente) {
-        const { error } = await supabase.from('jornadas_eventos_test').insert({
+        const { error: insertError } = await supabase.from('jornadas_eventos_test').insert({
           temporada,
           jornada_test: jornada,
           fase_temporada: 'postseason',
@@ -171,26 +148,19 @@ export async function sincronizarPostemporada(temporada: number, semanaInicio = 
           ...relojAdministrativo,
           estado: 'pendiente',
         });
-        if (error) throw new Error(`Error creando jornada administrativa ${definicion.nombre}: ${error.message}`);
-      } else if (jornadaExistente.estado === 'pendiente') {
-        const { error } = await supabase.from('jornadas_eventos_test')
-          .update({ fase_temporada: 'postseason', semana_espn: localizacion.week, ...relojAdministrativo })
-          .eq('temporada', temporada).eq('jornada_test', jornada).eq('estado', 'pendiente');
-        if (error) throw new Error(`Error actualizando reloj de ${definicion.nombre}: ${error.message}`);
+        if (insertError) throw new Error(`Error creando jornada administrativa ${definicion.nombre}: ${insertError.message}`);
       }
 
-      const { data: jornadaVerificada, error: jornadaVerificadaError } = await supabase
-        .from('jornadas_eventos_test')
-        .select('jornada_test, fase_temporada, semana_espn, estado, inicio_jornada, cierre_pronosticos')
-        .eq('temporada', temporada).eq('jornada_test', jornada).maybeSingle();
-      if (jornadaVerificadaError || !jornadaVerificada) throw new Error(`No se pudo verificar la jornada administrativa ${definicion.nombre}: ${jornadaVerificadaError?.message || 'sin registro'}`);
-      if (jornadaVerificada.fase_temporada !== 'postseason') throw new Error(`${definicion.nombre} no quedó marcada como postseason.`);
-      if (Number(jornadaVerificada.semana_espn) !== Number(localizacion.week)) throw new Error(`${definicion.nombre} no quedó con semana_espn ${localizacion.week}.`);
-      if (!jornadaVerificada.inicio_jornada || !jornadaVerificada.cierre_pronosticos) throw new Error(`${definicion.nombre} no quedó con inicio_jornada/cierre_pronosticos válidos.`);
-
-      const estadoFinal = await cerrarPorraPlayoffSiProcede({ temporada, jornada, estado: jornadaVerificada.estado, cierrePronosticos: jornadaVerificada.cierre_pronosticos });
-      resultados.push({ ronda, nombre: definicion.nombre, preparada: true, jornada, semanaEspn: localizacion.week, partidos: eventos.length, estado: estadoFinal, inicioJornada: jornadaVerificada.inicio_jornada, cierrePronosticos: jornadaVerificada.cierre_pronosticos });
-      console.log(`${definicion.nombre} preparada: REDZONE J${jornada}, ESPN Week ${localizacion.week}, ${eventos.length}/${definicion.partidosEsperados} partidos + reloj administrativo. Estado: ${estadoFinal}.`);
+      resultados.push({
+        ronda,
+        nombre: definicion.nombre,
+        preparada: true,
+        jornada,
+        semanaEspn: localizacion.week,
+        partidos: eventos.length,
+        jornadaAdministrativa: jornadaExistente ? 'existente' : 'creada',
+      });
+      console.log(`${definicion.nombre}: partidos J${jornada} guardados y jornada administrativa ${jornadaExistente ? 'ya existente' : 'creada'}.`);
     } catch (error: any) {
       resultados.push({ solicitud: semanaSolicitada, preparada: false, motivo: error?.message || String(error) });
       console.error(`Error al sincronizar playoffs solicitud ${semanaSolicitada}:`, error);
