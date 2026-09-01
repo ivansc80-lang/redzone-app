@@ -62,9 +62,9 @@ async function verificarJornadaPreparada(
 
   const { data: jornadaPreparada, error: jornadaPreparadaError } = await supabase
     .from('jornadas_eventos_test')
-    .select('jornada, estado, inicio_jornada, cierre_pronosticos')
+    .select('jornada_test, estado, inicio_jornada, cierre_pronosticos')
     .eq('temporada', temporada)
-    .eq('jornada', jornada)
+    .eq('jornada_test', jornada)
     .maybeSingle();
 
   if (jornadaPreparadaError) {
@@ -145,7 +145,7 @@ async function validarCicloActualPlayoff(
     .from('jornadas_eventos_test')
     .update(checkpoints.cambios)
     .eq('temporada', temporada)
-    .eq('jornada', jornada);
+    .eq('jornada_test', jornada);
 
   if (checkpointError) {
     throw new Error(
@@ -205,7 +205,7 @@ async function activarContextoSiguienteRonda(params: {
   origen: 'regular' | 'playoffs';
   semanaAnterior?: number | null;
 }): Promise<TransicionPlayoffOk> {
-  const { temporada, jornadaActual, jornadaNueva, rondaNueva, origen, semanaAnterior = null } = params;
+  const { temporada, jornadaActual, jornadaNueva, rondaNueva, origen } = params;
   const definicionNueva = RONDAS_PLAYOFF[rondaNueva];
   const indiceNuevo = indiceDesdeRonda(rondaNueva);
   const ahoraIso = new Date().toISOString();
@@ -214,7 +214,7 @@ async function activarContextoSiguienteRonda(params: {
     .from('jornadas_eventos_test')
     .update({ estado: 'finalizada', fin_jornada: ahoraIso })
     .eq('temporada', temporada)
-    .eq('jornada', jornadaActual)
+    .eq('jornada_test', jornadaActual)
     .neq('estado', 'finalizada');
 
   if (finalizarActualError) {
@@ -241,7 +241,7 @@ async function activarContextoSiguienteRonda(params: {
       .from('jornadas_eventos_test')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
-      .eq('jornada', jornadaActual)
+      .eq('jornada_test', jornadaActual)
       .eq('estado', 'finalizada');
     throw error;
   }
@@ -257,7 +257,7 @@ async function activarContextoSiguienteRonda(params: {
       .from('jornadas_eventos_test')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
-      .eq('jornada', jornadaActual)
+      .eq('jornada_test', jornadaActual)
       .eq('estado', 'finalizada');
 
     if (rollbackJornadaError) {
@@ -273,6 +273,7 @@ async function activarContextoSiguienteRonda(params: {
       fase_competicion: definicionNueva.faseCompeticion,
       semana_postemporada: indiceNuevo,
       jornada_actual: jornadaNueva,
+      jornada_test_actual: jornadaNueva,
     })
     .eq('id', 1)
     .eq('temporada', temporada)
@@ -285,7 +286,7 @@ async function activarContextoSiguienteRonda(params: {
       .from('jornadas_eventos_test')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
-      .eq('jornada', jornadaActual)
+      .eq('jornada_test', jornadaActual)
       .eq('estado', 'finalizada');
 
     throw new Error(definicionNueva.nombre + ' preparada y PUSH resuelto, pero app_config_test no pudo activarse: ' + (activarError?.message || 'contexto no coincidente'));
@@ -305,6 +306,9 @@ export async function intentarTransicionRegularAWildCard(
   temporada: number,
   jornadaRegular: number,
 ): Promise<ResultadoTransicionPlayoff> {
+  // Primero se descubre y prepara por completo la siguiente jornada.
+  // Solo después de verificar que J19 existe y contiene los 6 Wild Card
+  // se activa el cambio de contexto regular -> playoffs.
   const resultados = await sincronizarPostemporada(temporada, 1, 1);
   const wildCard = resultados.find(
     (resultado: any) => resultado?.ronda === 'wild_card',
@@ -422,6 +426,5 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
     jornadaNueva,
     rondaNueva: siguiente,
     origen: 'playoffs',
-    semanaAnterior: semanaPostemporada,
   });
 }
