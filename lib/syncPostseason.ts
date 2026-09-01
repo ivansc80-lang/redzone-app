@@ -20,7 +20,7 @@ function rondaDesdeSemanaSolicitada(semana: number): RondaPlayoff {
 
 async function obtenerUltimaJornadaRegularDesdeBbdd(temporada: number) {
   const { data, error } = await supabase
-    .from('partidos')
+    .from('partidos_test')
     .select('jornada')
     .eq('temporada', temporada)
     .eq('tipo_competicion', 'regular')
@@ -39,7 +39,7 @@ async function obtenerUltimaJornadaRegular(temporada: number) {
   const desdeBbdd = await obtenerUltimaJornadaRegularDesdeBbdd(temporada);
 
   const { data: config, error: configError } = await supabase
-    .from('app_config')
+    .from('app_config_test')
     .select('ultima_comprobacion_estructura_playoffs')
     .eq('id', 1)
     .maybeSingle();
@@ -63,7 +63,7 @@ async function obtenerUltimaJornadaRegular(temporada: number) {
   const estructura = await descubrirEstructuraTemporadaNFL(temporada);
 
   const { error: marcarError } = await supabase
-    .from('app_config')
+    .from('app_config_test')
     .update({ ultima_comprobacion_estructura_playoffs: new Date().toISOString() })
     .eq('id', 1);
 
@@ -93,7 +93,7 @@ async function cerrarPorraPlayoffSiProcede(params: {
   }
 
   const { data: cerrada, error } = await supabase
-    .from('jornadas_eventos')
+    .from('jornadas_eventos_test')
     .update({ estado: 'cerrada' })
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -196,7 +196,7 @@ export async function sincronizarPostemporada(
         partidosParaReloj.push({ fecha_partido: fechaPartido });
 
         const { data: partidoGuardado, error: upsertError } = await supabase
-          .from('partidos')
+          .from('partidos_test')
           .upsert({
             espn_event_id: String(evento.id), temporada, jornada,
             semana_competicion: localizacion.week,
@@ -217,22 +217,22 @@ export async function sincronizarPostemporada(
         if (!partidoGuardado) continue;
 
         if (comp.status?.type?.completed && resultadoOficial) {
-          const { error: aciertosError } = await supabase.from('pronosticos').update({ acierto: true })
+          const { error: aciertosError } = await supabase.from('pronosticos_test').update({ acierto: true })
             .eq('partido_id', partidoGuardado.id).eq('eleccion', resultadoOficial);
           if (aciertosError) throw new Error(`Error al validar aciertos de ${definicion.nombre}: ${aciertosError.message}`);
 
-          const { error: fallosError } = await supabase.from('pronosticos').update({ acierto: false })
+          const { error: fallosError } = await supabase.from('pronosticos_test').update({ acierto: false })
             .eq('partido_id', partidoGuardado.id).neq('eleccion', resultadoOficial);
           if (fallosError) throw new Error(`Error al validar fallos de ${definicion.nombre}: ${fallosError.message}`);
         } else {
-          const { error: limpiarError } = await supabase.from('pronosticos').update({ acierto: null })
+          const { error: limpiarError } = await supabase.from('pronosticos_test').update({ acierto: null })
             .eq('partido_id', partidoGuardado.id);
           if (limpiarError) throw new Error(`Error al limpiar aciertos pendientes de ${definicion.nombre}: ${limpiarError.message}`);
         }
       }
 
       const { data: verificados, error: verificarError } = await supabase
-        .from('partidos').select('espn_event_id')
+        .from('partidos_test').select('espn_event_id')
         .eq('temporada', temporada).eq('jornada', jornada)
         .eq('tipo_competicion', definicion.faseCompeticion);
 
@@ -244,22 +244,22 @@ export async function sincronizarPostemporada(
 
       const relojAdministrativo = calcularRelojAdministrativo(partidosParaReloj);
       const { data: jornadaExistente, error: jornadaExistenteError } = await supabase
-        .from('jornadas_eventos').select('jornada, estado')
+        .from('jornadas_eventos_test').select('jornada, estado')
         .eq('temporada', temporada).eq('jornada', jornada).maybeSingle();
 
       if (jornadaExistenteError) throw new Error(`Error consultando reloj de ${definicion.nombre}: ${jornadaExistenteError.message}`);
 
       if (!jornadaExistente) {
-        const { error } = await supabase.from('jornadas_eventos').insert({ temporada, jornada, ...relojAdministrativo, estado: 'pendiente' });
+        const { error } = await supabase.from('jornadas_eventos_test').insert({ temporada, jornada, ...relojAdministrativo, estado: 'pendiente' });
         if (error) throw new Error(`Error creando jornada administrativa ${definicion.nombre}: ${error.message}`);
       } else if (jornadaExistente.estado === 'pendiente') {
-        const { error } = await supabase.from('jornadas_eventos').update(relojAdministrativo)
+        const { error } = await supabase.from('jornadas_eventos_test').update(relojAdministrativo)
           .eq('temporada', temporada).eq('jornada', jornada).eq('estado', 'pendiente');
         if (error) throw new Error(`Error actualizando reloj de ${definicion.nombre}: ${error.message}`);
       }
 
       const { data: jornadaVerificada, error: jornadaVerificadaError } = await supabase
-        .from('jornadas_eventos')
+        .from('jornadas_eventos_test')
         .select('jornada, estado, inicio_jornada, cierre_pronosticos')
         .eq('temporada', temporada).eq('jornada', jornada).maybeSingle();
 
