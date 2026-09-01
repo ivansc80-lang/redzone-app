@@ -2559,12 +2559,17 @@ const [verPassword, setVerPassword] = useState(false);
 
   useEffect(() => {
     const cargarDatosSupabase = async () => {
+      const maxJornadaCargar = Math.max(18, Number(jornadaActual || 1));
+
       const todasLasJornadas = await Promise.all(
-        Array.from({ length: 18 }, (_, i) => getPartidosPorJornada(i + 1)),
+        Array.from(
+          { length: maxJornadaCargar },
+          (_, i) => getPartidosPorJornada(i + 1),
+        ),
       );
       const partidosData = todasLasJornadas.flat();
       const agrupadas: Record<number, PronosticoPartido[]> = {};
-      for (let j = 1; j <= 18; j++) agrupadas[j] = [];
+      for (let j = 1; j <= maxJornadaCargar; j++) agrupadas[j] = [];
 
       partidosData.forEach((row: any) => {
         const numJornada = row.jornada || 1;
@@ -2640,7 +2645,7 @@ const [verPassword, setVerPassword] = useState(false);
           }
         >
       > = {};
-      for (let j = 1; j <= 18; j++) {
+      for (let j = 1; j <= maxJornadaCargar; j++) {
         obj[j] = {
           cace: {
             pronosticos: JSON.parse(JSON.stringify(agrupadas[j] || [])),
