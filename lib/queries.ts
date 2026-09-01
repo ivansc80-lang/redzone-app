@@ -19,11 +19,19 @@ export interface PartidoTemporada {
   info_visitante?: { nombre: string; logo_url: string };
 }
 
+type FaseActiva = "regular" | "playoffs" | "superbowl";
+
+function normalizarFaseCompeticion(valor: unknown): FaseActiva {
+  if (valor === "playoffs" || valor === "postseason") return "playoffs";
+  if (valor === "superbowl" || valor === "super_bowl") return "superbowl";
+  return "regular";
+}
+
 async function obtenerContextoCompeticion() {
   const { data, error } = await supabase
     .from("app_config")
     .select(
-      "temporada, jornada_actual, modo_pretemporada_test, modo_pretemporada_hasta, temporada_test, jornada_test_actual",
+      "temporada, jornada_actual, fase_competicion, semana_postemporada, modo_pretemporada_test, modo_pretemporada_hasta, temporada_test, jornada_test_actual",
     )
     .eq("id", 1)
     .maybeSingle();
@@ -39,6 +47,11 @@ async function obtenerContextoCompeticion() {
   return {
     temporadaRegular: Number(data.temporada),
     jornadaRegular: Number(data.jornada_actual ?? 1),
+    faseCompeticion: normalizarFaseCompeticion(data.fase_competicion),
+    semanaPostemporada:
+      data.semana_postemporada === null || data.semana_postemporada === undefined
+        ? null
+        : Number(data.semana_postemporada),
     pretemporadaActiva,
     temporadaTest: Number(data.temporada_test ?? data.temporada),
     jornadaTestActual: Number(data.jornada_test_actual ?? 1),
@@ -48,12 +61,12 @@ async function obtenerContextoCompeticion() {
 /**
  * Obtiene los partidos que debe mostrar la PWA.
  * Durante la prueba temporal devuelve la pretemporada real de ESPN.
- * Fuera de la prueba devuelve la jornada regular solicitada.
+ * Fuera de la prueba usa la fase competitiva activa de app_config.
  */
 export interface ContextoJornadaActiva {
   temporada: number;
   jornada: number;
-  tipoCompeticion: "regular" | "pretemporada_test";
+  tipoCompeticion: "regular" | "pretemporada_test" | "playoffs" | "superbowl";
   estado: string;
   cierrePronosticos: string | null;
 }
@@ -99,7 +112,7 @@ export async function getContextoJornadaActiva(): Promise<ContextoJornadaActiva>
 
   if (error) {
     throw new Error(
-      `Error al obtener contexto de jornada regular: ${error.message}`,
+      `Error al obtener contexto de jornada activa: ${error.message}`,
     );
   }
 
@@ -112,7 +125,7 @@ export async function getContextoJornadaActiva(): Promise<ContextoJornadaActiva>
   return {
     temporada: contexto.temporadaRegular,
     jornada: contexto.jornadaRegular,
-    tipoCompeticion: "regular",
+    tipoCompeticion: contexto.faseCompeticion,
     estado: data.estado || "pendiente",
     cierrePronosticos: data.cierre_pronosticos || null,
   };
@@ -152,10 +165,24 @@ export async function getPartidosPorJornada(
         .eq("temporada", contexto.temporadaTest)
         .eq("tipo_competicion", "pretemporada_test")
         .eq("jornada", contexto.jornadaTestActual);
-    } else {
+    } else if (contexto.jornadaRegular > 18 && jornada === 18) {
+      // El cargador histórico actual de page.tsx solicita J1..J18.
+      // En la llamada de J18 añadimos también las jornadas postseason ya
+      // disponibles hasta la jornada activa. Cada fila conserva su jornada real
+      // y page.tsx vuelve a agruparla por row.jornada, por lo que J19/J20/J21/J22
+      // aparecen sin perder el histórico de J18.
       query = query
         .eq("temporada", contexto.temporadaRegular)
-        .eq("tipo_competicion", "regular")
+        .in("tipo_competicion", ["regular", "playoffs", "superbowl"])
+        .gte("jornada", 18)
+        .lte("jornada", contexto.jornadaRegular);
+    } else {
+      const tipoCompeticion =
+        jornada <= 18 ? "regular" : contexto.faseCompeticion;
+
+      query = query
+        .eq("temporada", contexto.temporadaRegular)
+        .eq("tipo_competicion", tipoCompeticion)
         .eq("jornada", jornada);
     }
 
@@ -184,9 +211,6 @@ export async function getPartidosPorJornada(
  *
  * COMPETICIÓN REAL:
  *   temporada activa → temporada regular + playoffs + Super Bowl.
- *
- * Esta consulta es independiente de PORRA/JORNADA, que continúan utilizando
- * getPartidosPorJornada() y por tanto solamente trabajan con la jornada activa.
  */
 export async function getPartidosGames(): Promise<PartidoTemporada[]> {
   try {
