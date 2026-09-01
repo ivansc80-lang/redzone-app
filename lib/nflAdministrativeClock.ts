@@ -76,8 +76,12 @@ export function calcularRelojAdministrativo(
   );
 
   const primerKickoff = new Date(ordenados[0].fecha_partido);
+  const ultimoKickoff = new Date(ordenados[ordenados.length - 1].fecha_partido);
   const cierrePronosticos = new Date(
     primerKickoff.getTime() - PICK_CLOSE_MINUTES * 60 * 1000
+  );
+  const finJornada = new Date(
+    ultimoKickoff.getTime() + CHECKPOINT_MARGIN_HOURS * 60 * 60 * 1000
   );
 
   const grupos = agruparPorFranja(ordenados);
@@ -105,7 +109,7 @@ export function calcularRelojAdministrativo(
   return {
     inicio_jornada: primerKickoff.toISOString(),
     cierre_pronosticos: cierrePronosticos.toISOString(),
-    fin_jornada: null,
+    fin_jornada: finJornada.toISOString(),
     ...franjas,
   };
 }
