@@ -61,7 +61,7 @@ async function verificarJornadaPreparada(
   const definicion = RONDAS_PLAYOFF[ronda];
 
   const { data: jornadaPreparada, error: jornadaPreparadaError } = await supabase
-    .from('jornadas_eventos')
+    .from('jornadas_eventos_test')
     .select('jornada, estado, inicio_jornada, cierre_pronosticos')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -83,7 +83,7 @@ async function verificarJornadaPreparada(
   }
 
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos')
+    .from('partidos_test')
     .select('id, espn_event_id, equipo_local, equipo_visitante, fecha_partido')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -115,7 +115,7 @@ async function validarCicloActualPlayoff(
   const definicion = RONDAS_PLAYOFF[ronda];
 
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos')
+    .from('partidos_test')
     .select('id, estado, resultado_oficial, fecha_partido')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -142,7 +142,7 @@ async function validarCicloActualPlayoff(
   );
 
   const { error: checkpointError } = await supabase
-    .from('jornadas_eventos')
+    .from('jornadas_eventos_test')
     .update(checkpoints.cambios)
     .eq('temporada', temporada)
     .eq('jornada', jornada);
@@ -166,7 +166,7 @@ async function validarCicloActualPlayoff(
 
   const idsPartidos = partidos.map((p: any) => p.id);
   const { data: pronosticos, error: pronosticosError } = await supabase
-    .from('pronosticos')
+    .from('pronosticos_test')
     .select('eleccion, acierto')
     .in('partido_id', idsPartidos);
 
@@ -211,7 +211,7 @@ async function activarContextoSiguienteRonda(params: {
   const ahoraIso = new Date().toISOString();
 
   const { error: finalizarActualError } = await supabase
-    .from('jornadas_eventos')
+    .from('jornadas_eventos_test')
     .update({ estado: 'finalizada', fin_jornada: ahoraIso })
     .eq('temporada', temporada)
     .eq('jornada', jornadaActual)
@@ -238,7 +238,7 @@ async function activarContextoSiguienteRonda(params: {
         });
   } catch (error) {
     await supabase
-      .from('jornadas_eventos')
+      .from('jornadas_eventos_test')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
       .eq('jornada', jornadaActual)
@@ -254,7 +254,7 @@ async function activarContextoSiguienteRonda(params: {
 
   if (falloRealPush) {
     const { error: rollbackJornadaError } = await supabase
-      .from('jornadas_eventos')
+      .from('jornadas_eventos_test')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
       .eq('jornada', jornadaActual)
@@ -264,11 +264,11 @@ async function activarContextoSiguienteRonda(params: {
       throw new Error('Falló el PUSH de transición y también el rollback de la jornada: ' + rollbackJornadaError.message);
     }
 
-    throw new Error('Falló el PUSH de transición J' + jornadaActual + ' → J' + jornadaNueva + '; la jornada fue restaurada y app_config no se modificó.');
+    throw new Error('Falló el PUSH de transición J' + jornadaActual + ' → J' + jornadaNueva + '; la jornada fue restaurada y app_config_test no se modificó.');
   }
 
   const { data: configActualizada, error: activarError } = await supabase
-    .from('app_config')
+    .from('app_config_test')
     .update({
       fase_competicion: definicionNueva.faseCompeticion,
       semana_postemporada: indiceNuevo,
@@ -282,13 +282,13 @@ async function activarContextoSiguienteRonda(params: {
 
   if (activarError || !configActualizada) {
     await supabase
-      .from('jornadas_eventos')
+      .from('jornadas_eventos_test')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
       .eq('jornada', jornadaActual)
       .eq('estado', 'finalizada');
 
-    throw new Error(definicionNueva.nombre + ' preparada y PUSH resuelto, pero app_config no pudo activarse: ' + (activarError?.message || 'contexto no coincidente'));
+    throw new Error(definicionNueva.nombre + ' preparada y PUSH resuelto, pero app_config_test no pudo activarse: ' + (activarError?.message || 'contexto no coincidente'));
   }
   return {
     transicion: true,
