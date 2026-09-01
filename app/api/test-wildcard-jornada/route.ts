@@ -86,6 +86,7 @@ export async function GET() {
         .insert({
           temporada: TEMPORADA,
           jornada_test: JORNADA_WILD_CARD,
+          fase_temporada: 'postseason',
           semana_espn: WEEK_WILD_CARD,
           ...relojAdministrativo,
           estado: 'pendiente',
@@ -100,6 +101,7 @@ export async function GET() {
       const { error: updateError } = await supabase
         .from('jornadas_eventos_test')
         .update({
+          fase_temporada: 'postseason',
           semana_espn: WEEK_WILD_CARD,
           ...relojAdministrativo,
         })
@@ -117,7 +119,7 @@ export async function GET() {
     const { data: jornada, error: verificarError } = await supabase
       .from('jornadas_eventos_test')
       .select(
-        'temporada, jornada_test, semana_espn, inicio_jornada, cierre_pronosticos, fin_jornada, estado',
+        'temporada, jornada_test, fase_temporada, semana_espn, inicio_jornada, cierre_pronosticos, fin_jornada, estado',
       )
       .eq('temporada', TEMPORADA)
       .eq('jornada_test', JORNADA_WILD_CARD)
