@@ -1,4 +1,5 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { intentarTransicionRegularAWildCard } from '@/lib/playoffTransition';
 
 const TABLAS_TEST = {
   config: 'app_config_test',
@@ -36,7 +37,7 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
 
   const { data: config, error: configError } = await supabase
     .from(TABLAS_TEST.config)
-    .select('temporada, jornada_actual, fase_competicion')
+    .select('temporada, jornada_actual, fase_competicion, semana_postemporada')
     .eq('id', 1)
     .maybeSingle();
 
@@ -45,6 +46,8 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
 
   const temporada = Number(config.temporada);
   const jornada = Number(config.jornada_actual);
+  const faseCompeticion = String(config.fase_competicion || 'regular');
+  const tipoCompeticionPartidos = faseCompeticion === 'regular' ? 'regular' : 'playoffs';
 
   if (!Number.isInteger(temporada) || temporada < 2000) {
     throw new Error(`TEST: temporada inválida: ${config.temporada}`);
@@ -56,7 +59,7 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
   const { data: evento, error: eventoError } = await supabase
     .from(TABLAS_TEST.jornadas)
     .select(
-      'temporada, jornada_test, inicio_jornada, cierre_pronosticos, early_games, late_games, mnf, fin_jornada, estado, early_games_validado, late_games_validado, mnf_validado',
+      'temporada, jornada_test, fase_temporada, inicio_jornada, cierre_pronosticos, early_games, late_games, mnf, fin_jornada, estado, early_games_validado, late_games_validado, mnf_validado',
     )
     .eq('temporada', temporada)
     .eq('jornada_test', jornada)
@@ -99,18 +102,18 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
     .select('id, jornada, fecha_partido, estado, puntos_local, puntos_visitante, resultado_oficial')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
-    .eq('tipo_competicion', 'regular')
+    .eq('tipo_competicion', tipoCompeticionPartidos)
     .order('fecha_partido', { ascending: true })
     .order('espn_event_id', { ascending: true });
 
   if (partidosError) throw new Error(`TEST: error leyendo partidos_test J${jornada}: ${partidosError.message}`);
   const partidos = (partidosRaw || []) as PartidoTest[];
-  if (partidos.length === 0) throw new Error(`TEST: J${jornada} no tiene partidos_test`);
+  if (partidos.length === 0) {
+    throw new Error(
+      `TEST: J${jornada} no tiene partidos_test para tipo_competicion=${tipoCompeticionPartidos}`,
+    );
+  }
 
-  // El kickoff codifica el bloque de prueba:
-  // bloque 1 -> inicio + 2 min, termina en inicio + 4 min
-  // bloque 2 -> inicio + 5 min, termina en inicio + 6 min
-  // bloque 3 -> inicio + 7 min, termina en inicio + 8 min
   const finBloque1Ms = inicioMs + 4 * 60_000;
   const finBloque2Ms = inicioMs + 6 * 60_000;
   const finBloque3Ms = inicioMs + 8 * 60_000;
@@ -187,7 +190,7 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
     .select('id, estado, resultado_oficial')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
-    .eq('tipo_competicion', 'regular');
+    .eq('tipo_competicion', tipoCompeticionPartidos);
 
   if (verificarPartidosError) throw new Error(`TEST: error verificando partidos J${jornada}: ${verificarPartidosError.message}`);
 
@@ -224,14 +227,48 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
 
     if (finalizarError) throw new Error(`TEST: error finalizando J${jornada}: ${finalizarError.message}`);
 
-    const { data: siguiente } = await supabase
+    const { data: siguiente, error: siguienteError } = await supabase
       .from(TABLAS_TEST.jornadas)
-      .select('jornada_test')
+      .select('jornada_test, fase_temporada')
       .eq('temporada', temporada)
       .eq('jornada_test', jornada + 1)
       .maybeSingle();
 
-    if (siguiente) {
+    if (siguienteError) {
+      throw new Error(`TEST: error buscando J${jornada + 1}: ${siguienteError.message}`);
+    }
+
+    // La transición regular -> postseason NO puede usar la transición genérica.
+    // J18 permanece como contexto activo hasta que Wild Card esté preparada y
+    // la fase + semana postseason + jornada cambien juntas en un único UPDATE.
+    if (faseCompeticion === 'regular' && siguiente?.fase_temporada === 'postseason') {
+      const transicionPlayoffs = await intentarTransicionRegularAWildCard(temporada, jornada);
+
+      if (!transicionPlayoffs.transicion) {
+        return {
+          mode: 'tr25_test',
+          temporada,
+          jornada,
+          estado: 'finalizada',
+          fase: 'regular_completa',
+          siguienteJornada: null,
+          motivo: transicionPlayoffs.motivo,
+        };
+      }
+
+      return {
+        mode: 'tr25_test',
+        temporada,
+        jornada,
+        estado: 'finalizada',
+        fase: 'transicion_playoffs',
+        siguienteJornada: transicionPlayoffs.jornadaNueva,
+        faseCompeticion: transicionPlayoffs.faseCompeticion,
+        semanaPostemporada: transicionPlayoffs.semanaPostemporada,
+      };
+    }
+
+    if (siguiente && siguiente.fase_temporada === 'regular') {
       const { error: activarError } = await supabase
         .from(TABLAS_TEST.config)
         .update({ jornada_actual: jornada + 1, jornada_test_actual: jornada + 1 })
@@ -256,7 +293,7 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
       temporada,
       jornada,
       estado: 'finalizada',
-      fase: 'regular_completa',
+      fase: faseCompeticion === 'regular' ? 'regular_completa' : 'postseason_completa',
       siguienteJornada: null,
     };
   }
@@ -277,6 +314,7 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
     jornada,
     estado: ahoraMs >= cierreMs ? 'cerrada' : 'pendiente',
     fase,
+    faseCompeticion,
     partidos: partidos.length,
     finalizados: (partidosVerificados || []).filter((p: any) => p.estado === 'STATUS_FINAL').length,
     pronosticosValidados,
