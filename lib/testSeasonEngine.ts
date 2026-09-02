@@ -101,15 +101,9 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
       if(transicion.transicion) return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'transicion_playoffs',siguienteJornada:transicion.jornadaNueva,faseCompeticion:transicion.faseCompeticion,semanaPostemporada:transicion.semanaPostemporada};
 
       if(transicion.finPlayoffs && semanaPostemporada===4){
-        // J22/Super Bowl ya terminó y todos sus pronósticos fueron validados arriba.
-        // El activador es idempotente: mientras el desempate siga abierto devuelve
-        // clasificatoria; cuando la ruta de tirada guarda ganador_eleccion, lo reconoce
-        // como resuelto en el siguiente tick.
         const desempate=await activarDesempateSuperbowlSiProcede();
 
         if(desempate.resuelto && desempate.ganador){
-          // rankingCompetition incorpora ganador_eleccion como +1 exactamente una vez.
-          // Recalculamos después de resolver para consolidar y verificar al campeón.
           const rankingFinal=await calcularRankingCompeticion(temporada);
           const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
 
@@ -117,12 +111,22 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
             throw new Error('TEST: el ganador del desempate no coincide con el líder único del ranking final');
           }
 
+          // El cierre anual solo ocurre después de confirmar el campeón. No avanzamos
+          // todavía a draft/pretemporada: ese corredor se conectará en el paso 6.
+          const {error:cerrarTemporadaError}=await supabase.from(TABLAS_TEST.config)
+            .update({fase_competicion:'finalizada'})
+            .eq('id',1)
+            .eq('temporada',temporada)
+            .eq('jornada_actual',jornada);
+          if(cerrarTemporadaError) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${cerrarTemporadaError.message}`);
+
           return {
             mode:'tr25_test',
             temporada,
             jornada,
             estado:'finalizada',
-            fase:'campeon_confirmado',
+            fase:'temporada_finalizada',
+            faseCompeticion:'finalizada',
             siguienteJornada:null,
             campeon:campeon.userId,
             puntosCampeon:campeon.puntos,
