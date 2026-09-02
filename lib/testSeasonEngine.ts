@@ -89,8 +89,6 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
   const todosFinalizados=(partidosVerificados||[]).length===partidos.length&&(partidosVerificados||[]).every((p:any)=>p.estado==='STATUS_FINAL'&&p.resultado_oficial!==null);
   const checkpointsOk=ahoraMs>=checkpoint3Ms&&Boolean(cambiosCheckpoints.mnf_validado||evento.mnf_validado)&&Boolean(cambiosCheckpoints.early_games_validado||evento.early_games_validado)&&Boolean(cambiosCheckpoints.late_games_validado||evento.late_games_validado);
 
-  // La transición de jornada NO depende de que existan pronósticos. Los pronósticos
-  // se validan cuando existen, pero una jornada puede generar la siguiente sin ellos.
   if(ahoraMs>=finMs&&todosFinalizados&&checkpointsOk){
     const {error:finalizarError}=await supabase.from(TABLAS_TEST.jornadas).update({estado:'finalizada'}).eq('temporada',temporada).eq('jornada_test',jornada);
     if(finalizarError)throw new Error(`TEST: error finalizando J${jornada}: ${finalizarError.message}`);
@@ -103,6 +101,36 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
       if(transicion.finPlayoffs && semanaPostemporada===4){
         const desempate=await activarDesempateSuperbowlSiProcede();
 
+        // CAMINO A: la Super Bowl deja líder único y no hace falta desempate.
+        if(desempate.resuelto && !desempate.ganador){
+          const rankingFinal=await calcularRankingCompeticion(temporada);
+          const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
+          if(!campeon) throw new Error('TEST: la Super Bowl terminó sin desempate pero no existe un líder único');
+
+          const {error:cerrarTemporadaError}=await supabase.from(TABLAS_TEST.config)
+            .update({fase_competicion:'finalizada'})
+            .eq('id',1)
+            .eq('temporada',temporada)
+            .eq('jornada_actual',jornada);
+          if(cerrarTemporadaError) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${cerrarTemporadaError.message}`);
+
+          return {
+            mode:'tr25_test',
+            temporada,
+            jornada,
+            estado:'finalizada',
+            fase:'temporada_finalizada',
+            faseCompeticion:'finalizada',
+            siguienteJornada:null,
+            campeon:campeon.userId,
+            puntosCampeon:campeon.puntos,
+            ranking:rankingFinal.ranking,
+            desempate,
+            motivo:transicion.motivo,
+          };
+        }
+
+        // CAMINO B: hubo empate, se resolvió y el ganador recibe el +1.
         if(desempate.resuelto && desempate.ganador){
           const rankingFinal=await calcularRankingCompeticion(temporada);
           const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
@@ -111,8 +139,6 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
             throw new Error('TEST: el ganador del desempate no coincide con el líder único del ranking final');
           }
 
-          // El cierre anual solo ocurre después de confirmar el campeón. No avanzamos
-          // todavía a draft/pretemporada: ese corredor se conectará en el paso 6.
           const {error:cerrarTemporadaError}=await supabase.from(TABLAS_TEST.config)
             .update({fase_competicion:'finalizada'})
             .eq('id',1)
