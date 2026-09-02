@@ -5,6 +5,7 @@ import {
 } from '@/lib/playoffTransition';
 import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
 import { calcularRankingCompeticion } from '@/lib/rankingCompetition';
+import { gestionarCicloAnualTest } from '@/lib/testAnnualLifecycle';
 
 const TABLAS_TEST = {
   config: 'app_config_test',
@@ -30,7 +31,7 @@ function ms(fecha: string | null | undefined) {
 export async function sincronizarTemporadaTestActual(ahora = new Date()) {
   const ahoraMs = ahora.getTime();
   const { data: config, error: configError } = await supabase.from(TABLAS_TEST.config)
-    .select('temporada, jornada_actual, fase_competicion, semana_postemporada').eq('id', 1).maybeSingle();
+    .select('temporada, temporada_objetivo, jornada_actual, fase_competicion, semana_postemporada').eq('id', 1).maybeSingle();
   if (configError) throw new Error(`TEST: error leyendo app_config_test: ${configError.message}`);
   if (!config) throw new Error('TEST: app_config_test está vacío');
 
@@ -38,8 +39,21 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
   const jornada = Number(config.jornada_actual);
   const faseCompeticion = String(config.fase_competicion || 'regular');
   const semanaPostemporada = config.semana_postemporada == null ? null : Number(config.semana_postemporada);
-  const tipoCompeticionPartidos = faseCompeticion === 'regular' ? 'regular' : 'playoffs';
   if (!Number.isInteger(temporada) || temporada < 2000) throw new Error(`TEST: temporada inválida: ${config.temporada}`);
+
+  // Una vez cerrada la temporada deportiva, el cron deja de exigir una jornada
+  // activa y entra en el corredor anual TEST: finalizada -> draft -> calendario
+  // desde 15 mayo -> pretemporada -> regular a T-125 del primer kickoff de J1.
+  if (faseCompeticion === 'finalizada' || faseCompeticion === 'draft' || faseCompeticion === 'pretemporada') {
+    return gestionarCicloAnualTest({
+      temporada,
+      temporadaObjetivo: config.temporada_objetivo == null ? null : Number(config.temporada_objetivo),
+      faseCompeticion: faseCompeticion as 'finalizada'|'draft'|'pretemporada',
+      ahora,
+    });
+  }
+
+  const tipoCompeticionPartidos = faseCompeticion === 'regular' ? 'regular' : 'playoffs';
   if (!Number.isInteger(jornada) || jornada < 1) throw new Error(`TEST: jornada inválida: ${config.jornada_actual}`);
 
   const { data: evento, error: eventoError } = await supabase.from(TABLAS_TEST.jornadas)
@@ -101,79 +115,26 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
       if(transicion.finPlayoffs && semanaPostemporada===4){
         const desempate=await activarDesempateSuperbowlSiProcede();
 
-        // CAMINO A: la Super Bowl deja líder único y no hace falta desempate.
         if(desempate.resuelto && !desempate.ganador){
           const rankingFinal=await calcularRankingCompeticion(temporada);
           const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
           if(!campeon) throw new Error('TEST: la Super Bowl terminó sin desempate pero no existe un líder único');
-
-          const {error:cerrarTemporadaError}=await supabase.from(TABLAS_TEST.config)
-            .update({fase_competicion:'finalizada'})
-            .eq('id',1)
-            .eq('temporada',temporada)
-            .eq('jornada_actual',jornada);
-          if(cerrarTemporadaError) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${cerrarTemporadaError.message}`);
-
-          return {
-            mode:'tr25_test',
-            temporada,
-            jornada,
-            estado:'finalizada',
-            fase:'temporada_finalizada',
-            faseCompeticion:'finalizada',
-            siguienteJornada:null,
-            campeon:campeon.userId,
-            puntosCampeon:campeon.puntos,
-            ranking:rankingFinal.ranking,
-            desempate,
-            motivo:transicion.motivo,
-          };
+          const {error}=await supabase.from(TABLAS_TEST.config).update({fase_competicion:'finalizada'}).eq('id',1).eq('temporada',temporada).eq('jornada_actual',jornada);
+          if(error) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${error.message}`);
+          return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'temporada_finalizada',faseCompeticion:'finalizada',siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,motivo:transicion.motivo};
         }
 
-        // CAMINO B: hubo empate, se resolvió y el ganador recibe el +1.
         if(desempate.resuelto && desempate.ganador){
           const rankingFinal=await calcularRankingCompeticion(temporada);
           const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
-
-          if(!campeon || campeon.userId!==desempate.ganador){
-            throw new Error('TEST: el ganador del desempate no coincide con el líder único del ranking final');
-          }
-
-          const {error:cerrarTemporadaError}=await supabase.from(TABLAS_TEST.config)
-            .update({fase_competicion:'finalizada'})
-            .eq('id',1)
-            .eq('temporada',temporada)
-            .eq('jornada_actual',jornada);
-          if(cerrarTemporadaError) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${cerrarTemporadaError.message}`);
-
-          return {
-            mode:'tr25_test',
-            temporada,
-            jornada,
-            estado:'finalizada',
-            fase:'temporada_finalizada',
-            faseCompeticion:'finalizada',
-            siguienteJornada:null,
-            campeon:campeon.userId,
-            puntosCampeon:campeon.puntos,
-            ranking:rankingFinal.ranking,
-            desempate,
-            motivo:transicion.motivo,
-          };
+          if(!campeon || campeon.userId!==desempate.ganador) throw new Error('TEST: el ganador del desempate no coincide con el líder único del ranking final');
+          const {error}=await supabase.from(TABLAS_TEST.config).update({fase_competicion:'finalizada'}).eq('id',1).eq('temporada',temporada).eq('jornada_actual',jornada);
+          if(error) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${error.message}`);
+          return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'temporada_finalizada',faseCompeticion:'finalizada',siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,motivo:transicion.motivo};
         }
 
-        return {
-          mode:'tr25_test',
-          temporada,
-          jornada,
-          estado:'finalizada',
-          fase:desempate.activado?'desempate_superbowl':'postseason_completa',
-          siguienteJornada:null,
-          desempate,
-          motivo:transicion.motivo,
-        };
+        return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:desempate.activado?'desempate_superbowl':'postseason_completa',siguienteJornada:null,desempate,motivo:transicion.motivo};
       }
-
       return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:transicion.finPlayoffs?'postseason_completa':'esperando_siguiente_ronda',siguienteJornada:null,motivo:transicion.motivo};
     }
 
