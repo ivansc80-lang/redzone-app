@@ -17,6 +17,27 @@ export default function FranchisePlayoffCalendarLoader({ teamId, temporada }: Pr
     let cancelado = false;
 
     async function cargar() {
+      // Usamos la misma autoridad de temporada que el resto de REDZONE.
+      // En esta rama TEST, app_config se redirige automáticamente a app_config_test.
+      const { data: config, error: configError } = await supabase
+        .from("app_config")
+        .select("temporada")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (configError) {
+        console.error(
+          "Error cargando temporada activa para calendario playoff:",
+          configError.message,
+        );
+      }
+
+      const temporadaActiva = Number(config?.temporada);
+      const temporadaConsulta =
+        Number.isFinite(temporadaActiva) && temporadaActiva > 0
+          ? temporadaActiva
+          : temporada;
+
       const { data, error } = await supabase
         .from("partidos")
         .select(
@@ -34,7 +55,7 @@ export default function FranchisePlayoffCalendarLoader({ teamId, temporada }: Pr
           )
         `,
         )
-        .eq("temporada", temporada)
+        .eq("temporada", temporadaConsulta)
         .gte("jornada", 19)
         .lte("jornada", 22)
         .order("jornada", { ascending: true })
