@@ -4,6 +4,7 @@ import {
   intentarTransicionSiguienteRondaPlayoff,
 } from '@/lib/playoffTransition';
 import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
+import { calcularRankingCompeticion } from '@/lib/rankingCompetition';
 
 const TABLAS_TEST = {
   config: 'app_config_test',
@@ -101,9 +102,36 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
 
       if(transicion.finPlayoffs && semanaPostemporada===4){
         // J22/Super Bowl ya terminó y todos sus pronósticos fueron validados arriba.
-        // Recalculamos el ranking completo y solo abrimos desempate si persiste empate
-        // en el liderato. Con las elecciones previstas para TR25 esperamos 103-103-103.
+        // El activador es idempotente: mientras el desempate siga abierto devuelve
+        // clasificatoria; cuando la ruta de tirada guarda ganador_eleccion, lo reconoce
+        // como resuelto en el siguiente tick.
         const desempate=await activarDesempateSuperbowlSiProcede();
+
+        if(desempate.resuelto && desempate.ganador){
+          // rankingCompetition incorpora ganador_eleccion como +1 exactamente una vez.
+          // Recalculamos después de resolver para consolidar y verificar al campeón.
+          const rankingFinal=await calcularRankingCompeticion(temporada);
+          const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
+
+          if(!campeon || campeon.userId!==desempate.ganador){
+            throw new Error('TEST: el ganador del desempate no coincide con el líder único del ranking final');
+          }
+
+          return {
+            mode:'tr25_test',
+            temporada,
+            jornada,
+            estado:'finalizada',
+            fase:'campeon_confirmado',
+            siguienteJornada:null,
+            campeon:campeon.userId,
+            puntosCampeon:campeon.puntos,
+            ranking:rankingFinal.ranking,
+            desempate,
+            motivo:transicion.motivo,
+          };
+        }
+
         return {
           mode:'tr25_test',
           temporada,
