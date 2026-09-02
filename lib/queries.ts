@@ -260,9 +260,6 @@ export async function getPartidosGames(): Promise<PartidoTemporada[]> {
   }
 }
 
-// FRANQUICIAS usa esta colección como calendario completo de la temporada.
-// J1-J18 siguen siendo temporada regular y, cuando ESPN/REDZONE descubre
-// postemporada, se añaden J19-J22 sin crear un calendario paralelo.
 export async function getPartidosTemporadaRegularCompleta(): Promise<
   PartidoTemporada[]
 > {
@@ -287,26 +284,19 @@ export async function getPartidosTemporadaRegularCompleta(): Promise<
       `,
       )
       .eq("temporada", contexto.temporadaRegular)
-      .in("tipo_competicion", ["regular", "playoffs", "superbowl"])
+      .eq("tipo_competicion", "regular")
       .order("jornada", { ascending: true })
       .order("fecha_partido", { ascending: true });
 
     if (error) {
       console.error(
-        "Error al obtener el calendario completo de la temporada:",
+        "Error al obtener la temporada regular completa:",
         error.message,
       );
       return [];
     }
 
-    // En TEST los partidos ESPN ya pueden traer su resultado histórico aunque
-    // la simulación todavía no haya llegado a esa jornada. Para PRÓXIMO PARTIDO
-    // manda el reloj administrativo de REDZONE, no Date.now() ni ese resultado.
-    return (data || []).map((partido) =>
-      partido.jornada >= contexto.jornadaRegular && partido.jornada >= 19
-        ? { ...partido, resultado_oficial: null }
-        : partido,
-    );
+    return data || [];
   } catch (err) {
     console.error("Excepción en getPartidosTemporadaRegularCompleta:", err);
     return [];
