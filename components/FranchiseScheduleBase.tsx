@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPartidosTemporadaRegularCompleta, type PartidoTemporada } from "@/lib/queries";
+import {
+  getContextoJornadaActiva,
+  getPartidosGames,
+  type PartidoTemporada,
+} from "@/lib/queries";
 import type {
   EspnTeamDefenseSummary,
   EspnTeamOffenseSummary,
   EspnTeamTurnoversSummary,
 } from "@/lib/espnTeamSummary";
+import {
+  FranchisePlayoffComparison,
+  type PlayoffForm,
+} from "@/components/FranchisePlayoffExtension";
 
 type Props = { teamId: string; temporada: number };
 
@@ -32,18 +40,33 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
   const [ofensiva, setOfensiva] = useState<EspnTeamOffenseSummary[]>([]);
   const [defensiva, setDefensiva] = useState<EspnTeamDefenseSummary[]>([]);
   const [entregas, setEntregas] = useState<EspnTeamTurnoversSummary[]>([]);
+  const [proximoPartido, setProximoPartido] = useState<PartidoFranquicia | null>(null);
+  const [playoffForm, setPlayoffForm] = useState<PlayoffForm[]>([]);
 
   useEffect(() => {
     let cancelado = false;
 
     async function cargar() {
       setCargando(true);
-      const [temporadaRegular, offenseRes, defenseRes, turnoversRes] = await Promise.all([
-        getPartidosTemporadaRegularCompleta(),
-        fetch(`/api/espn-team-stats/summary/offense?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
-        fetch(`/api/espn-team-stats/summary/defense?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
-        fetch(`/api/espn-team-stats/summary/turnovers?temporada=${temporada}&seasonType=2`, { cache: "no-store" }),
-      ]);
+      setPlayoffForm([]);
+
+      const [contexto, temporadaCompleta, offenseRes, defenseRes, turnoversRes] =
+        await Promise.all([
+          getContextoJornadaActiva(),
+          getPartidosGames(),
+          fetch(
+            `/api/espn-team-stats/summary/offense?temporada=${temporada}&seasonType=2`,
+            { cache: "no-store" },
+          ),
+          fetch(
+            `/api/espn-team-stats/summary/defense?temporada=${temporada}&seasonType=2`,
+            { cache: "no-store" },
+          ),
+          fetch(
+            `/api/espn-team-stats/summary/turnovers?temporada=${temporada}&seasonType=2`,
+            { cache: "no-store" },
+          ),
+        ]);
 
       const [offenseData, defenseData, turnoversData] = await Promise.all([
         offenseRes.ok ? offenseRes.json() : Promise.resolve([]),
@@ -51,20 +74,49 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
         turnoversRes.ok ? turnoversRes.json() : Promise.resolve([]),
       ]);
 
-      const delEquipo = temporadaRegular
+      const equipo = teamId.toUpperCase();
+      const delEquipo = temporadaCompleta
         .filter(
           (p) =>
-            p.equipo_local.toUpperCase() === teamId.toUpperCase() ||
-            p.equipo_visitante.toUpperCase() === teamId.toUpperCase(),
+            p.equipo_local.toUpperCase() === equipo ||
+            p.equipo_visitante.toUpperCase() === equipo,
         )
         .map((p) => ({
           ...p,
-          rivalLocal: p.equipo_local.toUpperCase() === teamId.toUpperCase(),
+          rivalLocal: p.equipo_local.toUpperCase() === equipo,
         }))
         .sort((a, b) => a.jornada - b.jornada);
 
+      const partidoJornadaActual = delEquipo.find(
+        (p) => p.jornada === contexto.jornada,
+      );
+
+      const siguiente =
+        partidoJornadaActual && contexto.estado !== "finalizada"
+          ? partidoJornadaActual
+          : delEquipo.find((p) => p.jornada > contexto.jornada) ?? null;
+
+      let formaPlayoff: PlayoffForm[] = [];
+
+      // En Wild Card todavía no hay partidos de playoff previos que acumular.
+      // Desde Divisional en adelante usamos únicamente las rondas ya jugadas.
+      if (siguiente && siguiente.jornada >= 20) {
+        const response = await fetch(
+          `/api/franchise-playoff-form?temporada=${contexto.temporada}&hastaJornada=${siguiente.jornada}&equipos=${encodeURIComponent(
+            `${siguiente.equipo_local},${siguiente.equipo_visitante}`,
+          )}`,
+          { cache: "no-store" },
+        );
+
+        if (response.ok) {
+          formaPlayoff = (await response.json()) as PlayoffForm[];
+        }
+      }
+
       if (!cancelado) {
         setPartidos(delEquipo);
+        setProximoPartido(siguiente);
+        setPlayoffForm(formaPlayoff);
         setOfensiva(offenseData as EspnTeamOffenseSummary[]);
         setDefensiva(defenseData as EspnTeamDefenseSummary[]);
         setEntregas(turnoversData as EspnTeamTurnoversSummary[]);
@@ -72,16 +124,19 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
       }
     }
 
-    cargar();
+    cargar().catch((error) => {
+      console.error("Error cargando HOME de franquicia:", error);
+      if (!cancelado) {
+        setProximoPartido(null);
+        setPlayoffForm([]);
+        setCargando(false);
+      }
+    });
+
     return () => {
       cancelado = true;
     };
   }, [teamId, temporada]);
-
-  const proximoPartido =
-    partidos.find((p) => new Date(p.fecha_partido).getTime() >= Date.now()) ??
-    partidos.find((p) => p.resultado_oficial == null) ??
-    null;
 
   const buscarOfensiva = (equipo: string) =>
     ofensiva.find((item) => item.equipo.toUpperCase() === equipo.toUpperCase()) ?? null;
@@ -91,6 +146,9 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
 
   const buscarEntregas = (equipo: string) =>
     entregas.find((item) => item.equipo.toUpperCase() === equipo.toUpperCase()) ?? null;
+
+  const buscarPlayoffForm = (equipo: string) =>
+    playoffForm.find((item) => item.equipo.toUpperCase() === equipo.toUpperCase()) ?? null;
 
   const numero = (valor?: string | null) => {
     const n = Number(String(valor ?? "").replace(/,/g, "").trim());
@@ -321,676 +379,176 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
               </div>
 
               <div className="grid min-h-0 flex-1 grid-rows-2 gap-5 p-5">
-
-                {/* ======================================================
-                    ATAQUE LOCAL VS DEFENSA VISITANTE
-                    LOCAL siempre izquierda / VISITANTE siempre derecha
-                   ====================================================== */}
                 <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200">
-
                   <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-center font-['Orbitron'] text-[11px] font-black uppercase text-[#002244] md:text-xs">
                     Ataque {resumenComparacion.local.nombre} vs defensa {resumenComparacion.visitante.nombre}
                   </div>
 
                   <div className="grid flex-1 grid-cols-[minmax(90px,1fr)_48px_minmax(88px,0.8fr)_minmax(90px,1fr)_48px] items-center gap-x-3 gap-y-4 px-4 py-5 text-[11px] md:grid-cols-[minmax(110px,1fr)_55px_minmax(110px,0.8fr)_minmax(110px,1fr)_55px] md:gap-x-5 md:text-[13px]">
+                    <span className="text-center font-black text-red-700">ATAQUE</span>
+                    <span className="text-center font-black text-zinc-500">RK</span>
+                    <span className="text-center font-black text-zinc-500">MÉTRICA</span>
+                    <span className="text-center font-black text-[#002244]">DEFENSA</span>
+                    <span className="text-center font-black text-zinc-500">RK</span>
 
-                    {/* CABECERA */}
-                    <span className="text-center font-black text-red-700">
-                      ATAQUE
-                    </span>
-                    <span className="text-center font-black text-zinc-500">
-                      RK
-                    </span>
-                    <span className="text-center font-black text-zinc-500">
-                      MÉTRICA
-                    </span>
-                    <span className="text-center font-black text-[#002244]">
-                      DEFENSA
-                    </span>
-                    <span className="text-center font-black text-zinc-500">
-                      RK
-                    </span>
-
-                    {/* YDS/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.ofensiva?.TOTAL_YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "TOTAL_YDS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "TOTAL_YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      YDS/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.defensiva?.YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "YDS_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "TOTAL_YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    {/* PASE/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.ofensiva?.PASS_YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "PASS_YDS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PASS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "PASS_YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      PASE/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.defensiva?.PASS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PASS_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "PASS_YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PASS_G",
-                        ),
-                      )}
-                    </span>
-
-                    {/* CARRERA/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.ofensiva?.RUSH_YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "RUSH_YDS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "RUSH_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "RUSH_YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      CARRERA/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.defensiva?.RUSH_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "RUSH_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "RUSH_YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "RUSH_G",
-                        ),
-                      )}
-                    </span>
-
-                    {/* PTS/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.ofensiva?.PTS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "PTS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PTS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "PTS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      PTS/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.defensiva?.PTS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PTS_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.local.codigo,
-                          "PTS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PTS_G",
-                        ),
-                      )}
-                    </span>
+                    {[
+                      ["TOTAL_YDS_G", "YDS_G", "YDS/G"],
+                      ["PASS_YDS_G", "PASS_G", "PASE/G"],
+                      ["RUSH_YDS_G", "RUSH_G", "CARRERA/G"],
+                      ["PTS_G", "PTS_G", "PTS/G"],
+                    ].map(([campoAtaque, campoDefensa, etiqueta]) => {
+                      const rkAtaque = rankingOfensivo(
+                        resumenComparacion.local.codigo,
+                        campoAtaque as "TOTAL_YDS_G" | "PASS_YDS_G" | "RUSH_YDS_G" | "PTS_G",
+                      );
+                      const rkDefensa = rankingDefensivo(
+                        resumenComparacion.visitante.codigo,
+                        campoDefensa as "YDS_G" | "PASS_G" | "RUSH_G" | "PTS_G",
+                      );
+                      return (
+                        <div key={etiqueta} className="contents">
+                          <span className="text-center font-bold">
+                            {resumenComparacion.local.ofensiva?.[
+                              campoAtaque as keyof EspnTeamOffenseSummary
+                            ] ?? "-"}
+                          </span>
+                          <span className={`text-center font-black ${colorRankingComparado(rkAtaque, rkDefensa)}`}>
+                            {ordinal(rkAtaque)}
+                          </span>
+                          <span className="text-center font-bold text-zinc-600">{etiqueta}</span>
+                          <span className="text-center font-bold">
+                            {resumenComparacion.visitante.defensiva?.[
+                              campoDefensa as keyof EspnTeamDefenseSummary
+                            ] ?? "-"}
+                          </span>
+                          <span className={`text-center font-black ${colorRankingComparado(rkDefensa, rkAtaque)}`}>
+                            {ordinal(rkDefensa)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* ======================================================
-                    DEFENSA LOCAL VS ATAQUE VISITANTE
-                    LOCAL siempre izquierda / VISITANTE siempre derecha
-                   ====================================================== */}
                 <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200">
-
                   <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-center font-['Orbitron'] text-[11px] font-black uppercase text-[#002244] md:text-xs">
                     Defensa {resumenComparacion.local.nombre} vs ataque {resumenComparacion.visitante.nombre}
                   </div>
 
                   <div className="grid flex-1 grid-cols-[minmax(90px,1fr)_48px_minmax(88px,0.8fr)_minmax(90px,1fr)_48px] items-center gap-x-3 gap-y-4 px-4 py-5 text-[11px] md:grid-cols-[minmax(110px,1fr)_55px_minmax(110px,0.8fr)_minmax(110px,1fr)_55px] md:gap-x-5 md:text-[13px]">
+                    <span className="text-center font-black text-[#002244]">DEFENSA</span>
+                    <span className="text-center font-black text-zinc-500">RK</span>
+                    <span className="text-center font-black text-zinc-500">MÉTRICA</span>
+                    <span className="text-center font-black text-red-700">ATAQUE</span>
+                    <span className="text-center font-black text-zinc-500">RK</span>
 
-                    {/* CABECERA */}
-                    <span className="text-center font-black text-[#002244]">
-                      DEFENSA
-                    </span>
-                    <span className="text-center font-black text-zinc-500">
-                      RK
-                    </span>
-                    <span className="text-center font-black text-zinc-500">
-                      MÉTRICA
-                    </span>
-                    <span className="text-center font-black text-red-700">
-                      ATAQUE
-                    </span>
-                    <span className="text-center font-black text-zinc-500">
-                      RK
-                    </span>
-
-                    {/* YDS/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.defensiva?.YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "YDS_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "TOTAL_YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      YDS/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.ofensiva?.TOTAL_YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "TOTAL_YDS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "TOTAL_YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    {/* PASE/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.defensiva?.PASS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "PASS_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PASS_YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "PASS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      PASE/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.ofensiva?.PASS_YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PASS_YDS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "PASS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PASS_YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    {/* CARRERA/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.defensiva?.RUSH_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "RUSH_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "RUSH_YDS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "RUSH_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      CARRERA/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.ofensiva?.RUSH_YDS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "RUSH_YDS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "RUSH_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "RUSH_YDS_G",
-                        ),
-                      )}
-                    </span>
-
-                    {/* PTS/G */}
-                    <span className="text-center font-bold">
-                      {resumenComparacion.local.defensiva?.PTS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "PTS_G",
-                        ),
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PTS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "PTS_G",
-                        ),
-                      )}
-                    </span>
-
-                    <span className="text-center font-bold text-zinc-600">
-                      PTS/G
-                    </span>
-
-                    <span className="text-center font-bold">
-                      {resumenComparacion.visitante.ofensiva?.PTS_G ?? "-"}
-                    </span>
-
-                    <span
-                      className={`text-center font-black ${colorRankingComparado(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PTS_G",
-                        ),
-                        rankingDefensivo(
-                          resumenComparacion.local.codigo,
-                          "PTS_G",
-                        ),
-                      )}`}
-                    >
-                      {ordinal(
-                        rankingOfensivo(
-                          resumenComparacion.visitante.codigo,
-                          "PTS_G",
-                        ),
-                      )}
-                    </span>
+                    {[
+                      ["YDS_G", "TOTAL_YDS_G", "YDS/G"],
+                      ["PASS_G", "PASS_YDS_G", "PASE/G"],
+                      ["RUSH_G", "RUSH_YDS_G", "CARRERA/G"],
+                      ["PTS_G", "PTS_G", "PTS/G"],
+                    ].map(([campoDefensa, campoAtaque, etiqueta]) => {
+                      const rkDefensa = rankingDefensivo(
+                        resumenComparacion.local.codigo,
+                        campoDefensa as "YDS_G" | "PASS_G" | "RUSH_G" | "PTS_G",
+                      );
+                      const rkAtaque = rankingOfensivo(
+                        resumenComparacion.visitante.codigo,
+                        campoAtaque as "TOTAL_YDS_G" | "PASS_YDS_G" | "RUSH_YDS_G" | "PTS_G",
+                      );
+                      return (
+                        <div key={etiqueta} className="contents">
+                          <span className="text-center font-bold">
+                            {resumenComparacion.local.defensiva?.[
+                              campoDefensa as keyof EspnTeamDefenseSummary
+                            ] ?? "-"}
+                          </span>
+                          <span className={`text-center font-black ${colorRankingComparado(rkDefensa, rkAtaque)}`}>
+                            {ordinal(rkDefensa)}
+                          </span>
+                          <span className="text-center font-bold text-zinc-600">{etiqueta}</span>
+                          <span className="text-center font-bold">
+                            {resumenComparacion.visitante.ofensiva?.[
+                              campoAtaque as keyof EspnTeamOffenseSummary
+                            ] ?? "-"}
+                          </span>
+                          <span className={`text-center font-black ${colorRankingComparado(rkAtaque, rkDefensa)}`}>
+                            {ordinal(rkAtaque)}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-zinc-200 p-5">
-                {/* ENTREGAS — comparativa directa entre ambos equipos */}
                 <div className="mb-4 text-center font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">
                   Entregas
                 </div>
 
                 <div className="overflow-hidden rounded-lg bg-zinc-50">
-                  {/* CABECERA EQUIPOS */}
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-zinc-200 px-4 py-4">
                     <div className="flex min-w-0 items-center gap-2">
-                      <img
-                        src={resumenComparacion.local.logo}
-                        alt=""
-                        className="h-8 w-8 shrink-0 object-contain"
-                      />
+                      <img src={resumenComparacion.local.logo} alt="" className="h-8 w-8 shrink-0 object-contain" />
                       <span className="truncate text-[11px] font-black text-[#002244] md:text-[12px]">
                         {resumenComparacion.local.nombre}
                       </span>
                     </div>
-
-                    <div className="font-['Orbitron'] text-[9px] font-black text-red-700">
-                      VS
-                    </div>
-
+                    <div className="font-['Orbitron'] text-[9px] font-black text-red-700">VS</div>
                     <div className="flex min-w-0 items-center justify-end gap-2">
                       <span className="truncate text-right text-[11px] font-black text-[#002244] md:text-[12px]">
                         {resumenComparacion.visitante.nombre}
                       </span>
-                      <img
-                        src={resumenComparacion.visitante.logo}
-                        alt=""
-                        className="h-8 w-8 shrink-0 object-contain"
-                      />
+                      <img src={resumenComparacion.visitante.logo} alt="" className="h-8 w-8 shrink-0 object-contain" />
                     </div>
                   </div>
 
-                  {/* CABECERA RK / DATO */}
                   <div className="grid grid-cols-[42px_58px_minmax(86px,1fr)_58px_42px] items-center gap-1 border-b border-zinc-200 px-3 py-2 text-center text-[8px] font-black uppercase text-zinc-400 md:grid-cols-[48px_70px_minmax(110px,1fr)_70px_48px]">
-                    <span>RK</span>
-                    <span>Dato</span>
-                    <span></span>
-                    <span>Dato</span>
-                    <span>RK</span>
+                    <span>RK</span><span>Dato</span><span></span><span>Dato</span><span>RK</span>
                   </div>
 
-                  {/* PERDIDAS */}
-                  {(() => {
-                    const rkLocal = rankingEntregas(
-                      resumenComparacion.local.codigo,
-                      "GIVE",
-                    );
-                    const rkVisitante = rankingEntregas(
-                      resumenComparacion.visitante.codigo,
-                      "GIVE",
-                    );
-
+                  {([
+                    ["GIVE", "Perdidas"],
+                    ["TAKE", "Recuperadas"],
+                  ] as const).map(([campo, etiqueta]) => {
+                    const rkLocal = rankingEntregas(resumenComparacion.local.codigo, campo);
+                    const rkVisitante = rankingEntregas(resumenComparacion.visitante.codigo, campo);
                     return (
-                      <div className="grid grid-cols-[42px_58px_minmax(86px,1fr)_58px_42px] items-center gap-1 border-b border-zinc-200 px-3 py-3 text-center text-[11px] md:grid-cols-[48px_70px_minmax(110px,1fr)_70px_48px] md:text-[12px]">
-                        <span
-                          className={`font-black ${colorRankingComparado(
-                            rkLocal,
-                            rkVisitante,
-                          )}`}
-                        >
-                          {ordinal(rkLocal)}
-                        </span>
-
-                        <span className="font-black text-[#002244]">
-                          {resumenComparacion.local.entregas?.GIVE ?? "-"}
-                        </span>
-
-                        <span className="font-black uppercase text-zinc-500">
-                          Perdidas
-                        </span>
-
-                        <span className="font-black text-[#002244]">
-                          {resumenComparacion.visitante.entregas?.GIVE ?? "-"}
-                        </span>
-
-                        <span
-                          className={`font-black ${colorRankingComparado(
-                            rkVisitante,
-                            rkLocal,
-                          )}`}
-                        >
-                          {ordinal(rkVisitante)}
-                        </span>
+                      <div key={campo} className="grid grid-cols-[42px_58px_minmax(86px,1fr)_58px_42px] items-center gap-1 border-b border-zinc-200 px-3 py-3 text-center text-[11px] md:grid-cols-[48px_70px_minmax(110px,1fr)_70px_48px] md:text-[12px]">
+                        <span className={`font-black ${colorRankingComparado(rkLocal, rkVisitante)}`}>{ordinal(rkLocal)}</span>
+                        <span className="font-black text-[#002244]">{resumenComparacion.local.entregas?.[campo] ?? "-"}</span>
+                        <span className="font-black uppercase text-zinc-500">{etiqueta}</span>
+                        <span className="font-black text-[#002244]">{resumenComparacion.visitante.entregas?.[campo] ?? "-"}</span>
+                        <span className={`font-black ${colorRankingComparado(rkVisitante, rkLocal)}`}>{ordinal(rkVisitante)}</span>
                       </div>
                     );
-                  })()}
+                  })}
 
-                  {/* RECUPERADAS */}
                   {(() => {
-                    const rkLocal = rankingEntregas(
-                      resumenComparacion.local.codigo,
-                      "TAKE",
-                    );
-                    const rkVisitante = rankingEntregas(
-                      resumenComparacion.visitante.codigo,
-                      "TAKE",
-                    );
-
-                    return (
-                      <div className="grid grid-cols-[42px_58px_minmax(86px,1fr)_58px_42px] items-center gap-1 border-b border-zinc-200 px-3 py-3 text-center text-[11px] md:grid-cols-[48px_70px_minmax(110px,1fr)_70px_48px] md:text-[12px]">
-                        <span
-                          className={`font-black ${colorRankingComparado(
-                            rkLocal,
-                            rkVisitante,
-                          )}`}
-                        >
-                          {ordinal(rkLocal)}
-                        </span>
-
-                        <span className="font-black text-[#002244]">
-                          {resumenComparacion.local.entregas?.TAKE ?? "-"}
-                        </span>
-
-                        <span className="font-black uppercase text-zinc-500">
-                          Recuperadas
-                        </span>
-
-                        <span className="font-black text-[#002244]">
-                          {resumenComparacion.visitante.entregas?.TAKE ?? "-"}
-                        </span>
-
-                        <span
-                          className={`font-black ${colorRankingComparado(
-                            rkVisitante,
-                            rkLocal,
-                          )}`}
-                        >
-                          {ordinal(rkVisitante)}
-                        </span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* DIFERENCIAL */}
-                  {(() => {
-                    const rkLocal = rankingDiferencialEntregas(
-                      resumenComparacion.local.codigo,
-                    );
-                    const rkVisitante = rankingDiferencialEntregas(
-                      resumenComparacion.visitante.codigo,
-                    );
-
+                    const rkLocal = rankingDiferencialEntregas(resumenComparacion.local.codigo);
+                    const rkVisitante = rankingDiferencialEntregas(resumenComparacion.visitante.codigo);
                     return (
                       <div className="grid grid-cols-[42px_58px_minmax(86px,1fr)_58px_42px] items-center gap-1 px-3 py-3 text-center text-[11px] md:grid-cols-[48px_70px_minmax(110px,1fr)_70px_48px] md:text-[12px]">
-                        <span
-                          className={`font-black ${colorRankingComparado(
-                            rkLocal,
-                            rkVisitante,
-                          )}`}
-                        >
-                          {ordinal(rkLocal)}
-                        </span>
-
-                        <span className="font-black text-[#002244]">
-                          {resumenComparacion.local.entregas?.DIFF ?? "-"}
-                        </span>
-
-                        <span className="font-black uppercase text-zinc-500">
-                          Diferencial
-                        </span>
-
-                        <span className="font-black text-[#002244]">
-                          {resumenComparacion.visitante.entregas?.DIFF ?? "-"}
-                        </span>
-
-                        <span
-                          className={`font-black ${colorRankingComparado(
-                            rkVisitante,
-                            rkLocal,
-                          )}`}
-                        >
-                          {ordinal(rkVisitante)}
-                        </span>
+                        <span className={`font-black ${colorRankingComparado(rkLocal, rkVisitante)}`}>{ordinal(rkLocal)}</span>
+                        <span className="font-black text-[#002244]">{resumenComparacion.local.entregas?.DIFF ?? "-"}</span>
+                        <span className="font-black uppercase text-zinc-500">Diferencial</span>
+                        <span className="font-black text-[#002244]">{resumenComparacion.visitante.entregas?.DIFF ?? "-"}</span>
+                        <span className={`font-black ${colorRankingComparado(rkVisitante, rkLocal)}`}>{ordinal(rkVisitante)}</span>
                       </div>
                     );
                   })()}
                 </div>
               </div>
+
+              {proximoPartido.jornada >= 20 && (
+                <FranchisePlayoffComparison
+                  local={buscarPlayoffForm(resumenComparacion.local.codigo)}
+                  visitante={buscarPlayoffForm(resumenComparacion.visitante.codigo)}
+                  localNombre={resumenComparacion.local.nombre}
+                  visitanteNombre={resumenComparacion.visitante.nombre}
+                />
+              )}
             </div>
           )}
         </div>
