@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Tab = "ofensiva" | "defensiva" | "especiales" | "lesionados";
+type VistaTab = Tab | "practice";
+
 type Athlete = {
   id: string;
   displayName?: string;
@@ -28,10 +30,16 @@ type Athlete = {
     totalSalary?: number;
   }>;
 };
+
 type Group = { position?: string; items?: Athlete[] };
 type RosterResponse = {
   athletes?: Group[];
   coach?: { firstName?: string; lastName?: string }[];
+};
+
+type RosterPlayer = {
+  athlete: Athlete;
+  group: string;
 };
 
 const OFFENSE = new Set([
@@ -141,7 +149,7 @@ function playerName(a: Athlete) {
   return a.displayName || a.fullName || "Jugador";
 }
 
-function sortRoster(a: Athlete, b: Athlete, tab: Tab) {
+function sortRoster(a: Athlete, b: Athlete, tab: VistaTab) {
   const order = tab === "ofensiva" ? OFFENSE_ORDER : DEFENSE_ORDER;
   const posA = normalizedPosition(a);
   const posB = normalizedPosition(b);
@@ -172,13 +180,51 @@ function feetInches(inches?: number) {
   const ft = Math.floor(inches / 12);
   return `${ft}' ${inches % 12}"`;
 }
-function category(a: Athlete): Exclude<Tab, "lesionados"> {
+
+function category(a: Athlete): "ofensiva" | "defensiva" | "especiales" {
   const p = (a.position?.abbreviation || "").toUpperCase();
   if (SPECIAL.has(p)) return "especiales";
   if (DEFENSE.has(p)) return "defensiva";
   return "ofensiva";
 }
-function isInjured(a: Athlete) {
+
+function normalizarGrupo(group: string) {
+  return String(group || "").trim().toLowerCase();
+}
+
+function grupoEsPractice(group: string) {
+  const g = normalizarGrupo(group);
+  return g.includes("practice squad") || g.includes("practice");
+}
+
+function grupoEsLesionados(group: string) {
+  const g = normalizarGrupo(group);
+  return (
+    g.includes("injured reserve") ||
+    g.includes("reserve or out") ||
+    g.includes("injured") ||
+    g.includes("physically unable") ||
+    g.includes("pup") ||
+    g === "out"
+  );
+}
+
+function grupoEsOfensiva(group: string) {
+  const g = normalizarGrupo(group);
+  return g === "offense" || g === "offensive" || g.includes("offense");
+}
+
+function grupoEsDefensiva(group: string) {
+  const g = normalizarGrupo(group);
+  return g === "defense" || g === "defensive" || g.includes("defense");
+}
+
+function grupoEsEspeciales(group: string) {
+  const g = normalizarGrupo(group);
+  return g.includes("special teams") || g === "specialists";
+}
+
+function isInjuredByStatus(a: Athlete) {
   const s = (a.status?.name || a.status?.type || "").toLowerCase();
   return (
     s.includes("injur") ||
@@ -200,14 +246,17 @@ export default function FranchiseRoster({
   const [data, setData] = useState<RosterResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [tabLocal, setTabLocal] = useState<VistaTab | null>(null);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError("");
+    setTabLocal(null);
     const espnId = ESPN_TEAM_IDS[teamId.toUpperCase()] ?? teamId;
     fetch(
       `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${espnId}/roster`,
+      { cache: "no-store" },
     )
       .then((r) => {
         if (!r.ok) throw new Error(`ESPN ${r.status}`);
@@ -230,34 +279,82 @@ export default function FranchiseRoster({
     };
   }, [teamId]);
 
-  const players = useMemo(
-    () => (data?.athletes || []).flatMap((g) => g.items || []),
+  useEffect(() => {
+    if (tabLocal !== "practice") setTabLocal(null);
+  }, [tab]);
+
+  const vistaActiva: VistaTab = tabLocal ?? tab;
+
+  const players = useMemo<RosterPlayer[]>(
+    () =>
+      (data?.athletes || []).flatMap((g) =>
+        (g.items || []).map((athlete) => ({
+          athlete,
+          group: g.position || "",
+        })),
+      ),
     [data],
   );
+
   const shown = useMemo(() => {
-    if (tab === "lesionados") return players.filter(isInjured);
+    const filtrados = players.filter(({ athlete, group }) => {
+      if (vistaActiva === "practice") return grupoEsPractice(group);
 
-    const filtered = players.filter(
-      (a) => !isInjured(a) && category(a) === tab,
-    );
+      if (vistaActiva === "lesionados") {
+        return grupoEsLesionados(group) || isInjuredByStatus(athlete);
+      }
 
-    if (tab === "ofensiva" || tab === "defensiva") {
-      return [...filtered].sort((a, b) => sortRoster(a, b, tab));
+      // Un jugador de Practice Squad o IR/Out nunca debe mezclarse con
+      // la plantilla activa aunque su posición sea ofensiva/defensiva.
+      if (grupoEsPractice(group) || grupoEsLesionados(group) || isInjuredByStatus(athlete)) {
+        return false;
+      }
+
+      if (vistaActiva === "ofensiva") {
+        return grupoEsOfensiva(group) ||
+          (!grupoEsDefensiva(group) && !grupoEsEspeciales(group) && category(athlete) === "ofensiva");
+      }
+
+      if (vistaActiva === "defensiva") {
+        return grupoEsDefensiva(group) ||
+          (!grupoEsOfensiva(group) && !grupoEsEspeciales(group) && category(athlete) === "defensiva");
+      }
+
+      return grupoEsEspeciales(group) ||
+        (!grupoEsOfensiva(group) && !grupoEsDefensiva(group) && category(athlete) === "especiales");
+    });
+
+    const atletas = filtrados.map(({ athlete }) => athlete);
+
+    if (vistaActiva === "ofensiva" || vistaActiva === "defensiva") {
+      return [...atletas].sort((a, b) => sortRoster(a, b, vistaActiva));
     }
 
-    return filtered;
-  }, [players, tab]);
+    return atletas;
+  }, [players, vistaActiva]);
+
   const coach = data?.coach?.[0];
   const coachName = coach
     ? [coach.firstName, coach.lastName].filter(Boolean).join(" ")
     : "";
 
-  const tabs: { id: Tab; label: string }[] = [
+  const tabs: { id: VistaTab; label: string }[] = [
     { id: "ofensiva", label: "Ofensiva" },
     { id: "defensiva", label: "Defensiva" },
     { id: "especiales", label: "Equipos especiales" },
     { id: "lesionados", label: "Lesionados / IR" },
+    { id: "practice", label: "Practice Squad" },
   ];
+
+  const cambiarTab = (nuevoTab: VistaTab) => {
+    if (nuevoTab === "practice") {
+      setTabLocal("practice");
+      return;
+    }
+
+    setTabLocal(null);
+    onTabChange(nuevoTab);
+  };
 
   return (
     <div>
@@ -277,8 +374,8 @@ export default function FranchiseRoster({
           <button
             key={t.id}
             type="button"
-            onClick={() => onTabChange(t.id)}
-            className={`whitespace-nowrap border-b-2 px-4 py-3 text-xs font-black uppercase md:text-sm ${tab === t.id ? "border-red-700 text-red-700" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}
+            onClick={() => cambiarTab(t.id)}
+            className={`whitespace-nowrap border-b-2 px-4 py-3 text-xs font-black uppercase md:text-sm ${vistaActiva === t.id ? "border-red-700 text-red-700" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}
           >
             {t.label}
           </button>
@@ -319,25 +416,6 @@ export default function FranchiseRoster({
                     className="border-t border-zinc-200 even:bg-zinc-50/60"
                   >
                     <td className="px-4 py-2">
-                      {/*
-                        FUTURO PROYECTO — PERFIL ESPN EN PESTAÑA ÚNICA
-                        ------------------------------------------------
-                        Se conserva como referencia la lógica anterior de retorno:
-
-                        sessionStorage.setItem(
-                          "redzoneExternalReturn",
-                          JSON.stringify({
-                            pestanaActiva: "equipos",
-                            subPestanaEquipos: "franquicia",
-                            franquiciaSeleccionada: teamId,
-                            franchiseSection: "plantilla",
-                            rosterTab: tab,
-                          }),
-                        );
-
-                        Actualmente NO tiene poder operativo.
-                        El perfil ESPN se abre en una pestaña nueva.
-                      */}
                       <a
                         href={profile}
                         target="_blank"
