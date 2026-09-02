@@ -23,12 +23,14 @@ export interface RankingCompeticionServidor {
 }
 
 /**
- * Fuente servidor de RANKING REDZONE.
- * - regular + playoffs + Super Bowl;
- * - cada acierto validado suma 1 punto;
- * - si existe ganador del desempate post-Super Bowl, recibe exactamente
- *   1 punto adicional aunque el estado ya esté cerrado/inactivo;
- * - el bonus no altera validados ni efectividad porque no es un pronóstico.
+ * Fuente servidor de RANKING REDZONE para la simulación TR25/TR26.
+ * Esta rama trabaja exclusivamente contra las tablas TEST:
+ * - partidos_test
+ * - pronosticos_test
+ * - desempate_superbowl_estado_test
+ *
+ * La Super Bowl sigue perteneciendo a `playoffs`; no existe un tercer
+ * tipo de competición necesario para el ranking.
  */
 export async function calcularRankingCompeticion(
   temporada: number,
@@ -38,13 +40,13 @@ export async function calcularRankingCompeticion(
   }
 
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos')
+    .from('partidos_test')
     .select('id')
     .eq('temporada', temporada)
-    .in('tipo_competicion', ['regular', 'playoffs', 'superbowl']);
+    .in('tipo_competicion', ['regular', 'playoffs']);
 
   if (partidosError) {
-    throw new Error(`Error leyendo partidos para ranking: ${partidosError.message}`);
+    throw new Error(`Error leyendo partidos TEST para ranking: ${partidosError.message}`);
   }
 
   const idsPartidos = (partidos || []).map((p: any) => p.id);
@@ -55,13 +57,13 @@ export async function calcularRankingCompeticion(
 
   if (idsPartidos.length > 0) {
     const { data: pronosticos, error: pronosticosError } = await supabase
-      .from('pronosticos')
+      .from('pronosticos_test')
       .select('user_id, acierto')
       .in('partido_id', idsPartidos)
       .in('user_id', [...PARTICIPANTES_REDZONE]);
 
     if (pronosticosError) {
-      throw new Error(`Error leyendo pronósticos para ranking: ${pronosticosError.message}`);
+      throw new Error(`Error leyendo pronósticos TEST para ranking: ${pronosticosError.message}`);
     }
 
     for (const pronostico of pronosticos || []) {
@@ -77,13 +79,13 @@ export async function calcularRankingCompeticion(
   }
 
   const { data: desempate, error: desempateError } = await supabase
-    .from('desempate_superbowl_estado')
+    .from('desempate_superbowl_estado_test')
     .select('estado, ganador_eleccion')
     .eq('temporada', temporada)
     .maybeSingle();
 
   if (desempateError) {
-    throw new Error(`Error leyendo bonus de desempate: ${desempateError.message}`);
+    throw new Error(`Error leyendo bonus TEST de desempate: ${desempateError.message}`);
   }
 
   const ganadorBonus = desempate?.ganador_eleccion
