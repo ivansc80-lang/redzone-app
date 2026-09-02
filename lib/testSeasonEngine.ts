@@ -3,6 +3,7 @@ import {
   intentarTransicionRegularAWildCard,
   intentarTransicionSiguienteRondaPlayoff,
 } from '@/lib/playoffTransition';
+import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperbowl';
 
 const TABLAS_TEST = {
   config: 'app_config_test',
@@ -36,7 +37,7 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
   const jornada = Number(config.jornada_actual);
   const faseCompeticion = String(config.fase_competicion || 'regular');
   const semanaPostemporada = config.semana_postemporada == null ? null : Number(config.semana_postemporada);
-  const tipoCompeticionPartidos = faseCompeticion === 'regular' ? 'regular' : faseCompeticion === 'superbowl' ? 'superbowl' : 'playoffs';
+  const tipoCompeticionPartidos = faseCompeticion === 'regular' ? 'regular' : 'playoffs';
   if (!Number.isInteger(temporada) || temporada < 2000) throw new Error(`TEST: temporada inválida: ${config.temporada}`);
   if (!Number.isInteger(jornada) || jornada < 1) throw new Error(`TEST: jornada inválida: ${config.jornada_actual}`);
 
@@ -97,6 +98,24 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
       if(!semanaPostemporada) throw new Error(`TEST: J${jornada} está en ${faseCompeticion} pero semana_postemporada es null`);
       const transicion=await intentarTransicionSiguienteRondaPlayoff({temporada,jornadaActual:jornada,semanaPostemporada});
       if(transicion.transicion) return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'transicion_playoffs',siguienteJornada:transicion.jornadaNueva,faseCompeticion:transicion.faseCompeticion,semanaPostemporada:transicion.semanaPostemporada};
+
+      if(transicion.finPlayoffs && semanaPostemporada===4){
+        // J22/Super Bowl ya terminó y todos sus pronósticos fueron validados arriba.
+        // Recalculamos el ranking completo y solo abrimos desempate si persiste empate
+        // en el liderato. Con las elecciones previstas para TR25 esperamos 103-103-103.
+        const desempate=await activarDesempateSuperbowlSiProcede();
+        return {
+          mode:'tr25_test',
+          temporada,
+          jornada,
+          estado:'finalizada',
+          fase:desempate.activado?'desempate_superbowl':'postseason_completa',
+          siguienteJornada:null,
+          desempate,
+          motivo:transicion.motivo,
+        };
+      }
+
       return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:transicion.finPlayoffs?'postseason_completa':'esperando_siguiente_ronda',siguienteJornada:null,motivo:transicion.motivo};
     }
 
