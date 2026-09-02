@@ -1,6 +1,6 @@
 export type RondaPlayoff = 'wild_card' | 'divisional' | 'conference' | 'super_bowl';
 
-export type FaseCompeticionPlayoff = 'playoffs' | 'superbowl';
+export type FaseCompeticionPlayoff = 'playoffs';
 
 export interface DefinicionRondaPlayoff {
   ronda: RondaPlayoff;
@@ -36,7 +36,7 @@ export const RONDAS_PLAYOFF: Record<RondaPlayoff, DefinicionRondaPlayoff> = {
     ronda: 'super_bowl',
     nombre: 'SUPER BOWL',
     partidosEsperados: 1,
-    faseCompeticion: 'superbowl',
+    faseCompeticion: 'playoffs',
     semanaEspnInicial: 4,
   },
 };
@@ -123,9 +123,9 @@ export async function localizarSemanaEspnDeRonda(
     };
   }
 
-  // La Super Bowl no se fija eternamente a Week 5. Empezamos en Week 4
-  // y avanzamos hasta encontrar un evento identificado explícitamente como
-  // "Super Bowl". Week 4 puede ser Pro Bowl y debe ignorarse.
+  // La Super Bowl no se fija a una week concreta. Empezamos en Week 4
+  // y avanzamos hasta encontrar el evento identificado como "Super Bowl".
+  // La week encontrada por ESPN se conserva tal cual.
   for (let week = definicion.semanaEspnInicial; week <= 8; week++) {
     const eventos = await obtenerEventosPostseason(temporada, week);
     const eventosSuperBowl = eventos.filter(eventoEsSuperBowl);
