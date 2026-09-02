@@ -109,6 +109,18 @@ function dif(valor: number) {
   return valor > 0 ? `+${valor}` : String(valor);
 }
 
+type MejorEs = "mayor" | "menor";
+
+function colorDato(a: number, b: number, mejorEs: MejorEs) {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return ["text-[#002244]", "text-[#002244]"] as const;
+  if (a === b) return ["text-[#FBBF24]", "text-[#FBBF24]"] as const;
+
+  const aEsMejor = mejorEs === "mayor" ? a > b : a < b;
+  return aEsMejor
+    ? (["text-[#10B981]", "text-[#E00000]"] as const)
+    : (["text-[#E00000]", "text-[#10B981]"] as const);
+}
+
 export function FranchisePlayoffComparison({
   local,
   visitante,
@@ -122,13 +134,23 @@ export function FranchisePlayoffComparison({
 }) {
   if (!local || !visitante || local.partidos < 1 || visitante.partidos < 1) return null;
 
-  const fila = (titulo: string, a: string | number, b: string | number) => (
-    <div className="grid grid-cols-[1fr_1.15fr_1fr] items-center border-t border-zinc-200 px-3 py-2 text-center text-[10px] md:text-[11px]">
-      <span className="font-black text-[#002244]">{a}</span>
-      <span className="font-black uppercase text-zinc-500">{titulo}</span>
-      <span className="font-black text-[#002244]">{b}</span>
-    </div>
-  );
+  const fila = (
+    titulo: string,
+    a: number,
+    b: number,
+    mejorEs: MejorEs,
+    formateador: (valor: number) => string = dato,
+  ) => {
+    const [colorA, colorB] = colorDato(a, b, mejorEs);
+
+    return (
+      <div className="grid grid-cols-[1fr_1.15fr_1fr] items-center border-t border-zinc-200 px-3 py-2 text-center text-[10px] md:text-[11px]">
+        <span className={`font-black ${colorA}`}>{formateador(a)}</span>
+        <span className="font-black uppercase text-zinc-500">{titulo}</span>
+        <span className={`font-black ${colorB}`}>{formateador(b)}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="border-t border-zinc-200 p-5">
@@ -145,12 +167,12 @@ export function FranchisePlayoffComparison({
           <span className="font-['Orbitron'] text-[9px] text-red-700">OFENSIVA</span>
           <span className="truncate">{visitanteNombre}</span>
         </div>
-        {fila("YDS/G", dato(local.ofensiva.YDS_G), dato(visitante.ofensiva.YDS_G))}
-        {fila("PASE/G", dato(local.ofensiva.PASS_G), dato(visitante.ofensiva.PASS_G))}
-        {fila("CARRERA/G", dato(local.ofensiva.RUSH_G), dato(visitante.ofensiva.RUSH_G))}
-        {fila("PTS/G", dato(local.ofensiva.PTS_G), dato(visitante.ofensiva.PTS_G))}
-        {fila("INT LANZADAS", dato(local.ofensiva.INT), dato(visitante.ofensiva.INT))}
-        {fila("SACKS RECIBIDOS", dato(local.ofensiva.SACKS_RECIBIDOS), dato(visitante.ofensiva.SACKS_RECIBIDOS))}
+        {fila("YDS/G", local.ofensiva.YDS_G, visitante.ofensiva.YDS_G, "mayor")}
+        {fila("PASE/G", local.ofensiva.PASS_G, visitante.ofensiva.PASS_G, "mayor")}
+        {fila("CARRERA/G", local.ofensiva.RUSH_G, visitante.ofensiva.RUSH_G, "mayor")}
+        {fila("PTS/G", local.ofensiva.PTS_G, visitante.ofensiva.PTS_G, "mayor")}
+        {fila("INT LANZADAS", local.ofensiva.INT, visitante.ofensiva.INT, "menor")}
+        {fila("SACKS RECIBIDOS", local.ofensiva.SACKS_RECIBIDOS, visitante.ofensiva.SACKS_RECIBIDOS, "menor")}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
@@ -159,12 +181,12 @@ export function FranchisePlayoffComparison({
           <span className="font-['Orbitron'] text-[9px] text-red-700">DEFENSIVA</span>
           <span className="truncate">{visitanteNombre}</span>
         </div>
-        {fila("YDS/G", dato(local.defensiva.YDS_G), dato(visitante.defensiva.YDS_G))}
-        {fila("PASE/G", dato(local.defensiva.PASS_G), dato(visitante.defensiva.PASS_G))}
-        {fila("CARRERA/G", dato(local.defensiva.RUSH_G), dato(visitante.defensiva.RUSH_G))}
-        {fila("PTS/G", dato(local.defensiva.PTS_G), dato(visitante.defensiva.PTS_G))}
-        {fila("INT CONSEGUIDAS", dato(local.defensiva.INT), dato(visitante.defensiva.INT))}
-        {fila("SACKS CONSEGUIDOS", dato(local.defensiva.SACKS), dato(visitante.defensiva.SACKS))}
+        {fila("YDS/G", local.defensiva.YDS_G, visitante.defensiva.YDS_G, "menor")}
+        {fila("PASE/G", local.defensiva.PASS_G, visitante.defensiva.PASS_G, "menor")}
+        {fila("CARRERA/G", local.defensiva.RUSH_G, visitante.defensiva.RUSH_G, "menor")}
+        {fila("PTS/G", local.defensiva.PTS_G, visitante.defensiva.PTS_G, "menor")}
+        {fila("INT CONSEGUIDAS", local.defensiva.INT, visitante.defensiva.INT, "mayor")}
+        {fila("SACKS CONSEGUIDOS", local.defensiva.SACKS, visitante.defensiva.SACKS, "mayor")}
       </div>
 
       <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
@@ -173,9 +195,9 @@ export function FranchisePlayoffComparison({
           <span className="font-['Orbitron'] text-[9px] text-red-700">ENTREGAS</span>
           <span className="truncate">{visitanteNombre}</span>
         </div>
-        {fila("PERDIDAS", dato(local.entregas.PERDIDAS), dato(visitante.entregas.PERDIDAS))}
-        {fila("RECUPERADAS", dato(local.entregas.RECUPERADAS), dato(visitante.entregas.RECUPERADAS))}
-        {fila("DIFERENCIAL", dif(local.entregas.DIF), dif(visitante.entregas.DIF))}
+        {fila("PERDIDAS", local.entregas.PERDIDAS, visitante.entregas.PERDIDAS, "menor")}
+        {fila("RECUPERADAS", local.entregas.RECUPERADAS, visitante.entregas.RECUPERADAS, "mayor")}
+        {fila("DIFERENCIAL", local.entregas.DIF, visitante.entregas.DIF, "mayor", dif)}
       </div>
     </div>
   );
