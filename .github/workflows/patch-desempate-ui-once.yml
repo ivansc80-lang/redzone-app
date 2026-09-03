@@ -1,4 +1,4 @@
-name: Patch desempate UI once
+name: Patch temporada dinamica desempate once
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
           ref: fase2-playoffs
           fetch-depth: 0
 
-      - name: Limpiar interfaz antigua de desempate
+      - name: Sustituir temporada fija solo en flujo Super Bowl/desempate
         shell: bash
         run: |
           python3 - <<'PY'
@@ -28,101 +28,55 @@ jobs:
           path = Path('app/page.tsx')
           s = path.read_text()
 
-          def replace_once(old, new, label):
-              global s
-              if old not in s:
-                  raise SystemExit(f'No se encontró bloque: {label}')
-              s = s.replace(old, new, 1)
-
-          # 1. Eliminar estados del antiguo flujo de elección de equipo.
-          replace_once(
-          '''  const [partidoSuperbowl, setPartidoSuperbowl] = useState<any>(null);\n  const [eleccionesSuperbowl, setEleccionesSuperbowl] = useState<any[]>([]);\n  const [guardandoEleccionSuperbowl, setGuardandoEleccionSuperbowl] =\n    useState(false);\n\n''',
-          '',
-          'estados elección Super Bowl',
-          )
-
-          # 2. Sustituir la carga antigua por una carga dinámica, solo de la tirada real.
-          inicio = s.index('  useEffect(() => {\n    const cargarDesempate = async () => {')
-          fin_marker = '  }, [usuarioLogueado?.id]);\n\n  useEffect(() => {\n    const cargarDatosSupabase'
-          fin = s.index(fin_marker, inicio)
-          nuevo = '''  useEffect(() => {\n    let cancelado = false;\n\n    const cargarDesempate = async (mostrarCarga = false) => {\n      if (!usuarioLogueado?.id || !temporadaRegular) return;\n\n      if (mostrarCarga) setCargandoDesempate(true);\n\n      try {\n        const { data: estado, error: estadoError } = await supabase\n          .from("desempate_superbowl_estado")\n          .select("*")\n          .eq("temporada", temporadaRegular)\n          .maybeSingle();\n\n        if (estadoError) throw estadoError;\n        if (cancelado) return;\n\n        setEstadoDesempate(estado || null);\n\n        if (!estado || estado.estado !== "clasificatoria") {\n          setTiradasDesempate([]);\n          setErrorDesempate("");\n          return;\n        }\n\n        const ronda = Number(estado.ronda_actual || 1);\n\n        const { data: tiradas, error: tiradasError } = await supabase\n          .from("desempates_superbowl")\n          .select("user_id, valor, fase, ronda, created_at")\n          .eq("temporada", temporadaRegular)\n          .eq("fase", "clasificatoria")\n          .eq("ronda", ronda)\n          .order("created_at", { ascending: true });\n\n        if (tiradasError) throw tiradasError;\n        if (cancelado) return;\n\n        setTiradasDesempate(tiradas || []);\n        setErrorDesempate("");\n      } catch (error: any) {\n        console.error("Error al cargar desempate:", error);\n        if (!cancelado) {\n          setErrorDesempate(error?.message || "No se pudo cargar el desempate.");\n        }\n      } finally {\n        if (mostrarCarga && !cancelado) setCargandoDesempate(false);\n      }\n    };\n\n    cargarDesempate(true);\n    const intervalo = window.setInterval(() => cargarDesempate(false), 5000);\n\n    return () => {\n      cancelado = true;\n      window.clearInterval(intervalo);\n    };\n  }, [usuarioLogueado?.id, temporadaRegular]);\n\n  useEffect(() => {\n    const cargarDatosSupabase'''
-          s = s[:inicio] + nuevo + s[fin + len(fin_marker):]
-
-          # 3. Tirada: temporada activa y una sola fase.
-          replace_once('.eq("temporada", 2026)\n        .maybeSingle();', '.eq("temporada", temporadaRegular)\n        .maybeSingle();', 'temporada dinámica al recargar estado tras tirar')
-          replace_once(
-          '''        const fase =\n          estadoActualizado.estado === "clasificatoria"\n            ? "clasificatoria"\n            : "eleccion_final";\n\n        const ronda = Number(estadoActualizado.ronda_actual || 1);''',
-          '''        const fase = "clasificatoria";\n        const ronda = Number(estadoActualizado.ronda_actual || 1);''',
-          'fase única al recargar tiradas',
-          )
-          replace_once('.eq("temporada", 2026)\n            .eq("fase", fase)', '.eq("temporada", temporadaRegular)\n            .eq("fase", fase)', 'temporada dinámica al recargar tiradas')
-
-          # 4. Eliminar por completo el handler de elegir equipo.
-          inicio = s.index('  const handleElegirEquipoSuperbowl = async (equipo: string) => {')
-          fin = s.index('  const handleVotacionAleatoriaYSimular = async () => {', inicio)
-          s = s[:inicio] + s[fin:]
-
-          # 5. Solo existe un estado activo: clasificatoria.
-          replace_once(
-          '''  const desempateActivo =\n    estadoDesempate &&\n    (estadoDesempate.estado === "clasificatoria" ||\n      estadoDesempate.estado === "eleccion_final");''',
-          '''  const desempateActivo =\n    estadoDesempate?.estado === "clasificatoria";''',
-          'estado único de desempate',
-          )
-
-          inicio = s.index('  const eleccionSuperbowlActiva = estadoDesempate?.estado === "resuelto";')
-          fin = s.index('  const noticiasFiltradas =', inicio)
-          s = s[:inicio] + s[fin:]
-
-          # 6. Texto de la ruleta adaptado al protocolo final.
-          replace_once(
-          '''                        {estadoDesempate?.estado === "clasificatoria"\n                          ? "RONDA CLASIFICATORIA"\n                          : "TIRADA PARA ELEGIR PRIMERO"}''',
-          '''                        {`TIRADA FINAL · RONDA ${Number(estadoDesempate?.ronda_actual || 1)}`}''',
-          'texto ruleta',
-          )
-
-          # 7. Eliminar la antigua pantalla ELECCIÓN SUPER BOWL.
-          inicio = s.index('              {eleccionSuperbowlActiva && partidoSuperbowl && (')
-          fin_marker = '              <div\n                className={`${desempateActivo || eleccionSuperbowlActiva ? "hidden" : ""} bg-white border border-white rounded-2xl p-3 md:p-6 shadow-2xl`}\n              >'
-          fin = s.index(fin_marker, inicio)
-          reemplazo = '              <div\n                className={`${desempateActivo ? "hidden" : ""} bg-white border border-white rounded-2xl p-3 md:p-6 shadow-2xl`}\n              >'
-          s = s[:inicio] + reemplazo + s[fin + len(fin_marker):]
-
-          # 8. El RANKING visual suma el mismo +1 del servidor sin tocar efectividad.
-          replace_once(
-          '''        const efectividadCalc =\n          totalValidados > 0\n            ? Math.round((totalAciertosPartidos / totalValidados) * 100) + "%"\n            : "0%";\n        return { ...usr, puntos: totalPuntos, efectividad: efectividadCalc };''',
-          '''        const mapaUuidRanking: Record<string, string> = {\n          cace: "088072d0-0782-409f-b5e4-f8a558f27b4f",\n          juanjo: "dadb359a-8bc1-442e-8202-62fa2f8ddab9",\n          ivan: "351a81a5-86f9-4d6d-a567-f49ed5959e57",\n        };\n\n        const tieneBonusDesempate =\n          estadoDesempate?.estado === "inactivo" &&\n          Boolean(estadoDesempate?.ganador_eleccion) &&\n          estadoDesempate.ganador_eleccion === mapaUuidRanking[usr.id];\n\n        if (tieneBonusDesempate) totalPuntos += 1;\n\n        const efectividadCalc =\n          totalValidados > 0\n            ? Math.round((totalAciertosPartidos / totalValidados) * 100) + "%"\n            : "0%";\n        return { ...usr, puntos: totalPuntos, efectividad: efectividadCalc };''',
-          'bonus visual ranking',
-          )
-          replace_once('  }, [pronosticosGames]);', '  }, [pronosticosGames, estadoDesempate]);', 'dependencia ranking desempate')
-
-          # 9. Comprobaciones: no debe quedar nada del flujo eliminado ni temporada fija en DESEMPATE.
-          prohibidos = [
-              'handleElegirEquipoSuperbowl',
-              'eleccionSuperbowlActiva',
-              'usuarioPuedeElegirSuperbowl',
-              'eleccionUsuarioSuperbowl',
-              'guardandoEleccionSuperbowl',
-              'eleccionesSuperbowl',
-              'partidoSuperbowl',
-              '/api/desempate/elegir-equipo',
-              '"TIRADA PARA ELEGIR PRIMERO"',
+          targets = [
+              ('desempate_superbowl_estado', 2),
+              ('desempates_superbowl', 2),
+              ('elecciones_superbowl', 2),
           ]
-          restos = [x for x in prohibidos if x in s]
-          if restos:
-              raise SystemExit(f'Restos del flujo antiguo: {restos}')
+
+          total = 0
+          for table, expected in targets:
+              marker = f'.from("{table}")'
+              pos = 0
+              changed = 0
+              while True:
+                  start = s.find(marker, pos)
+                  if start == -1:
+                      break
+                  end = s.find('.maybeSingle()', start)
+                  order_end = s.find('.order(', start)
+                  if end == -1 or (order_end != -1 and order_end < end):
+                      end = order_end
+                  if end == -1:
+                      end = min(len(s), start + 800)
+                  block = s[start:end]
+                  old = '.eq("temporada", 2026)'
+                  if old in block:
+                      absolute = start + block.index(old)
+                      s = s[:absolute] + '.eq("temporada", temporadaRegular)' + s[absolute + len(old):]
+                      changed += 1
+                      total += 1
+                      pos = absolute + len('.eq("temporada", temporadaRegular)')
+                  else:
+                      pos = start + len(marker)
+              if changed != expected:
+                  raise SystemExit(f'{table}: esperadas {expected} sustituciones, hechas {changed}')
+
+          if total != 6:
+              raise SystemExit(f'Esperadas 6 sustituciones totales, hechas {total}')
 
           path.write_text(s)
           PY
 
-      - name: Verificar TypeScript/Next build
+      - name: Verificar build
         run: npm ci && npm run build
 
-      - name: Commit del parche y retirada del workflow temporal
+      - name: Commit del cambio y retirada del workflow temporal
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/patch-desempate-ui-once.yml
           git add app/page.tsx
-          git commit -m "refactor: limpiar interfaz del nuevo desempate"
+          git commit -m "TEST: usar temporada activa en desempate Super Bowl"
           git push origin HEAD:fase2-playoffs
