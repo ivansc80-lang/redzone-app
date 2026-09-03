@@ -13,6 +13,8 @@ const TEST_TABLES: Record<string, string> = {
   jornadas_eventos: 'jornadas_eventos_test_compat',
   partidos: 'partidos_test',
   pronosticos: 'pronosticos_test',
+  desempate_superbowl_estado: 'desempate_superbowl_estado_test',
+  desempates_superbowl: 'desempates_superbowl_test',
 };
 
 export const supabase = new Proxy(baseClient, {
