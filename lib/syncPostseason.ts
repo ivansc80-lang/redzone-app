@@ -22,7 +22,7 @@ function rondaDesdeSemanaSolicitada(semana: number): RondaPlayoff {
 
 async function obtenerUltimaJornadaRegularDesdeBbdd(temporada: number) {
   const { data, error } = await supabase
-    .from('partidos_test')
+    .from('partidos')
     .select('jornada')
     .eq('temporada', temporada)
     .eq('tipo_competicion', 'regular')
@@ -41,7 +41,7 @@ async function obtenerUltimaJornadaRegular(temporada: number) {
   const desdeBbdd = await obtenerUltimaJornadaRegularDesdeBbdd(temporada);
 
   const { data: config, error: configError } = await supabase
-    .from('app_config_test')
+    .from('app_config')
     .select('ultima_comprobacion_estructura_playoffs')
     .eq('id', 1)
     .maybeSingle();
@@ -66,7 +66,7 @@ async function obtenerUltimaJornadaRegular(temporada: number) {
   const estructura = await descubrirEstructuraTemporadaNFL(temporada);
 
   const { error: marcarError } = await supabase
-    .from('app_config_test')
+    .from('app_config')
     .update({ ultima_comprobacion_estructura_playoffs: new Date().toISOString() })
     .eq('id', 1);
 
@@ -96,10 +96,9 @@ async function asegurarJornadaAdministrativa(params: {
     nombreRonda,
   } = params;
 
-  // Igual que en la ruta TEST de Wild Card que funcionó:
-  // la jornada administrativa nace de los partidos que YA están guardados.
+  // La jornada administrativa nace de los partidos que YA están guardados.
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos_test')
+    .from('partidos')
     .select('espn_event_id, fecha_partido, equipo_local, equipo_visitante')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -109,7 +108,7 @@ async function asegurarJornadaAdministrativa(params: {
 
   if (partidosError) {
     throw new Error(
-      `Error leyendo partidos_test J${jornada}: ${partidosError.message}`,
+      `Error leyendo partidos J${jornada}: ${partidosError.message}`,
     );
   }
 
@@ -137,67 +136,76 @@ async function asegurarJornadaAdministrativa(params: {
   };
 
   const { data: existente, error: existenteError } = await supabase
-    .from('jornadas_eventos_test')
-    .select('jornada_test, estado')
+    .from('jornadas_eventos')
+    .select('jornada, estado')
     .eq('temporada', temporada)
-    .eq('jornada_test', jornada)
+    .eq('jornada', jornada)
     .maybeSingle();
 
   if (existenteError) {
     throw new Error(
-      `Error comprobando jornadas_eventos_test J${jornada}: ${existenteError.message}`,
+      `Error comprobando jornadas_eventos J${jornada}: ${existenteError.message}`,
     );
   }
 
   if (!existente) {
     const { error: insertError } = await supabase
-      .from('jornadas_eventos_test')
+      .from('jornadas_eventos')
       .insert({
         temporada,
-        jornada_test: jornada,
-        fase_temporada: 'postseason',
+        jornada,
         semana_espn: semanaEspn,
+        fase_temporada: 'postseason',
         ...relojAdministrativo,
         estado: 'pendiente',
       });
 
     if (insertError) {
       throw new Error(
-        `Error creando jornadas_eventos_test J${jornada}: ${insertError.message}`,
+        `Error creando jornadas_eventos J${jornada}: ${insertError.message}`,
       );
     }
   } else if (existente.estado === 'pendiente') {
     const { error: updateError } = await supabase
-      .from('jornadas_eventos_test')
+      .from('jornadas_eventos')
       .update({
-        fase_temporada: 'postseason',
         semana_espn: semanaEspn,
+        fase_temporada: 'postseason',
         ...relojAdministrativo,
       })
       .eq('temporada', temporada)
-      .eq('jornada_test', jornada)
+      .eq('jornada', jornada)
       .eq('estado', 'pendiente');
 
     if (updateError) {
       throw new Error(
-        `Error actualizando jornadas_eventos_test J${jornada}: ${updateError.message}`,
+        `Error actualizando jornadas_eventos J${jornada}: ${updateError.message}`,
       );
     }
   }
 
   // Igual que en a6be86a: comprobación final inmediata.
   const { data: jornadaCreada, error: verificarError } = await supabase
-    .from('jornadas_eventos_test')
+    .from('jornadas_eventos')
     .select(
-      'temporada, jornada_test, fase_temporada, semana_espn, inicio_jornada, cierre_pronosticos, fin_jornada, estado',
+      'temporada, jornada, semana_espn, fase_temporada, inicio_jornada, cierre_pronosticos, fin_jornada, estado',
     )
     .eq('temporada', temporada)
-    .eq('jornada_test', jornada)
+    .eq('jornada', jornada)
     .maybeSingle();
 
   if (verificarError || !jornadaCreada) {
     throw new Error(
       `No se pudo verificar J${jornada}: ${verificarError?.message || 'sin registro'}`,
+    );
+  }
+
+  if (
+    jornadaCreada.fase_temporada !== 'postseason' ||
+    jornadaCreada.semana_espn !== semanaEspn
+  ) {
+    throw new Error(
+      `J${jornada} quedó con metadatos incorrectos: fase=${jornadaCreada.fase_temporada}, semana ESPN=${jornadaCreada.semana_espn}.`,
     );
   }
 
@@ -286,7 +294,7 @@ export async function sincronizarPostemporada(
         }
 
         const { data: partidoGuardado, error: upsertError } = await supabase
-          .from('partidos_test')
+          .from('partidos')
           .upsert(
             {
               espn_event_id: String(evento.id),
@@ -319,7 +327,7 @@ export async function sincronizarPostemporada(
 
         if (comp.status?.type?.completed && resultadoOficial) {
           const { error: aciertosError } = await supabase
-            .from('pronosticos_test')
+            .from('pronosticos')
             .update({ acierto: true })
             .eq('partido_id', partidoGuardado.id)
             .eq('eleccion', resultadoOficial);
@@ -331,7 +339,7 @@ export async function sincronizarPostemporada(
           }
 
           const { error: fallosError } = await supabase
-            .from('pronosticos_test')
+            .from('pronosticos')
             .update({ acierto: false })
             .eq('partido_id', partidoGuardado.id)
             .neq('eleccion', resultadoOficial);
@@ -343,7 +351,7 @@ export async function sincronizarPostemporada(
           }
         } else {
           const { error: limpiarError } = await supabase
-            .from('pronosticos_test')
+            .from('pronosticos')
             .update({ acierto: null })
             .eq('partido_id', partidoGuardado.id);
 

@@ -61,10 +61,10 @@ async function verificarJornadaPreparada(
   const definicion = RONDAS_PLAYOFF[ronda];
 
   const { data: jornadaPreparada, error: jornadaPreparadaError } = await supabase
-    .from('jornadas_eventos_test')
-    .select('jornada_test, estado, inicio_jornada, cierre_pronosticos')
+    .from('jornadas_eventos')
+    .select('jornada, estado, inicio_jornada, cierre_pronosticos')
     .eq('temporada', temporada)
-    .eq('jornada_test', jornada)
+    .eq('jornada', jornada)
     .maybeSingle();
 
   if (jornadaPreparadaError) {
@@ -83,7 +83,7 @@ async function verificarJornadaPreparada(
   }
 
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos_test')
+    .from('partidos')
     .select('id, espn_event_id, equipo_local, equipo_visitante, fecha_partido')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -115,7 +115,7 @@ async function validarCicloActualPlayoff(
   const definicion = RONDAS_PLAYOFF[ronda];
 
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos_test')
+    .from('partidos')
     .select('id, estado, resultado_oficial, fecha_partido')
     .eq('temporada', temporada)
     .eq('jornada', jornada)
@@ -142,10 +142,10 @@ async function validarCicloActualPlayoff(
   );
 
   const { error: checkpointError } = await supabase
-    .from('jornadas_eventos_test')
+    .from('jornadas_eventos')
     .update(checkpoints.cambios)
     .eq('temporada', temporada)
-    .eq('jornada_test', jornada);
+    .eq('jornada', jornada);
 
   if (checkpointError) {
     throw new Error(
@@ -166,7 +166,7 @@ async function validarCicloActualPlayoff(
 
   const idsPartidos = partidos.map((p: any) => p.id);
   const { data: pronosticos, error: pronosticosError } = await supabase
-    .from('pronosticos_test')
+    .from('pronosticos')
     .select('eleccion, acierto')
     .in('partido_id', idsPartidos);
 
@@ -211,10 +211,10 @@ async function activarContextoSiguienteRonda(params: {
   const ahoraIso = new Date().toISOString();
 
   const { error: finalizarActualError } = await supabase
-    .from('jornadas_eventos_test')
+    .from('jornadas_eventos')
     .update({ estado: 'finalizada', fin_jornada: ahoraIso })
     .eq('temporada', temporada)
-    .eq('jornada_test', jornadaActual)
+    .eq('jornada', jornadaActual)
     .neq('estado', 'finalizada');
 
   if (finalizarActualError) {
@@ -238,10 +238,10 @@ async function activarContextoSiguienteRonda(params: {
         });
   } catch (error) {
     await supabase
-      .from('jornadas_eventos_test')
+      .from('jornadas_eventos')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
-      .eq('jornada_test', jornadaActual)
+      .eq('jornada', jornadaActual)
       .eq('estado', 'finalizada');
     throw error;
   }
@@ -254,26 +254,25 @@ async function activarContextoSiguienteRonda(params: {
 
   if (falloRealPush) {
     const { error: rollbackJornadaError } = await supabase
-      .from('jornadas_eventos_test')
+      .from('jornadas_eventos')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
-      .eq('jornada_test', jornadaActual)
+      .eq('jornada', jornadaActual)
       .eq('estado', 'finalizada');
 
     if (rollbackJornadaError) {
       throw new Error('Falló el PUSH de transición y también el rollback de la jornada: ' + rollbackJornadaError.message);
     }
 
-    throw new Error('Falló el PUSH de transición J' + jornadaActual + ' → J' + jornadaNueva + '; la jornada fue restaurada y app_config_test no se modificó.');
+    throw new Error('Falló el PUSH de transición J' + jornadaActual + ' → J' + jornadaNueva + '; la jornada fue restaurada y app_config no se modificó.');
   }
 
   const { data: configActualizada, error: activarError } = await supabase
-    .from('app_config_test')
+    .from('app_config')
     .update({
       fase_competicion: definicionNueva.faseCompeticion,
       semana_postemporada: indiceNuevo,
       jornada_actual: jornadaNueva,
-      jornada_test_actual: jornadaNueva,
     })
     .eq('id', 1)
     .eq('temporada', temporada)
@@ -283,13 +282,13 @@ async function activarContextoSiguienteRonda(params: {
 
   if (activarError || !configActualizada) {
     await supabase
-      .from('jornadas_eventos_test')
+      .from('jornadas_eventos')
       .update({ estado: 'cerrada', fin_jornada: null })
       .eq('temporada', temporada)
-      .eq('jornada_test', jornadaActual)
+      .eq('jornada', jornadaActual)
       .eq('estado', 'finalizada');
 
-    throw new Error(definicionNueva.nombre + ' preparada y PUSH resuelto, pero app_config_test no pudo activarse: ' + (activarError?.message || 'contexto no coincidente'));
+    throw new Error(definicionNueva.nombre + ' preparada y PUSH resuelto, pero app_config no pudo activarse: ' + (activarError?.message || 'contexto no coincidente'));
   }
   return {
     transicion: true,
@@ -355,14 +354,6 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
   const rondaActual = rondaDesdeIndice(semanaPostemporada);
   const siguiente = siguienteRondaPlayoff(rondaActual);
 
-  if (!siguiente) {
-    return {
-      transicion: false,
-      finPlayoffs: true,
-      motivo: 'Super Bowl es la última ronda de playoffs.',
-    };
-  }
-
   await sincronizarPostemporada(
     temporada,
     semanaPostemporada,
@@ -380,6 +371,14 @@ export async function intentarTransicionSiguienteRondaPlayoff(params: {
       transicion: false,
       rondaActual,
       motivo: cicloActual.motivo || 'La ronda actual todavía no está completa.',
+    };
+  }
+
+  if (!siguiente) {
+    return {
+      transicion: false,
+      finPlayoffs: true,
+      motivo: 'Super Bowl sincronizada y validada; playoffs finalizados.',
     };
   }
 
