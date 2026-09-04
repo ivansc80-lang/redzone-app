@@ -1,4 +1,5 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
+import { pushInicioTemporadaSiProcede } from '@/lib/pushAutomatic';
 
 export type FaseAnual = 'finalizada' | 'draft' | 'pretemporada' | 'regular';
 
@@ -78,24 +79,27 @@ export async function gestionarCicloAnual({
     nuevaFase = 'finalizada';
   }
 
-  // Una vez que el nuevo calendario ya fue validado y activado, temporada
-  // apunta a esa campaña y J1 existe en BBDD. La entrada a TR es automática
-  // exactamente T-125 horas respecto al primer kickoff real de J1.
+  // `temporada` continúa siendo la temporada competitiva vigente.
+  // `objetivo` identifica la siguiente temporada preparada en BBDD.
+  // Solo al alcanzar T-125 respecto al kickoff real de J1 se activa.
+  const temporadaEntradaRegular = objetivo ?? temporada;
+  let temporadaActiva = temporada;
   let inicioRegular: Date | null = null;
 
-  if (faseCompeticion === 'pretemporada' && objetivo === null) {
-    const inicioJ1 = await obtenerInicioJ1(temporada);
+  if (nuevaFase === 'pretemporada') {
+    const inicioJ1 = await obtenerInicioJ1(temporadaEntradaRegular);
 
     if (inicioJ1) {
       inicioRegular = new Date(
         inicioJ1.getTime() - HORAS_ANTES_INICIO_TR * 60 * 60 * 1000,
       );
-
-      if (ahora >= inicioRegular) {
-        nuevaFase = 'regular';
-      }
     }
   }
+
+  const entraEnRegular =
+    nuevaFase === 'pretemporada' &&
+    inicioRegular !== null &&
+    ahora >= inicioRegular;
 
   const cambios: Record<string, any> = {};
 
@@ -103,28 +107,72 @@ export async function gestionarCicloAnual({
     cambios.temporada_objetivo = objetivo;
   }
 
-  if (nuevaFase !== faseCompeticion) {
+  if (!entraEnRegular && nuevaFase !== faseCompeticion) {
     cambios.fase_competicion = nuevaFase;
+  }
 
-    if (nuevaFase === 'regular') {
-      cambios.jornada_actual = 1;
-      cambios.semana_postemporada = null;
-    }
+  if (entraEnRegular) {
+    nuevaFase = 'regular';
+    cambios.temporada = temporadaEntradaRegular;
+    cambios.temporada_objetivo = null;
+    cambios.fase_competicion = 'regular';
+    cambios.jornada_actual = 1;
+    cambios.semana_postemporada = null;
   }
 
   if (Object.keys(cambios).length > 0) {
-    const { error } = await supabase
+    let update = supabase
       .from('app_config')
       .update(cambios)
       .eq('id', 1);
 
+    // La activación de la nueva temporada es una transición protegida:
+    // solo se realiza si la temporada competitiva sigue siendo la esperada.
+    if (entraEnRegular) {
+      update = update.eq('temporada', temporada);
+    }
+
+    const { error } = await update;
+
     if (error) {
       throw new Error(`Error actualizando ciclo anual: ${error.message}`);
+    }
+
+    if (entraEnRegular) {
+      temporadaActiva = temporadaEntradaRegular;
+      objetivo = null;
+
+      const { data: jornada1, error: jornada1Error } = await supabase
+        .from('jornadas_eventos')
+        .select('estado, cierre_pronosticos')
+        .eq('temporada', temporadaActiva)
+        .eq('jornada', 1)
+        .eq('fase_temporada', 'regular')
+        .maybeSingle();
+
+      if (jornada1Error) {
+        throw new Error(
+          `Error leyendo Jornada 1 para PUSH de inicio de temporada: ${jornada1Error.message}`,
+        );
+      }
+
+      if (!jornada1) {
+        throw new Error(
+          `No existe Jornada 1 regular de ${temporadaActiva} para enviar el PUSH de inicio de temporada`,
+        );
+      }
+
+      await pushInicioTemporadaSiProcede({
+        temporada: temporadaActiva,
+        jornada: 1,
+        estado: jornada1.estado,
+        cierrePronosticos: jornada1.cierre_pronosticos,
+      });
     }
   }
 
   return {
-    temporadaMostrada: temporada,
+    temporadaMostrada: temporadaActiva,
     temporadaObjetivo: objetivo,
     faseAnterior: faseCompeticion,
     faseActual: nuevaFase,

@@ -151,6 +151,8 @@ export async function prepararNuevaTemporadaDesdeEspn(
   const jornadasEventos = [...jornadas.entries()].map(([jornada, lista]) => ({
     temporada: temporadaObjetivo,
     jornada,
+    semana_espn: jornada,
+    fase_temporada: 'regular',
     ...calcularRelojAdministrativo(lista),
     estado: 'pendiente',
   }));
@@ -164,7 +166,7 @@ export async function prepararNuevaTemporadaDesdeEspn(
   const { data: verificacionPartidos, error: verificarPartidosError } = await supabase.from('partidos').select('id, jornada, espn_event_id').eq('temporada', temporadaObjetivo).eq('tipo_competicion', 'regular');
   if (verificarPartidosError) throw new Error(`Error verificando partidos ${temporadaObjetivo}: ${verificarPartidosError.message}`);
 
-  const { data: verificacionJornadas, error: verificarJornadasError } = await supabase.from('jornadas_eventos').select('jornada').eq('temporada', temporadaObjetivo);
+  const { data: verificacionJornadas, error: verificarJornadasError } = await supabase.from('jornadas_eventos').select('jornada').eq('temporada', temporadaObjetivo).eq('fase_temporada', 'regular');
   if (verificarJornadasError) throw new Error(`Error verificando jornadas ${temporadaObjetivo}: ${verificarJornadasError.message}`);
 
   if (verificacionPartidos?.length !== totalPartidosEsperados || verificacionJornadas?.length !== totalJornadas) {
@@ -176,16 +178,10 @@ export async function prepararNuevaTemporadaDesdeEspn(
     return { validado: false, activado: false, temporadaObjetivo, motivo: 'La verificación final detectó espn_event_id ausentes en BBDD' };
   }
 
-  const { error: activarError } = await supabase.from('app_config').update({
-    temporada: temporadaObjetivo,
-    temporada_objetivo: null,
-    jornada_actual: 1,
-    semana_postemporada: null,
-    fase_competicion: faseActual,
-  }).eq('id', 1);
-
-  if (activarError) throw new Error(`Calendario ${temporadaObjetivo} validado, pero no pudo activarse: ${activarError.message}`);
-
+  // El calendario queda preparado y validado, pero NO se convierte todavía
+  // en la temporada competitiva activa. `app_config.temporada` cambiará
+  // únicamente al entrar en fase `regular`, exactamente T-125 respecto
+  // al primer kickoff real de J1.
   return {
     validado: true,
     activado: true,

@@ -78,7 +78,7 @@ export async function pushInicioTemporadaSiProcede({
 
     titulo: `🏈 ¡ARRANCA REDZONE ${temporada}!`,
     mensaje:
-      "La PORRA de la Jornada 1 ya está abierta. ¡Haz tus pronósticos!",
+      "INICIO DE TEMPORADA / APERTURA PORRA J1",
 
     url: "/",
 
