@@ -35,7 +35,7 @@ import type { EspnStandingTeam } from "@/lib/espnStandings";
 interface PronosticoPartido {
   id: string;
   temporada: number;
-  tipo_competicion: "regular" | "pretemporada_test" | "playoffs" | "superbowl";
+  tipo_competicion: "regular" | "pretemporada_test" | "playoffs";
   semana_competicion?: number | null;
   local: string;
   localLogo: string;
@@ -1188,6 +1188,12 @@ export default function Home() {
   // app_config.temporada es la única autoridad.
   const [temporadaRegular, setTemporadaRegular] = useState<number>(2026);
 
+  // Fase administrativa/anual real de la competición.
+  // Se mantiene separada de tipo_competicion para poder distinguir
+  // FINALIZADA, DRAFT y PRETEMPORADA antes de abrir la nueva TR.
+  const [faseCompeticionActual, setFaseCompeticionActual] =
+    useState<string>("regular");
+
   // STATS parte automáticamente de la temporada activa,
   // pero conserva su selector manual para consultar temporadas anteriores.
   const [temporadaStats, setTemporadaStats] = useState<number>(2026);
@@ -1199,7 +1205,7 @@ export default function Home() {
     async function cargarTemporadaRegular() {
       const { data, error } = await supabase
         .from("app_config")
-        .select("temporada")
+        .select("temporada, fase_competicion")
         .eq("id", 1)
         .maybeSingle();
 
@@ -1209,19 +1215,39 @@ export default function Home() {
       }
 
       const temporada = Number(data?.temporada);
+      const fase = String(data?.fase_competicion || "regular").toLowerCase();
 
-      if (!cancelado && Number.isFinite(temporada) && temporada > 0) {
-        setTemporadaRegular(temporada);
-        setTemporadaStats(temporada);
+      if (!cancelado) {
+        setFaseCompeticionActual(fase);
+
+        if (Number.isFinite(temporada) && temporada > 0) {
+          setTemporadaRegular(temporada);
+        }
       }
     }
 
     cargarTemporadaRegular();
 
+    // Durante el ciclo anual TEST la fase puede cambiar automáticamente
+    // FINALIZADA -> DRAFT -> PRETEMPORADA -> REGULAR.
+    // Refrescamos el mismo app_config sin modificar la lógica de
+    // GAMES, SCORE, STATS ni FRANQUICIAS/HOME.
+    const intervaloFaseCompeticion = window.setInterval(
+      cargarTemporadaRegular,
+      5_000,
+    );
+
     return () => {
       cancelado = true;
+      window.clearInterval(intervaloFaseCompeticion);
     };
   }, []);
+
+  // STATS sigue automáticamente a la temporada activa solo cuando esta cambia.
+  // El polling de fase no pisa el selector manual de temporadas históricas.
+  useEffect(() => {
+    setTemporadaStats(temporadaRegular);
+  }, [temporadaRegular]);
 
   // Herramientas manuales de emergencia.
   // Deben permanecer invisibles e inertes durante el ciclo automático.
@@ -2456,9 +2482,6 @@ const [verPassword, setVerPassword] = useState(false);
   const [cargandoDesempate, setCargandoDesempate] = useState(false);
 
   const [partidoSuperbowl, setPartidoSuperbowl] = useState<any>(null);
-  const [eleccionesSuperbowl, setEleccionesSuperbowl] = useState<any[]>([]);
-  const [guardandoEleccionSuperbowl, setGuardandoEleccionSuperbowl] =
-    useState(false);
 
   useEffect(() => {
     const cargarDesempate = async () => {
@@ -2470,7 +2493,7 @@ const [verPassword, setVerPassword] = useState(false);
         const { data: estado, error: estadoError } = await supabase
           .from("desempate_superbowl_estado")
           .select("*")
-          .eq("temporada", 2026)
+          .eq("temporada", temporadaRegular)
           .maybeSingle();
 
         if (estadoError) {
@@ -2497,7 +2520,8 @@ const [verPassword, setVerPassword] = useState(false);
             )
           `,
           )
-          .eq("tipo_competicion", "superbowl")
+          .eq("tipo_competicion", "playoffs")
+          .eq("jornada", 22)
           .order("fecha_partido", { ascending: true })
           .limit(1)
           .maybeSingle();
@@ -2508,34 +2532,21 @@ const [verPassword, setVerPassword] = useState(false);
 
         setPartidoSuperbowl(partidoSb || null);
 
-        const { data: eleccionesSb, error: eleccionesSbError } = await supabase
-          .from("elecciones_superbowl")
-          .select("*")
-          .eq("temporada", 2026)
-          .order("created_at", { ascending: true });
-
-        if (eleccionesSbError) {
-          throw eleccionesSbError;
-        }
-
-        setEleccionesSuperbowl(eleccionesSb || []);
-
-        if (!estado || estado.estado === "inactivo") {
+        if (!estado) {
           setTiradasDesempate([]);
           return;
         }
 
-        const fase =
-          estado.estado === "clasificatoria"
-            ? "clasificatoria"
-            : "eleccion_final";
+        // Conservamos las tiradas también cuando el desempate ya está resuelto.
+        // Así JORNADA puede mostrar el resultado final del desempate.
+        const fase = "clasificatoria";
 
         const ronda = Number(estado.ronda_actual || 1);
 
         const { data: tiradas, error: tiradasError } = await supabase
           .from("desempates_superbowl")
           .select("user_id, valor, fase, ronda, created_at")
-          .eq("temporada", 2026)
+          .eq("temporada", temporadaRegular)
           .eq("fase", fase)
           .eq("ronda", ronda)
           .order("created_at", { ascending: true });
@@ -2555,7 +2566,7 @@ const [verPassword, setVerPassword] = useState(false);
     };
 
     cargarDesempate();
-  }, [usuarioLogueado?.id]);
+  }, [usuarioLogueado?.id, temporadaRegular]);
 
   useEffect(() => {
     const cargarDatosSupabase = async () => {
@@ -3052,15 +3063,10 @@ const [verPassword, setVerPassword] = useState(false);
           await supabase
             .from("partidos")
             .select(
-              "id, temporada, tipo_competicion, estado, resultado_oficial"
+              "id, temporada, jornada, tipo_competicion, estado, resultado_oficial"
             )
             .eq("temporada", temporadaFinal)
-            .in("tipo_competicion", [
-              "wildcard",
-              "divisional",
-              "conference",
-              "superbowl",
-            ]);
+            .eq("tipo_competicion", "playoffs");
 
         if (playoffsError) throw playoffsError;
         if (cancelado) return;
@@ -3171,7 +3177,8 @@ const [verPassword, setVerPassword] = useState(false);
           // ------------------------------------------------------
           const superBowl = partidosPlayoffs.find(
             (partido: any) =>
-              String(partido.tipo_competicion).toLowerCase() === "superbowl"
+              String(partido.tipo_competicion).toLowerCase() === "playoffs" &&
+              Number(partido.jornada) === 22
           );
 
           if (!superBowl) {
@@ -3188,17 +3195,19 @@ const [verPassword, setVerPassword] = useState(false);
             return;
           }
 
-          const { data: puntuacionesSuperBowl, error: puntosError } =
+          // Verificamos que los tres participantes tengan pronóstico
+          // registrado en la Super Bowl. En TEST, `pronosticos` está
+          // redirigido por el proxy a `pronosticos_test`.
+          const { data: pronosticosSuperBowl, error: puntosError } =
             await supabase
-              .from("puntuaciones_jornadas")
-              .select("*")
-              .eq("temporada", temporadaFinal)
-              .eq("tipo_competicion", "superbowl");
+              .from("pronosticos")
+              .select("user_id, partido_id")
+              .eq("partido_id", superBowl.id);
 
           if (puntosError) throw puntosError;
 
           const usuariosSuperBowl = new Set(
-            (puntuacionesSuperBowl || [])
+            (pronosticosSuperBowl || [])
               .map((fila: any) => fila.user_id)
               .filter(Boolean)
           );
@@ -3237,7 +3246,14 @@ const [verPassword, setVerPassword] = useState(false);
               null;
 
             if (ganadorDesempate) {
-              campeonMatematico = String(ganadorDesempate);
+              const mapaUuidAUsuario: Record<string, string> = {
+                "088072d0-0782-409f-b5e4-f8a558f27b4f": "cace",
+                "dadb359a-8bc1-442e-8202-62fa2f8ddab9": "juanjo",
+                "351a81a5-86f9-4d6d-a567-f49ed5959e57": "ivan",
+              };
+
+              campeonMatematico =
+                mapaUuidAUsuario[String(ganadorDesempate)] ?? null;
             } else {
               campeonMatematico = null;
             }
@@ -3460,10 +3476,7 @@ const [verPassword, setVerPassword] = useState(false);
       partidos.forEach((p) => {
         // Las rachas de GAMES pertenecen exclusivamente a la TR.
         // Wild Card, Divisional, Conference y Super Bowl nunca las modifican.
-        if (
-          p.tipo_competicion === "playoffs" ||
-          p.tipo_competicion === "superbowl"
-        ) {
+        if (p.tipo_competicion === "playoffs") {
           return;
         }
 
@@ -3493,6 +3506,34 @@ const [verPassword, setVerPassword] = useState(false);
 
   useEffect(() => {
     setUsuarios((prevUsuarios) => {
+      const faseAnualSinCompeticion =
+        faseCompeticionActual === "finalizada" ||
+        faseCompeticionActual === "draft" ||
+        faseCompeticionActual === "pretemporada";
+
+      if (faseAnualSinCompeticion) {
+        return prevUsuarios.map((usr, index) => ({
+          ...usr,
+          puntos: 0,
+          efectividad: "0%",
+          posicion: `${index + 1}º`,
+          esLider: false,
+          esColider: false,
+        }));
+      }
+
+      const mapaUuidUsuarios: Record<string, string> = {
+        cace: "088072d0-0782-409f-b5e4-f8a558f27b4f",
+        juanjo: "dadb359a-8bc1-442e-8202-62fa2f8ddab9",
+        ivan: "351a81a5-86f9-4d6d-a567-f49ed5959e57",
+      };
+
+      const ganadorDesempate =
+        Number(estadoDesempate?.temporada) === temporadaRegular &&
+        estadoDesempate?.ganador_eleccion
+          ? String(estadoDesempate.ganador_eleccion)
+          : null;
+
       const nuevosUsuarios = prevUsuarios.map((usr) => {
         let totalPuntos = 0;
         let totalAciertosPartidos = 0;
@@ -3518,12 +3559,24 @@ const [verPassword, setVerPassword] = useState(false);
             });
           }
         }
+
+        // El desempate concede +1 únicamente al total de puntos.
+        // No aumenta validados ni altera la efectividad.
+        if (
+          ganadorDesempate &&
+          mapaUuidUsuarios[usr.id] === ganadorDesempate
+        ) {
+          totalPuntos++;
+        }
+
         const efectividadCalc =
           totalValidados > 0
             ? Math.round((totalAciertosPartidos / totalValidados) * 100) + "%"
             : "0%";
+
         return { ...usr, puntos: totalPuntos, efectividad: efectividadCalc };
       });
+
       nuevosUsuarios.sort((a, b) => b.puntos - a.puntos);
 
       const maxPuntos = nuevosUsuarios[0]?.puntos ?? 0;
@@ -3543,7 +3596,13 @@ const [verPassword, setVerPassword] = useState(false);
         };
       });
     });
-  }, [pronosticosGames]);
+  }, [
+    pronosticosGames,
+    estadoDesempate?.ganador_eleccion,
+    estadoDesempate?.temporada,
+    temporadaRegular,
+    faseCompeticionActual,
+  ]);
 
   useEffect(() => {
     if (pestanaActiva === "noticias" && noticias.length === 0) {
@@ -3901,11 +3960,18 @@ const [verPassword, setVerPassword] = useState(false);
 
       setNumeroRuletaVisual(resultado.valor);
 
+      // El último participante también debe poder ver su tirada.
+      // El servidor puede haber resuelto ya el desempate, pero mantenemos
+      // el resultado visible un instante antes de refrescar el estado.
+      if (resultado.desempateResuelto) {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      }
+
       // Recargar estado del desempate.
       const { data: estadoActualizado, error: estadoError } = await supabase
         .from("desempate_superbowl_estado")
         .select("*")
-        .eq("temporada", 2026)
+        .eq("temporada", temporadaRegular)
         .maybeSingle();
 
       if (estadoError) throw estadoError;
@@ -3913,10 +3979,7 @@ const [verPassword, setVerPassword] = useState(false);
       setEstadoDesempate(estadoActualizado || null);
 
       if (estadoActualizado) {
-        const fase =
-          estadoActualizado.estado === "clasificatoria"
-            ? "clasificatoria"
-            : "eleccion_final";
+        const fase = "clasificatoria";
 
         const ronda = Number(estadoActualizado.ronda_actual || 1);
 
@@ -3924,7 +3987,7 @@ const [verPassword, setVerPassword] = useState(false);
           await supabase
             .from("desempates_superbowl")
             .select("user_id, valor, fase, ronda, created_at")
-            .eq("temporada", 2026)
+            .eq("temporada", temporadaRegular)
             .eq("fase", fase)
             .eq("ronda", ronda)
             .order("created_at", { ascending: true });
@@ -3939,63 +4002,6 @@ const [verPassword, setVerPassword] = useState(false);
     } finally {
       if (intervalo) clearInterval(intervalo);
       setGirandoRuleta(false);
-    }
-  };
-
-  const handleElegirEquipoSuperbowl = async (equipo: string) => {
-    if (!usuarioLogueado?.id) {
-      setErrorDesempate("Debes iniciar sesión para elegir.");
-      return;
-    }
-
-    if (guardandoEleccionSuperbowl) return;
-
-    setGuardandoEleccionSuperbowl(true);
-    setErrorDesempate("");
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      const token = session?.access_token;
-
-      if (!token) {
-        throw new Error("No se pudo validar tu sesión.");
-      }
-
-      const response = await fetch("/api/desempate/elegir-equipo", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ equipo }),
-      });
-
-      const resultado = await response.json();
-
-      if (!response.ok || !resultado.success) {
-        throw new Error(resultado?.error || "No se pudo guardar la elección.");
-      }
-
-      const { data: eleccionesActualizadas, error: eleccionesError } =
-        await supabase
-          .from("elecciones_superbowl")
-          .select("*")
-          .eq("temporada", 2026)
-          .order("created_at", { ascending: true });
-
-      if (eleccionesError) {
-        throw eleccionesError;
-      }
-
-      setEleccionesSuperbowl(eleccionesActualizadas || []);
-    } catch (error: any) {
-      console.error("Error al elegir equipo Super Bowl:", error);
-      setErrorDesempate(error?.message || "No se pudo guardar la elección.");
-    } finally {
-      setGuardandoEleccionSuperbowl(false);
     }
   };
 
@@ -4352,8 +4358,7 @@ const [verPassword, setVerPassword] = useState(false);
 
   const desempateActivo =
     estadoDesempate &&
-    (estadoDesempate.estado === "clasificatoria" ||
-      estadoDesempate.estado === "eleccion_final");
+    estadoDesempate.estado === "clasificatoria";
 
   const participantesDesempate: string[] = estadoDesempate?.participantes || [];
 
@@ -4369,21 +4374,18 @@ const [verPassword, setVerPassword] = useState(false);
     ? numeroRuletaVisual
     : (tiradaUsuarioActual?.valor ?? numeroRuletaVisual ?? 0);
 
+  // La ruleta es privada por sesión/usuario.
+  // Al cambiar de cuenta nunca debe conservar el número visual anterior.
+  useEffect(() => {
+    setNumeroRuletaVisual(0);
+    setErrorDesempate("");
+  }, [usuarioLogueado?.id]);
+
   const digitosRuleta = String(numeroMostradoRuleta || 0)
     .padStart(3, "0")
     .slice(-3)
     .split("");
 
-  const eleccionSuperbowlActiva = estadoDesempate?.estado === "resuelto";
-
-  const usuarioPuedeElegirSuperbowl =
-    eleccionSuperbowlActiva &&
-    usuarioLogueado?.id === estadoDesempate?.ganador_eleccion &&
-    eleccionesSuperbowl.length === 0;
-
-  const eleccionUsuarioSuperbowl = eleccionesSuperbowl.find(
-    (e: any) => e.user_id === usuarioLogueado?.id,
-  );
 
   const noticiasFiltradas =
     filtroNoticias === "TODAS"
@@ -4462,10 +4464,6 @@ const [verPassword, setVerPassword] = useState(false);
   const nombreRondaPlayoff = (partido?: PronosticoPartido | null) => {
     if (!partido) return "";
 
-    if (partido.tipo_competicion === "superbowl") {
-      return "SUPER BOWL";
-    }
-
     if (partido.tipo_competicion !== "playoffs") {
       return "";
     }
@@ -4477,6 +4475,8 @@ const [verPassword, setVerPassword] = useState(false);
         return "DIVISIONAL";
       case 3:
         return "CONFERENCE";
+      case 4:
+        return "SUPER BOWL";
       default:
         return "PLAYOFFS";
     }
@@ -4490,7 +4490,11 @@ const [verPassword, setVerPassword] = useState(false);
     pestanaActiva === "clasificacion"
       ? "TABLA GENERAL DE POSICIONES"
       : pestanaActiva === "pronosticos"
-        ? `PRONÓSTICOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
+        ? faseCompeticionActual === "finalizada" ||
+          faseCompeticionActual === "draft" ||
+          faseCompeticionActual === "pretemporada"
+          ? "FASE DE COMPETICIÓN ACTUAL"
+          : `PRONÓSTICOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
         : pestanaActiva === "jornada"
           ? `RESULTADOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
           : pestanaActiva === "perfil"
@@ -8636,7 +8640,23 @@ const [verPassword, setVerPassword] = useState(false);
 
           {pestanaActiva === "pronosticos" && (
             <section className="space-y-6 max-w-5xl mx-auto">
-              {desempateActivo && (
+              {(faseCompeticionActual === "finalizada" ||
+                faseCompeticionActual === "draft" ||
+                faseCompeticionActual === "pretemporada") && (
+                <div className="bg-white border border-white rounded-2xl p-6 md:p-10 shadow-2xl text-center">
+                  <p className="font-['Orbitron'] font-bold text-sm md:text-lg text-zinc-600 uppercase tracking-widest mb-3">
+                    FASE DE COMPETICIÓN ACTUAL
+                  </p>
+                  <p className="font-['Orbitron'] font-black text-2xl md:text-4xl text-[#8b0000] uppercase tracking-wider">
+                    {faseCompeticionActual}
+                  </p>
+                </div>
+              )}
+
+              {desempateActivo &&
+                faseCompeticionActual !== "finalizada" &&
+                faseCompeticionActual !== "draft" &&
+                faseCompeticionActual !== "pretemporada" && (
                 <div className="max-w-xl mx-auto">
                   <div className="bg-gradient-to-b from-zinc-700 via-zinc-900 to-black border-4 border-zinc-500 rounded-[2rem] p-5 md:p-8 shadow-2xl">
                     <div className="bg-black border-2 border-red-700 rounded-2xl px-4 py-4 mb-5 flex justify-center">
@@ -8737,134 +8757,15 @@ const [verPassword, setVerPassword] = useState(false);
                 </div>
               )}
 
-              {eleccionSuperbowlActiva && partidoSuperbowl && (
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-gradient-to-b from-zinc-700 via-zinc-900 to-black border-4 border-zinc-500 rounded-[2rem] p-5 md:p-8 shadow-2xl">
-                    <div className="bg-black border-2 border-red-700 rounded-2xl px-4 py-4 mb-5 flex justify-center">
-                      <img
-                        src="/redzone1_logo.png"
-                        alt="REDZONE"
-                        className="h-12 md:h-16 object-contain"
-                      />
-                    </div>
-
-                    <div className="text-center mb-6">
-                      <h2 className="font-['Orbitron'] font-black text-xl md:text-2xl uppercase text-white tracking-wider">
-                        ELECCIÓN SUPER BOWL
-                      </h2>
-
-                      <p className="font-['Orbitron'] text-xs md:text-sm text-zinc-300 mt-2">
-                        {usuarioPuedeElegirSuperbowl
-                          ? "HAS GANADO LA TIRADA · ELIGE TU EQUIPO"
-                          : eleccionUsuarioSuperbowl
-                            ? "TU EQUIPO PARA LA SUPER BOWL"
-                            : "ESPERANDO LA ELECCIÓN DEL GANADOR"}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 md:gap-6">
-                      {[
-                        {
-                          codigo: partidoSuperbowl.equipo_local,
-                          nombre:
-                            partidoSuperbowl.info_local?.nombre ||
-                            partidoSuperbowl.equipo_local,
-                          logo: partidoSuperbowl.info_local?.logo_url || "",
-                        },
-                        {
-                          codigo: partidoSuperbowl.equipo_visitante,
-                          nombre:
-                            partidoSuperbowl.info_visitante?.nombre ||
-                            partidoSuperbowl.equipo_visitante,
-                          logo: partidoSuperbowl.info_visitante?.logo_url || "",
-                        },
-                      ].map((equipo) => {
-                        const seleccionado =
-                          eleccionUsuarioSuperbowl?.equipo === equipo.codigo;
-
-                        return (
-                          <button
-                            key={equipo.codigo}
-                            type="button"
-                            onClick={() =>
-                              usuarioPuedeElegirSuperbowl &&
-                              handleElegirEquipoSuperbowl(equipo.codigo)
-                            }
-                            disabled={
-                              !usuarioPuedeElegirSuperbowl ||
-                              guardandoEleccionSuperbowl
-                            }
-                            className={`relative min-h-[190px] md:min-h-[240px] rounded-2xl border-4 p-4 flex flex-col items-center justify-center gap-4 transition-all ${
-                              seleccionado
-                                ? "bg-emerald-600 border-emerald-300 text-white scale-[1.02]"
-                                : usuarioPuedeElegirSuperbowl
-                                  ? "bg-white border-zinc-300 text-black hover:border-red-500 hover:scale-[1.02] cursor-pointer"
-                                  : "bg-zinc-800 border-zinc-600 text-zinc-300 cursor-not-allowed"
-                            }`}
-                          >
-                            <img
-                              src={equipo.logo}
-                              alt={equipo.nombre}
-                              className="w-24 h-24 md:w-32 md:h-32 object-contain"
-                            />
-
-                            <span className="font-['Orbitron'] font-black text-sm md:text-lg uppercase text-center">
-                              {equipo.nombre}
-                            </span>
-
-                            {seleccionado && (
-                              <span className="font-['Orbitron'] font-black text-xs uppercase">
-                                ✓ TU EQUIPO
-                              </span>
-                            )}
-
-                            {!usuarioPuedeElegirSuperbowl &&
-                              !seleccionado &&
-                              !eleccionUsuarioSuperbowl && (
-                                <span className="absolute top-3 right-3 text-xl">
-                                  🔒
-                                </span>
-                              )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {guardandoEleccionSuperbowl && (
-                      <p className="mt-5 text-center font-['Orbitron'] font-bold text-amber-400">
-                        GUARDANDO ELECCIÓN...
-                      </p>
-                    )}
-
-                    {eleccionUsuarioSuperbowl && (
-                      <div className="mt-6 bg-emerald-950 border-2 border-emerald-600 rounded-xl p-4 text-center">
-                        <p className="font-['Orbitron'] font-black text-emerald-300 uppercase">
-                          ✓ EQUIPO ASIGNADO
-                        </p>
-                      </div>
-                    )}
-
-                    {!usuarioPuedeElegirSuperbowl &&
-                      !eleccionUsuarioSuperbowl && (
-                        <div className="mt-6 bg-black border border-zinc-700 rounded-xl p-4 text-center">
-                          <p className="font-['Orbitron'] text-xs md:text-sm text-zinc-300 uppercase">
-                            🔒 La elección está bloqueada hasta que el ganador
-                            de la tirada seleccione equipo
-                          </p>
-                        </div>
-                      )}
-
-                    {errorDesempate && (
-                      <div className="mt-4 bg-red-950 border border-red-600 rounded-xl p-3 text-center text-red-200 font-bold">
-                        {errorDesempate}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div
-                className={`${desempateActivo || eleccionSuperbowlActiva ? "hidden" : ""} bg-white border border-white rounded-2xl p-3 md:p-6 shadow-2xl`}
+                className={`${
+                  desempateActivo ||
+                  faseCompeticionActual === "finalizada" ||
+                  faseCompeticionActual === "draft" ||
+                  faseCompeticionActual === "pretemporada"
+                    ? "hidden"
+                    : ""
+                } bg-white border border-white rounded-2xl p-3 md:p-6 shadow-2xl`}
               >
                 <div
                   className={`mb-4 text-white text-center py-3 px-4 rounded-xl font-['Orbitron'] font-black uppercase tracking-widest ${
@@ -9087,7 +8988,7 @@ const [verPassword, setVerPassword] = useState(false);
                               : "bg-zinc-700 text-zinc-200 border-zinc-500";
                         } else {
                           estiloTiradaJornada =
-                            Number(tiradaUsuario.valor) >= ordenados[1]
+                            Number(tiradaUsuario.valor) === ordenados[0]
                               ? "bg-emerald-600 text-white border-emerald-400"
                               : "bg-red-700 text-white border-red-500";
                         }
@@ -9126,19 +9027,32 @@ const [verPassword, setVerPassword] = useState(false);
                         <div
                           className={`${usr.colorBg} border border-white/20 rounded-t-lg py-3 text-center text-white font-['Orbitron'] font-black text-2xl leading-none shadow`}
                         >
-                          {confirmadoUsr
-                            ? `${puntosJornadaActual} aciertos`
-                            : "0 aciertos"}
+                          {faseCompeticionActual === "finalizada" ||
+                          faseCompeticionActual === "draft" ||
+                          faseCompeticionActual === "pretemporada"
+                            ? "0 aciertos"
+                            : confirmadoUsr
+                              ? `${puntosJornadaActual} aciertos`
+                              : "0 aciertos"}
                         </div>
                         <div
                           className={`${usr.colorBg} border border-white/20 rounded-b-lg py-3 text-center text-white font-['Orbitron'] font-bold text-xl leading-none tracking-wider`}
                         >
-                          Total Acumulado: {usr.puntos} pts
+                          Total Acumulado:{" "}
+                          {faseCompeticionActual === "finalizada" ||
+                          faseCompeticionActual === "draft" ||
+                          faseCompeticionActual === "pretemporada"
+                            ? 0
+                            : usr.puntos}{" "}
+                          pts
                         </div>
                       </div>
 
-                      {estadoDesempate &&
-                        estadoDesempate.estado !== "inactivo" && (
+                      {faseCompeticionActual !== "finalizada" &&
+                        faseCompeticionActual !== "draft" &&
+                        faseCompeticionActual !== "pretemporada" &&
+                        estadoDesempate &&
+                        (participaEnRonda || Boolean(tiradaUsuario)) && (
                           <div
                             className={`border-2 rounded-xl py-3 text-center font-['Orbitron'] font-black text-3xl tracking-[0.25em] shadow-lg ${estiloTiradaJornada}`}
                           >
@@ -9147,7 +9061,10 @@ const [verPassword, setVerPassword] = useState(false);
                         )}
 
                       <div className="bg-black/90 border border-zinc-800 rounded-xl overflow-hidden shadow-xl p-2 space-y-2">
-                        {pronosticosUsr.map((p) => {
+                        {faseCompeticionActual !== "finalizada" &&
+                          faseCompeticionActual !== "draft" &&
+                          faseCompeticionActual !== "pretemporada" &&
+                          pronosticosUsr.map((p) => {
                           const pronosticosVisibles =
                             estadoJornadaActual === "cerrada" ||
                             estadoJornadaActual === "finalizada";

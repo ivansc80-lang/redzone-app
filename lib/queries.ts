@@ -216,6 +216,25 @@ export async function getPartidosGames(): Promise<PartidoTemporada[]> {
   try {
     const contexto = await obtenerContextoCompeticion();
 
+    let temporadaGames = contexto.temporadaRegular;
+
+    if (!contexto.pretemporadaActiva) {
+      const { data: jornadasDisponibles, error: jornadasError } = await supabase
+        .from("jornadas_eventos")
+        .select("temporada")
+        .eq("fase_temporada", "regular")
+        .order("temporada", { ascending: false })
+        .limit(1);
+
+      if (!jornadasError && jornadasDisponibles?.length) {
+        const temporadaMasAlta = Number(jornadasDisponibles[0].temporada);
+
+        if (Number.isInteger(temporadaMasAlta)) {
+          temporadaGames = temporadaMasAlta;
+        }
+      }
+    }
+
     let query = supabase
       .from("partidos")
       .select(
@@ -242,7 +261,7 @@ export async function getPartidosGames(): Promise<PartidoTemporada[]> {
         .eq("tipo_competicion", "pretemporada_test");
     } else {
       query = query
-        .eq("temporada", contexto.temporadaRegular)
+        .eq("temporada", temporadaGames)
         .in("tipo_competicion", ["regular", "playoffs", "superbowl"]);
     }
 

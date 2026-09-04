@@ -53,6 +53,35 @@ async function obtenerInicioJ1Test(temporada: number) {
   return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
+
+async function calendarioRegularTestYaPreparado(temporada: number) {
+  const { count: partidos, error: partidosError } = await supabase
+    .from('partidos_test')
+    .select('id', { count: 'exact', head: true })
+    .eq('temporada', temporada)
+    .eq('tipo_competicion', 'regular');
+
+  if (partidosError) {
+    throw new Error(
+      `TEST: error comprobando calendario preparado ${temporada}: ${partidosError.message}`
+    );
+  }
+
+  const { count: jornadas, error: jornadasError } = await supabase
+    .from('jornadas_eventos_test')
+    .select('jornada_test', { count: 'exact', head: true })
+    .eq('temporada', temporada)
+    .eq('fase_temporada', 'regular');
+
+  if (jornadasError) {
+    throw new Error(
+      `TEST: error comprobando jornadas preparadas ${temporada}: ${jornadasError.message}`
+    );
+  }
+
+  return (partidos ?? 0) >= 272 && (jornadas ?? 0) >= 18;
+}
+
 async function prepararNuevaTemporadaTest(temporadaObjetivo: number, faseActual: 'draft' | 'pretemporada') {
   const partidos: PartidoNuevoTest[] = [];
   const jornadas = new Map<number, PartidoNuevoTest[]>();
@@ -167,16 +196,9 @@ async function prepararNuevaTemporadaTest(temporadaObjetivo: number, faseActual:
     return { validado:false, activado:false, motivo:`Escritura TEST incompleta: partidos=${verificarPartidos?.length||0}/${totalPartidosEsperados}, jornadas=${verificarJornadas?.length||0}/${jornadas.size}` };
   }
 
-  const { error: activarError } = await supabase.from('app_config_test').update({
-    temporada: temporadaObjetivo,
-    temporada_objetivo: null,
-    jornada_actual: 1,
-    jornada_test_actual: 1,
-    semana_postemporada: null,
-    fase_competicion: faseActual,
-  }).eq('id',1);
-  if (activarError) throw new Error(`TEST: calendario ${temporadaObjetivo} validado pero no pudo activarse: ${activarError.message}`);
-
+  // El calendario queda preparado, pero NO se convierte todavía
+  // en la temporada competitiva activa. `app_config_test.temporada`
+  // cambiará únicamente al entrar en fase `regular`.
   return { validado:true, activado:true, temporadaObjetivo, jornadas:jornadas.size, partidos:totalPartidosEsperados };
 }
 
@@ -190,13 +212,27 @@ export async function gestionarCicloAnualTest(params:{
   let objetivo = Number.isInteger(params.temporadaObjetivo) && Number(params.temporadaObjetivo) >= 2000 ? Number(params.temporadaObjetivo) : null;
 
   const siguienteTemporada = temporada + 1;
-  const inicioBusqueda = fechaUTC(siguienteTemporada,5,15);
-  if (objetivo === null && ahora >= inicioBusqueda) objetivo = siguienteTemporada;
 
-  const anioCiclo = ahora.getUTCFullYear() > temporada ? temporada + 1 : temporada;
-  const inicioDraft = fechaUTC(anioCiclo,3,1);
-  const inicioPretemporada = fechaUTC(anioCiclo,7,16);
-  let nuevaFase:FaseAnualTest = ahora >= inicioPretemporada ? 'pretemporada' : ahora >= inicioDraft ? 'draft' : 'finalizada';
+  // RELOJ COMPRIMIDO EXCLUSIVO TEST · 04/09/2026 (hora peninsular española = UTC+2)
+  const inicioDraft = new Date('2026-09-04T12:11:00+02:00');
+  const inicioBusqueda = new Date('2026-09-04T12:12:00+02:00');
+  const inicioPretemporada = new Date('2026-09-04T12:16:00+02:00');
+  const inicioRegularTest = new Date('2026-09-04T12:17:00+02:00');
+
+  if (
+    temporada === 2025 &&
+    objetivo === null &&
+    ahora >= inicioBusqueda
+  ) {
+    objetivo = siguienteTemporada;
+  }
+
+  let nuevaFase:FaseAnualTest =
+    ahora >= inicioPretemporada
+      ? 'pretemporada'
+      : ahora >= inicioDraft
+        ? 'draft'
+        : 'finalizada';
 
   const cambios:Record<string,any> = {};
   if (objetivo !== null && params.temporadaObjetivo !== objetivo) cambios.temporada_objetivo = objetivo;
@@ -207,28 +243,49 @@ export async function gestionarCicloAnualTest(params:{
   }
 
   let calendario:any = null;
-  if (objetivo !== null && ahora >= fechaUTC(objetivo,5,15) && (nuevaFase === 'draft' || nuevaFase === 'pretemporada')) {
-    calendario = await prepararNuevaTemporadaTest(objetivo, nuevaFase);
-    if (calendario.activado) {
-      objetivo = null;
-      // prepararNuevaTemporadaTest ya ha movido app_config_test a la nueva temporada.
+
+  if (
+    objetivo !== null &&
+    ahora >= fechaUTC(objetivo,5,15) &&
+    (nuevaFase === 'draft' || nuevaFase === 'pretemporada')
+  ) {
+    const yaPreparado = await calendarioRegularTestYaPreparado(objetivo);
+
+    if (!yaPreparado) {
+      calendario = await prepararNuevaTemporadaTest(objetivo, nuevaFase);
     }
   }
 
-  const temporadaActiva = calendario?.activado ? siguienteTemporada : temporada;
-  if (calendario?.activado) nuevaFase = nuevaFase === 'draft' ? 'draft' : 'pretemporada';
+  // `temporada` continúa siendo la temporada competitiva vigente.
+  // `objetivo` identifica la siguiente temporada ya preparada.
+  let temporadaActiva = temporada;
+  const temporadaEntradaRegular = objetivo ?? temporada;
+
+  if (calendario?.activado) {
+    nuevaFase = nuevaFase === 'draft' ? 'draft' : 'pretemporada';
+  }
 
   let inicioRegular:Date|null = null;
-  if (nuevaFase === 'pretemporada' && objetivo === null) {
-    const inicioJ1 = await obtenerInicioJ1Test(temporadaActiva);
+  if (nuevaFase === 'pretemporada') {
+    const inicioJ1 = await obtenerInicioJ1Test(temporadaEntradaRegular);
     if (inicioJ1) {
-      inicioRegular = new Date(inicioJ1.getTime() - HORAS_ANTES_INICIO_TR*60*60*1000);
+      // TEST comprimido: la entrada en regular abre también la PORRA de J1.
+      // Las fechas reales de ESPN permanecen intactas.
+      inicioRegular = inicioRegularTest;
       if (ahora >= inicioRegular) {
         nuevaFase = 'regular';
         const { error } = await supabase.from('app_config_test').update({
-          fase_competicion:'regular', jornada_actual:1, jornada_test_actual:1, semana_postemporada:null,
-        }).eq('id',1).eq('temporada',temporadaActiva);
-        if (error) throw new Error(`TEST: error entrando en TR${String(temporadaActiva).slice(-2)}: ${error.message}`);
+          temporada: temporadaEntradaRegular,
+          temporada_objetivo: null,
+          fase_competicion: 'regular',
+          jornada_actual: 1,
+          jornada_test_actual: 1,
+          semana_postemporada: null,
+        }).eq('id',1).eq('temporada',temporada);
+        if (error) throw new Error(`TEST: error entrando en TR${String(temporadaEntradaRegular).slice(-2)}: ${error.message}`);
+
+        temporadaActiva = temporadaEntradaRegular;
+        objetivo = null;
       }
     }
   }
