@@ -5147,29 +5147,53 @@ const [verPassword, setVerPassword] = useState(false);
                   </div>
                 )}
 
-                {/* TEMPORADA ESCRITORIO */}
-                <div className="mb-6 hidden xl:block">
-                  <select
-                    value={temporadaStats}
-                    onChange={(e) => setTemporadaStats(Number(e.target.value))}
-                    className="bg-white border border-zinc-300 rounded-full px-4 py-2 text-xs md:text-sm font-semibold text-zinc-700 outline-none"
-                  >
-                    <option value={2026}>2026 Temporada regular</option>
-                    <option value={2025}>2025 Temporada regular</option>
-                  </select>
-                </div>
-
                 {vistaStatsCompleta &&
                 tipoStats === "equipo" &&
                 vistaResumenEquipo ? (
                   categoriaStatsEquipo === "ofensiva" ? (
-                    <TeamOffenseSummary temporada={temporadaStats} />
+                    <TeamOffenseSummary
+                      temporada={temporadaStats}
+                      onTemporadaChange={setTemporadaStats}
+                      onVolverALideres={() => {
+                        setVistaStatsCompleta(false);
+                        setTipoStats("equipo");
+                        setCategoriaStatsEquipo("ofensiva");
+                        setSubcategoriaStatsEquipo("yardas_totales");
+                      }}
+                    />
                   ) : categoriaStatsEquipo === "defensiva" ? (
-                    <TeamDefenseSummary temporada={temporadaStats} />
+                    <TeamDefenseSummary
+                      temporada={temporadaStats}
+                      onTemporadaChange={setTemporadaStats}
+                      onVolverALideres={() => {
+                        setVistaStatsCompleta(false);
+                        setTipoStats("equipo");
+                        setCategoriaStatsEquipo("ofensiva");
+                        setSubcategoriaStatsEquipo("yardas_totales");
+                      }}
+                    />
                   ) : categoriaStatsEquipo === "especiales" ? (
-                    <TeamSpecialTeamsSummary temporada={temporadaStats} />
+                    <TeamSpecialTeamsSummary
+                      temporada={temporadaStats}
+                      onTemporadaChange={setTemporadaStats}
+                      onVolverALideres={() => {
+                        setVistaStatsCompleta(false);
+                        setTipoStats("equipo");
+                        setCategoriaStatsEquipo("ofensiva");
+                        setSubcategoriaStatsEquipo("yardas_totales");
+                      }}
+                    />
                   ) : (
-                    <TeamTurnoversSummary temporada={temporadaStats} />
+                    <TeamTurnoversSummary
+                      temporada={temporadaStats}
+                      onTemporadaChange={setTemporadaStats}
+                      onVolverALideres={() => {
+                        setVistaStatsCompleta(false);
+                        setTipoStats("equipo");
+                        setCategoriaStatsEquipo("ofensiva");
+                        setSubcategoriaStatsEquipo("yardas_totales");
+                      }}
+                    />
                   )
                 ) : vistaStatsCompleta &&
                   tipoStats === "jugador" &&
@@ -5189,8 +5213,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("jugador");
                           setCategoriaStatsJugador("ofensiva");
@@ -5199,7 +5233,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
@@ -5560,8 +5595,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("jugador");
                           setCategoriaStatsJugador("ofensiva");
@@ -5570,7 +5615,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
@@ -5902,8 +5948,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("jugador");
                           setCategoriaStatsJugador("ofensiva");
@@ -5912,7 +5968,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
@@ -6338,8 +6395,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("jugador");
                           setCategoriaStatsJugador("ofensiva");
@@ -6348,7 +6415,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
@@ -7105,8 +7173,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("equipo");
                           setCategoriaStatsEquipo("ofensiva");
@@ -7115,7 +7193,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">
@@ -7388,8 +7467,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("equipo");
                           setCategoriaStatsEquipo("ofensiva");
@@ -7398,7 +7487,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
@@ -7583,8 +7673,18 @@ const [verPassword, setVerPassword] = useState(false);
                         </h3>
                       </div>
 
-                      <button
-                        onClick={() => {
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <select
+                          value={temporadaStats}
+                          onChange={(e) => setTemporadaStats(Number(e.target.value))}
+                          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+                        >
+                          <option value={2026}>2026 Temporada regular</option>
+                          <option value={2025}>2025 Temporada regular</option>
+                        </select>
+
+                        <button
+                          onClick={() => {
                           setVistaStatsCompleta(false);
                           setTipoStats("equipo");
                           setCategoriaStatsEquipo("ofensiva");
@@ -7593,7 +7693,8 @@ const [verPassword, setVerPassword] = useState(false);
                         className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
                       >
                         ← Volver a líderes
-                      </button>
+                        </button>
+                      </div>
                     </div>
 
                     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">

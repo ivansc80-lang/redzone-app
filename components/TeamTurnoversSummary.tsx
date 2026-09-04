@@ -5,9 +5,11 @@ import type { EspnTeamTurnoversSummary } from "@/lib/espnTeamSummary";
 
 type Props = {
   temporada: number;
+  onTemporadaChange: (temporada: number) => void;
+  onVolverALideres: () => void;
 };
 
-export default function TeamTurnoversSummary({ temporada }: Props) {
+export default function TeamTurnoversSummary({ temporada, onTemporadaChange, onVolverALideres }: Props) {
   const [datos,setDatos]=useState<EspnTeamTurnoversSummary[]>([]);
   const [cargando,setCargando]=useState(true);
   const [error,setError]=useState<string|null>(null);
@@ -28,9 +30,29 @@ export default function TeamTurnoversSummary({ temporada }: Props) {
   const keys=["GP","GIVE","TAKE","DIFF"] as (keyof EspnTeamTurnoversSummary)[];
 
   return <div className="w-full">
-    <div className="flex items-center gap-3 border-b-2 border-red-600 pb-3 mb-4">
-      <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
-      <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">Resumen entregas</h3>
+    <div className="flex items-center justify-between gap-3 border-b-2 border-red-600 pb-3 mb-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
+        <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">Resumen entregas</h3>
+      </div>
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <select
+          value={temporada}
+          onChange={(e) => onTemporadaChange(Number(e.target.value))}
+          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+        >
+          <option value={2026}>2026 Temporada regular</option>
+          <option value={2025}>2025 Temporada regular</option>
+        </select>
+
+        <button
+          onClick={onVolverALideres}
+          className="shrink-0 px-3 py-2 rounded-lg border border-red-600 text-red-700 hover:bg-red-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+        >
+          ← Volver a líderes
+        </button>
+      </div>
     </div>
     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
       <table className="min-w-[620px] w-full border-collapse text-xs">

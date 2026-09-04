@@ -5,9 +5,11 @@ import type { EspnTeamSpecialTeamsSummary } from "@/lib/espnTeamSummary";
 
 type Props = {
   temporada: number;
+  onTemporadaChange: (temporada: number) => void;
+  onVolverALideres: () => void;
 };
 
-export default function TeamSpecialTeamsSummary({ temporada }: Props) {
+export default function TeamSpecialTeamsSummary({ temporada, onTemporadaChange, onVolverALideres }: Props) {
   const [datos,setDatos]=useState<EspnTeamSpecialTeamsSummary[]>([]);
   const [cargando,setCargando]=useState(true);
   const [error,setError]=useState<string|null>(null);
@@ -29,9 +31,29 @@ export default function TeamSpecialTeamsSummary({ temporada }: Props) {
   const cortes=new Set([1,4,7,11]);
 
   return <div className="w-full">
-    <div className="flex items-center gap-3 border-b-2 border-blue-500 pb-3 mb-4">
-      <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
-      <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-500 underline-offset-4">Resumen equipos especiales</h3>
+    <div className="flex items-center justify-between gap-3 border-b-2 border-blue-500 pb-3 mb-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0" />
+        <h3 className="text-sm md:text-xl font-black uppercase tracking-wider text-blue-600 font-['Orbitron'] italic underline decoration-blue-500 underline-offset-4">Resumen equipos especiales</h3>
+      </div>
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <select
+          value={temporada}
+          onChange={(e) => onTemporadaChange(Number(e.target.value))}
+          className="hidden xl:block bg-white border border-zinc-300 rounded-full px-3 py-2 text-[10px] font-semibold text-zinc-700 outline-none"
+        >
+          <option value={2026}>2026 Temporada regular</option>
+          <option value={2025}>2025 Temporada regular</option>
+        </select>
+
+        <button
+          onClick={onVolverALideres}
+          className="shrink-0 px-3 py-2 rounded-lg border border-blue-600 text-blue-700 hover:bg-blue-700 hover:text-white transition-all font-['Orbitron'] font-black text-[8px] md:text-[10px] uppercase"
+        >
+          ← Volver a líderes
+        </button>
+      </div>
     </div>
     <p className="md:hidden text-[9px] text-zinc-500 font-semibold mb-2 text-right">Desliza para ver todas las estadísticas →</p>
     <div className="w-full overflow-x-auto border border-zinc-200 rounded-xl shadow-sm">
