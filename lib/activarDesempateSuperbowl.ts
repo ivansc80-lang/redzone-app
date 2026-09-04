@@ -6,32 +6,32 @@ import {
 
 /**
  * Activa el desempate de REDZONE exclusivamente DESPUÉS de la Super Bowl.
- * Esta rama de simulación trabaja únicamente con tablas TEST.
+ * Este motor trabaja con las tablas productivas de REDZONE.
  */
 export async function activarDesempateSuperbowlSiProcede() {
   const { data: config, error: configError } = await supabase
-    .from('app_config_test')
+    .from('app_config')
     .select('temporada, jornada_actual, fase_competicion, semana_postemporada')
     .eq('id', 1)
     .maybeSingle();
 
   if (configError || !config?.temporada) {
     throw new Error(
-      `No se pudo obtener la temporada TEST activa: ${configError?.message || 'app_config_test vacío'}`,
+      `No se pudo obtener la temporada activa: ${configError?.message || 'app_config vacío'}`,
     );
   }
 
   const temporada = Number(config.temporada);
 
   const { data: estadoActual, error: estadoError } = await supabase
-    .from('desempate_superbowl_estado_test')
+    .from('desempate_superbowl_estado')
     .select('*')
     .eq('temporada', temporada)
     .maybeSingle();
 
   if (estadoError) {
     throw new Error(
-      `Error al consultar estado TEST de desempate: ${estadoError.message}`,
+      `Error al consultar estado de desempate: ${estadoError.message}`,
     );
   }
 
@@ -63,13 +63,13 @@ export async function activarDesempateSuperbowlSiProcede() {
     return {
       activado: false,
       resuelto: false,
-      motivo: 'La competición TEST todavía no está en la ronda de Super Bowl.',
+      motivo: 'La competición todavía no está en la ronda de Super Bowl.',
     };
   }
 
   const jornadaSuperBowl = Number(config.jornada_actual);
   const { data: superBowl, error: superBowlError } = await supabase
-    .from('partidos_test')
+    .from('partidos')
     .select('id, jornada, estado, resultado_oficial')
     .eq('temporada', temporada)
     .eq('jornada', jornadaSuperBowl)
@@ -78,7 +78,7 @@ export async function activarDesempateSuperbowlSiProcede() {
     .maybeSingle();
 
   if (superBowlError) {
-    throw new Error(`Error comprobando la Super Bowl TEST: ${superBowlError.message}`);
+    throw new Error(`Error comprobando la Super Bowl: ${superBowlError.message}`);
   }
 
   if (
@@ -89,12 +89,12 @@ export async function activarDesempateSuperbowlSiProcede() {
     return {
       activado: false,
       resuelto: false,
-      motivo: 'La Super Bowl TEST todavía no está finalizada.',
+      motivo: 'La Super Bowl todavía no está finalizada.',
     };
   }
 
   const { data: pronosticosSb, error: pronosticosError } = await supabase
-    .from('pronosticos_test')
+    .from('pronosticos')
     .select('user_id, eleccion, acierto')
     .eq('temporada', temporada)
     .eq('partido_id', superBowl.id)
@@ -102,7 +102,7 @@ export async function activarDesempateSuperbowlSiProcede() {
 
   if (pronosticosError) {
     throw new Error(
-      `Error comprobando pronósticos TEST de Super Bowl: ${pronosticosError.message}`,
+      `Error comprobando pronósticos de Super Bowl: ${pronosticosError.message}`,
     );
   }
 
@@ -117,7 +117,7 @@ export async function activarDesempateSuperbowlSiProcede() {
     return {
       activado: false,
       resuelto: false,
-      motivo: 'La Super Bowl TEST todavía tiene pronósticos sin validar.',
+      motivo: 'La Super Bowl todavía tiene pronósticos sin validar.',
     };
   }
 
@@ -126,7 +126,7 @@ export async function activarDesempateSuperbowlSiProcede() {
 
   if (empatados.length <= 1) {
     const { error: guardarInactivoError } = await supabase
-      .from('desempate_superbowl_estado_test')
+      .from('desempate_superbowl_estado')
       .upsert(
         {
           temporada,
@@ -144,14 +144,14 @@ export async function activarDesempateSuperbowlSiProcede() {
 
     if (guardarInactivoError) {
       throw new Error(
-        `Error guardando estado TEST sin desempate: ${guardarInactivoError.message}`,
+        `Error guardando estado sin desempate: ${guardarInactivoError.message}`,
       );
     }
 
     return {
       activado: false,
       resuelto: true,
-      motivo: 'La Super Bowl TEST dejó un líder único.',
+      motivo: 'La Super Bowl dejó un líder único.',
       participantes: empatados,
       puntosMaximos: ranking.maxPuntos,
     };
@@ -159,12 +159,12 @@ export async function activarDesempateSuperbowlSiProcede() {
 
   if (empatados.length !== 2 && empatados.length !== 3) {
     throw new Error(
-      `Número inesperado de participantes TEST empatados: ${empatados.length}`,
+      `Número inesperado de participantes empatados: ${empatados.length}`,
     );
   }
 
   const { error: activarError } = await supabase
-    .from('desempate_superbowl_estado_test')
+    .from('desempate_superbowl_estado')
     .upsert(
       {
         temporada,
@@ -181,7 +181,7 @@ export async function activarDesempateSuperbowlSiProcede() {
     );
 
   if (activarError) {
-    throw new Error(`Error activando desempate TEST final: ${activarError.message}`);
+    throw new Error(`Error activando desempate final: ${activarError.message}`);
   }
 
   return {

@@ -23,11 +23,11 @@ export interface RankingCompeticionServidor {
 }
 
 /**
- * Fuente servidor de RANKING REDZONE para la simulación TR25/TR26.
- * Esta rama trabaja exclusivamente contra las tablas TEST:
- * - partidos_test
- * - pronosticos_test
- * - desempate_superbowl_estado_test
+ * Fuente servidor de RANKING REDZONE.
+ * Este motor trabaja contra las tablas productivas:
+ * - partidos
+ * - pronosticos
+ * - desempate_superbowl_estado
  *
  * La Super Bowl sigue perteneciendo a `playoffs`; no existe un tercer
  * tipo de competición necesario para el ranking.
@@ -40,13 +40,13 @@ export async function calcularRankingCompeticion(
   }
 
   const { data: partidos, error: partidosError } = await supabase
-    .from('partidos_test')
+    .from('partidos')
     .select('id')
     .eq('temporada', temporada)
     .in('tipo_competicion', ['regular', 'playoffs']);
 
   if (partidosError) {
-    throw new Error(`Error leyendo partidos TEST para ranking: ${partidosError.message}`);
+    throw new Error(`Error leyendo partidos para ranking: ${partidosError.message}`);
   }
 
   const idsPartidos = (partidos || []).map((p: any) => p.id);
@@ -57,13 +57,13 @@ export async function calcularRankingCompeticion(
 
   if (idsPartidos.length > 0) {
     const { data: pronosticos, error: pronosticosError } = await supabase
-      .from('pronosticos_test')
+      .from('pronosticos')
       .select('user_id, acierto')
       .in('partido_id', idsPartidos)
       .in('user_id', [...PARTICIPANTES_REDZONE]);
 
     if (pronosticosError) {
-      throw new Error(`Error leyendo pronósticos TEST para ranking: ${pronosticosError.message}`);
+      throw new Error(`Error leyendo pronósticos para ranking: ${pronosticosError.message}`);
     }
 
     for (const pronostico of pronosticos || []) {
@@ -79,13 +79,13 @@ export async function calcularRankingCompeticion(
   }
 
   const { data: desempate, error: desempateError } = await supabase
-    .from('desempate_superbowl_estado_test')
+    .from('desempate_superbowl_estado')
     .select('estado, ganador_eleccion')
     .eq('temporada', temporada)
     .maybeSingle();
 
   if (desempateError) {
-    throw new Error(`Error leyendo bonus TEST de desempate: ${desempateError.message}`);
+    throw new Error(`Error leyendo bonus de desempate: ${desempateError.message}`);
   }
 
   const ganadorBonus = desempate?.ganador_eleccion

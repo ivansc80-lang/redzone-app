@@ -5,14 +5,14 @@ import { PARTICIPANTES_REDZONE } from '@/lib/rankingCompetition';
 
 async function obtenerTemporadaActiva() {
   const { data, error } = await supabaseServer
-    .from('app_config_test')
+    .from('app_config')
     .select('temporada, fase_competicion')
     .eq('id', 1)
     .maybeSingle();
 
   if (error || !data?.temporada) {
     throw new Error(
-      `No se pudo obtener la temporada TEST activa: ${error?.message || 'app_config_test vacío'}`,
+      `No se pudo obtener la temporada activa: ${error?.message || 'app_config vacío'}`,
     );
   }
 
@@ -40,12 +40,12 @@ export async function POST(request: Request) {
     }
 
     const { data: estado, error: estadoError } = await supabaseServer
-      .from('desempate_superbowl_estado_test')
+      .from('desempate_superbowl_estado')
       .select('*')
       .eq('temporada', temporada)
       .maybeSingle();
 
-    if (estadoError) throw new Error(`Error al consultar el desempate TEST: ${estadoError.message}`);
+    if (estadoError) throw new Error(`Error al consultar el desempate: ${estadoError.message}`);
 
     if (!estado || estado.estado !== 'clasificatoria') {
       return NextResponse.json(
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const { data: tiradaExistente, error: tiradaExistenteError } = await supabaseServer
-      .from('desempates_superbowl_test')
+      .from('desempates_superbowl')
       .select('id, valor')
       .eq('temporada', temporada)
       .eq('fase', fase)
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (tiradaExistenteError) {
-      throw new Error(`Error al comprobar la tirada TEST: ${tiradaExistenteError.message}`);
+      throw new Error(`Error al comprobar la tirada: ${tiradaExistenteError.message}`);
     }
 
     if (tiradaExistente) {
@@ -91,13 +91,13 @@ export async function POST(request: Request) {
     const valor = randomInt(1, 101);
 
     const { error: guardarError } = await supabaseServer
-      .from('desempates_superbowl_test')
+      .from('desempates_superbowl')
       .insert({ temporada, fase, ronda, user_id: user.id, valor });
 
-    if (guardarError) throw new Error(`Error al guardar la tirada TEST: ${guardarError.message}`);
+    if (guardarError) throw new Error(`Error al guardar la tirada: ${guardarError.message}`);
 
     const { data: tiradasData, error: tiradasError } = await supabaseServer
-      .from('desempates_superbowl_test')
+      .from('desempates_superbowl')
       .select('user_id, valor')
       .eq('temporada', temporada)
       .eq('fase', fase)
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       .in('user_id', participantes);
 
     if (tiradasError) {
-      throw new Error(`Error al leer las tiradas TEST de la ronda: ${tiradasError.message}`);
+      throw new Error(`Error al leer las tiradas de la ronda: ${tiradasError.message}`);
     }
 
     const tiradas = tiradasData || [];
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
     if (empatadosMaximo.length > 1) {
       const nuevaRonda = ronda + 1;
       const { error: repetirError } = await supabaseServer
-        .from('desempate_superbowl_estado_test')
+        .from('desempate_superbowl_estado')
         .update({
           ronda_actual: nuevaRonda,
           participantes: empatadosMaximo,
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
         .eq('estado', 'clasificatoria');
 
       if (repetirError) {
-        throw new Error(`Error preparando repetición TEST del desempate: ${repetirError.message}`);
+        throw new Error(`Error preparando repetición del desempate: ${repetirError.message}`);
       }
 
       return NextResponse.json({
@@ -159,10 +159,10 @@ export async function POST(request: Request) {
 
     const ganador = empatadosMaximo[0];
 
-    // El ganador queda almacenado en la tabla TEST. rankingCompetition
+    // El ganador queda almacenado en la tabla productiva. rankingCompetition
     // le sumará exactamente +1 sin modificar validados ni efectividad.
     const { error: resolverError } = await supabaseServer
-      .from('desempate_superbowl_estado_test')
+      .from('desempate_superbowl_estado')
       .update({
         estado: 'inactivo',
         participantes,
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
       .eq('temporada', temporada)
       .eq('estado', 'clasificatoria');
 
-    if (resolverError) throw new Error(`Error resolviendo desempate TEST: ${resolverError.message}`);
+    if (resolverError) throw new Error(`Error resolviendo desempate: ${resolverError.message}`);
 
     return NextResponse.json({
       success: true,
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
       desempateResuelto: true,
     });
   } catch (error: any) {
-    console.error('Error en /api/desempate/tirar TEST:', error);
+    console.error('Error en /api/desempate/tirar:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Error desconocido.' },
       { status: 500 },
