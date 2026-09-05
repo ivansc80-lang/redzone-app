@@ -947,6 +947,18 @@ export default function Home() {
     }
   }, []);
 
+  // Registra el service worker al cargar REDZONE.
+  // PUSH sigue gestionando sus permisos y suscripción de forma independiente.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    navigator.serviceWorker
+      .register("/sw.js")
+      .catch((error) => {
+        console.error("Error registrando service worker REDZONE:", error);
+      });
+  }, []);
+
   // HISTORIAL DE NAVEGACIÓN INTERNA REDZONE
   // Permite que Atrás del navegador, botón lateral del ratón y gesto Atrás
   // del móvil restauren exactamente el menú/vista anterior sin recargar la app.
