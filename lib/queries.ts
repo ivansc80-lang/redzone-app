@@ -13,7 +13,7 @@ export interface PartidoTemporada {
   puntos_visitante: number | null;
   resultado_oficial: string | null;
   espn_event_id: string;
-  tipo_competicion?: "regular" | "pretemporada_test" | "playoffs" | "superbowl";
+  tipo_competicion?: "regular" | "playoffs" | "superbowl";
   semana_competicion?: number | null;
   info_local?: { nombre: string; logo_url: string };
   info_visitante?: { nombre: string; logo_url: string };
@@ -34,7 +34,7 @@ async function obtenerContextoCompeticion() {
   const { data, error } = await supabase
     .from("app_config")
     .select(
-      "temporada, jornada_actual, fase_competicion, semana_postemporada, modo_pretemporada_test, modo_pretemporada_hasta, temporada_test, jornada_test_actual",
+      "temporada, jornada_actual, fase_competicion, semana_postemporada",
     )
     .eq("id", 1)
     .maybeSingle();
@@ -53,9 +53,6 @@ async function obtenerContextoCompeticion() {
       data.semana_postemporada === null || data.semana_postemporada === undefined
         ? null
         : Number(data.semana_postemporada),
-    pretemporadaActiva: Boolean(data.modo_pretemporada_test),
-    temporadaTest: Number(data.temporada_test ?? data.temporada),
-    jornadaTestActual: Number(data.jornada_test_actual ?? 1),
   };
 }
 
@@ -87,7 +84,7 @@ async function obtenerFaseDeJornada(
 export interface ContextoJornadaActiva {
   temporada: number;
   jornada: number;
-  tipoCompeticion: "regular" | "pretemporada_test" | "playoffs" | "superbowl";
+  tipoCompeticion: "regular" | "playoffs" | "superbowl";
   estado: string;
   cierrePronosticos: string | null;
 }
@@ -95,31 +92,6 @@ export interface ContextoJornadaActiva {
 export async function getContextoJornadaActiva(): Promise<ContextoJornadaActiva> {
   const contexto = await obtenerContextoCompeticion();
 
-  if (contexto.pretemporadaActiva) {
-    const { data, error } = await supabase
-      .from("jornadas_eventos_test")
-      .select("estado, cierre_pronosticos")
-      .eq("temporada", contexto.temporadaTest)
-      .eq("jornada_test", contexto.jornadaTestActual)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(`Error al obtener contexto de jornada TEST: ${error.message}`);
-    }
-    if (!data) {
-      throw new Error(
-        `No existe TEST ${contexto.jornadaTestActual} de ${contexto.temporadaTest}`,
-      );
-    }
-
-    return {
-      temporada: contexto.temporadaTest,
-      jornada: contexto.jornadaTestActual,
-      tipoCompeticion: "pretemporada_test",
-      estado: data.estado || "pendiente",
-      cierrePronosticos: data.cierre_pronosticos || null,
-    };
-  }
 
   const { data, error } = await supabase
     .from("jornadas_eventos")
@@ -173,27 +145,18 @@ export async function getPartidosPorJornada(
       )
       .order("fecha_partido", { ascending: true });
 
-    if (contexto.pretemporadaActiva) {
-      if (jornada !== contexto.jornadaTestActual) return [];
+    const fallback =
+      jornada === contexto.jornadaRegular ? contexto.faseCompeticion : "regular";
+    const tipoCompeticion = await obtenerFaseDeJornada(
+      contexto.temporadaRegular,
+      jornada,
+      fallback,
+    );
 
-      query = query
-        .eq("temporada", contexto.temporadaTest)
-        .eq("tipo_competicion", "pretemporada_test")
-        .eq("jornada", contexto.jornadaTestActual);
-    } else {
-      const fallback =
-        jornada === contexto.jornadaRegular ? contexto.faseCompeticion : "regular";
-      const tipoCompeticion = await obtenerFaseDeJornada(
-        contexto.temporadaRegular,
-        jornada,
-        fallback,
-      );
-
-      query = query
-        .eq("temporada", contexto.temporadaRegular)
-        .eq("tipo_competicion", tipoCompeticion)
-        .eq("jornada", jornada);
-    }
+    query = query
+      .eq("temporada", contexto.temporadaRegular)
+      .eq("tipo_competicion", tipoCompeticion)
+      .eq("jornada", jornada);
 
     const { data, error } = await query;
 
@@ -218,20 +181,18 @@ export async function getPartidosGames(): Promise<PartidoTemporada[]> {
 
     let temporadaGames = contexto.temporadaRegular;
 
-    if (!contexto.pretemporadaActiva) {
-      const { data: jornadasDisponibles, error: jornadasError } = await supabase
-        .from("jornadas_eventos")
-        .select("temporada")
-        .eq("fase_temporada", "regular")
-        .order("temporada", { ascending: false })
-        .limit(1);
+    const { data: jornadasDisponibles, error: jornadasError } = await supabase
+      .from("jornadas_eventos")
+      .select("temporada")
+      .eq("fase_temporada", "regular")
+      .order("temporada", { ascending: false })
+      .limit(1);
 
-      if (!jornadasError && jornadasDisponibles?.length) {
-        const temporadaMasAlta = Number(jornadasDisponibles[0].temporada);
+    if (!jornadasError && jornadasDisponibles?.length) {
+      const temporadaMasAlta = Number(jornadasDisponibles[0].temporada);
 
-        if (Number.isInteger(temporadaMasAlta)) {
-          temporadaGames = temporadaMasAlta;
-        }
+      if (Number.isInteger(temporadaMasAlta)) {
+        temporadaGames = temporadaMasAlta;
       }
     }
 
@@ -255,15 +216,9 @@ export async function getPartidosGames(): Promise<PartidoTemporada[]> {
       .order("jornada", { ascending: true })
       .order("fecha_partido", { ascending: true });
 
-    if (contexto.pretemporadaActiva) {
-      query = query
-        .eq("temporada", contexto.temporadaTest)
-        .eq("tipo_competicion", "pretemporada_test");
-    } else {
-      query = query
-        .eq("temporada", temporadaGames)
-        .in("tipo_competicion", ["regular", "playoffs", "superbowl"]);
-    }
+    query = query
+      .eq("temporada", temporadaGames)
+      .in("tipo_competicion", ["regular", "playoffs", "superbowl"]);
 
     const { data, error } = await query;
 

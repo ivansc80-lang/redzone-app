@@ -35,7 +35,7 @@ import type { EspnStandingTeam } from "@/lib/espnStandings";
 interface PronosticoPartido {
   id: string;
   temporada: number;
-  tipo_competicion: "regular" | "pretemporada_test" | "playoffs";
+  tipo_competicion: "regular" | "playoffs";
   semana_competicion?: number | null;
   local: string;
   localLogo: string;
@@ -1184,6 +1184,50 @@ export default function Home() {
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
 
+  // Refresco automático de los datos que pueden cambiar dentro de una jornada.
+  // El cron productivo sincroniza ESPN -> Supabase cada 5 minutos.
+  // Esta señal reutiliza la misma carga ya validada sin modificar RACHAS.
+  const [refrescoCron, setRefrescoCron] = useState(0);
+
+  useEffect(() => {
+    let intervaloRefrescoCron: number | null = null;
+
+    // El cron productivo sincroniza en :00:10, :05:10, :10:10...
+    // La PWA relee Supabase 10 segundos después: :00:20, :05:20, :10:20...
+    const ahora = Date.now();
+    const bloqueCincoMinutos = 5 * 60 * 1000;
+    const desfaseRefresco = 20 * 1000;
+
+    // Próximo :00:20, :05:20, :10:20...
+    const bloqueActual =
+      Math.floor(ahora / bloqueCincoMinutos) * bloqueCincoMinutos;
+    const refrescoBloqueActual = bloqueActual + desfaseRefresco;
+
+    const siguienteRefresco =
+      ahora < refrescoBloqueActual
+        ? refrescoBloqueActual
+        : bloqueActual + bloqueCincoMinutos + desfaseRefresco;
+
+    const esperaInicial = siguienteRefresco - ahora;
+
+    const timeoutRefrescoCron = window.setTimeout(() => {
+      setRefrescoCron((valor) => valor + 1);
+
+      intervaloRefrescoCron = window.setInterval(
+        () => setRefrescoCron((valor) => valor + 1),
+        bloqueCincoMinutos,
+      );
+    }, esperaInicial);
+
+    return () => {
+      window.clearTimeout(timeoutRefrescoCron);
+
+      if (intervaloRefrescoCron !== null) {
+        window.clearInterval(intervaloRefrescoCron);
+      }
+    };
+  }, []);
+
   // Temporada regular activa de REDZONE.
   // app_config.temporada es la única autoridad.
   const [temporadaRegular, setTemporadaRegular] = useState<number>(2026);
@@ -1197,7 +1241,6 @@ export default function Home() {
   // STATS parte automáticamente de la temporada activa,
   // pero conserva su selector manual para consultar temporadas anteriores.
   const [temporadaStats, setTemporadaStats] = useState<number>(2026);
-  const [modoTest, setModoTest] = useState<boolean>(true);
 
   useEffect(() => {
     let cancelado = false;
@@ -1248,11 +1291,6 @@ export default function Home() {
   useEffect(() => {
     setTemporadaStats(temporadaRegular);
   }, [temporadaRegular]);
-
-  // Herramientas manuales de emergencia.
-  // Deben permanecer invisibles e inertes durante el ciclo automático.
-  // Solo se habilitarán temporalmente durante una intervención controlada.
-  const CONTROLES_TEST_EMERGENCIA = false;
 
   useEffect(() => {
     let cancelado = false;
@@ -2782,7 +2820,7 @@ const [verPassword, setVerPassword] = useState(false);
     };
 
     if (usuarioLogueado?.id) cargarDatosSupabase();
-  }, [usuarioLogueado?.id, usuarioActivoId, jornadaActual]);
+  }, [usuarioLogueado?.id, usuarioActivoId, jornadaActual, refrescoCron]);
 
   const cargarPerfil = async (
     userId: string,
@@ -3033,7 +3071,7 @@ const [verPassword, setVerPassword] = useState(false);
         }
 
         // ========================================================
-        // 1. CONFIGURACIÓN: NUNCA FUNCIONA EN MODO TEST
+        // 1. CONFIGURACIÓN DE LA TEMPORADA ACTIVA
         // ========================================================
         const { data: config, error: configError } = await supabase
           .from("app_config")
@@ -3043,10 +3081,6 @@ const [verPassword, setVerPassword] = useState(false);
 
         if (configError) throw configError;
         if (!config || cancelado) return;
-
-        if (Boolean(config.modo_pretemporada_test)) {
-          return;
-        }
 
         const temporadaFinal = Number(
           config.temporada ??
@@ -3196,8 +3230,7 @@ const [verPassword, setVerPassword] = useState(false);
           }
 
           // Verificamos que los tres participantes tengan pronóstico
-          // registrado en la Super Bowl. En TEST, `pronosticos` está
-          // redirigido por el proxy a `pronosticos_test`.
+          // registrado en la Super Bowl.
           const { data: pronosticosSuperBowl, error: puntosError } =
             await supabase
               .from("pronosticos")
@@ -3373,10 +3406,7 @@ const [verPassword, setVerPassword] = useState(false);
   // RACHAS GAMES
   // ============================================================
   // El cerebro administrativo decide QUÉ jornadas pueden contar.
-  // TEST  -> jornadas_eventos_test
-  // TR26  -> jornadas_eventos
-  //
-  // Solo se contabilizan jornadas con estado = "finalizada".
+  // Solo se contabilizan jornadas productivas con estado = "finalizada".
   // Esta lógica es exclusivamente de LECTURA.
   const [jornadasFinalizadasRacha, setJornadasFinalizadasRacha] =
     useState<Set<number>>(new Set());
@@ -3388,39 +3418,12 @@ const [verPassword, setVerPassword] = useState(false);
       try {
         const { data: config, error: configError } = await supabase
           .from("app_config")
-          .select(
-            "temporada, modo_pretemporada_test, temporada_test",
-          )
+          .select("temporada")
           .eq("id", 1)
           .maybeSingle();
 
         if (configError) throw configError;
         if (!config || cancelado) return;
-
-        if (config.modo_pretemporada_test) {
-          const temporadaTest =
-            Number(config.temporada_test) || Number(config.temporada) || 2026;
-
-          const { data, error } = await supabase
-            .from("jornadas_eventos_test")
-            .select("jornada_test, estado")
-            .eq("temporada", temporadaTest)
-            .eq("estado", "finalizada");
-
-          if (error) throw error;
-
-          if (!cancelado) {
-            setJornadasFinalizadasRacha(
-              new Set(
-                (data || []).map((fila: any) =>
-                  Number(fila.jornada_test),
-                ),
-              ),
-            );
-          }
-
-          return;
-        }
 
         const temporadaRegular = Number(config.temporada) || 2026;
 
@@ -4003,141 +4006,6 @@ const [verPassword, setVerPassword] = useState(false);
       if (intervalo) clearInterval(intervalo);
       setGirandoRuleta(false);
     }
-  };
-
-  const handleVotacionAleatoriaYSimular = async () => {
-    if (!CONTROLES_TEST_EMERGENCIA) return;
-
-    try {
-      const response = await fetch("/api/test-votacion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jornada: jornadaActual }),
-      });
-      const resultado = await response.json();
-      if (!response.ok || !resultado.success) {
-        console.error("Error al generar votación de prueba:", resultado);
-        alert(
-          resultado?.error ||
-            "No se pudieron generar los pronósticos de prueba.",
-        );
-        return;
-      }
-      const { data: pronosData, error: pronosError } = await supabase
-        .from("pronosticos")
-        .select("*");
-      if (pronosError) {
-        console.error(
-          "Error al recargar pronósticos después de la simulación:",
-          pronosError,
-        );
-        alert(
-          "Los pronósticos se guardaron, pero hubo un error al recargarlos.",
-        );
-        return;
-      }
-      const mapaUsuarios: Record<string, string> = {
-        "dadb359a-8bc1-442e-8202-62fa2f8ddab9": "juanjo",
-        "088072d0-0782-409f-b5e4-f8a558f27b4f": "cace",
-        "351a81a5-86f9-4d6d-a567-f49ed5959e57": "ivan",
-      };
-      setPronosticosPorUsuario((prev) => {
-        const copia = { ...prev };
-        if (!copia[jornadaActual]) copia[jornadaActual] = {};
-        Object.values(mapaUsuarios).forEach((usuarioInterno) => {
-          if (!copia[jornadaActual][usuarioInterno])
-            copia[jornadaActual][usuarioInterno] = {
-              pronosticos: JSON.parse(
-                JSON.stringify(jornadasOficiales[jornadaActual] || []),
-              ),
-              confirmado: false,
-              validado: false,
-            };
-        });
-        pronosData?.forEach((row: any) => {
-          const usuarioInterno = mapaUsuarios[row.user_id];
-          if (!usuarioInterno) return;
-          const partido = copia[jornadaActual][
-            usuarioInterno
-          ]?.pronosticos.find((p) => p.id === row.partido_id);
-          if (partido) {
-            partido.eleccion = row.eleccion;
-            partido.acierto = row.acierto ?? null;
-            copia[jornadaActual][usuarioInterno].confirmado = true;
-          }
-        });
-        return copia;
-      });
-      alert(
-        `¡Votación aleatoria guardada correctamente para Juanjo y Cace en la Jornada ${jornadaActual}!`,
-      );
-    } catch (error) {
-      console.error("Error inesperado en Modo Test:", error);
-      alert("Ha ocurrido un error inesperado en el Modo Test.");
-    }
-  };
-
-  const handleSiguienteJornada = () => {
-    if (!CONTROLES_TEST_EMERGENCIA) return;
-
-    if (jornadaActual < 18) setJornadaActual((prev) => prev + 1);
-    else alert("Has llegado a la última jornada (18).");
-  };
-
-  const handleValidarJornada = async () => {
-    if (!CONTROLES_TEST_EMERGENCIA) return;
-
-    const opciones: ("1" | "X" | "2")[] = ["1", "X", "2"];
-    const partidosAActualizar: {
-      id: string;
-      resultado_real: "1" | "X" | "2";
-    }[] = [];
-    const filasGuardarPronos: any[] = [];
-    const partidosBase = jornadasOficiales[jornadaActual] || [];
-    partidosBase.forEach((p) => {
-      const resReal =
-        p.resultadoReal ||
-        opciones[Math.floor(Math.random() * opciones.length)];
-      partidosAActualizar.push({ id: p.id, resultado_real: resReal });
-    });
-    for (const p of partidosAActualizar)
-      await supabase
-        .from("temporada_regular")
-        .update({ resultado_real: p.resultado_real })
-        .eq("id", p.id);
-    setPronosticosPorUsuario((prev) => {
-      const jornadaData = prev[jornadaActual] || {};
-      const copiaJornada = { ...jornadaData };
-      Object.keys(copiaJornada).forEach((uid) => {
-        const pronosValidados = copiaJornada[uid].pronosticos.map((p) => {
-          const resObj = partidosAActualizar.find((item) => item.id === p.id);
-          const resReal = resObj ? resObj.resultado_real : p.resultadoReal;
-          filasGuardarPronos.push({
-            jornada: jornadaActual,
-            usuario_id: uid,
-            partido_id: p.id,
-            eleccion: p.eleccion,
-            confirmado: copiaJornada[uid].confirmado,
-            validado: true,
-            updated_at: new Date(),
-          });
-          return { ...p, resultadoReal: resReal };
-        });
-        copiaJornada[uid] = {
-          ...copiaJornada[uid],
-          pronosticos: pronosValidados,
-          validado: true,
-        };
-      });
-      return { ...prev, [jornadaActual]: copiaJornada };
-    });
-    if (filasGuardarPronos.length > 0)
-      await supabase.from("pronosticos").upsert(filasGuardarPronos, {
-        onConflict: "jornada,usuario_id,partido_id",
-      });
-    alert(
-      `¡Jornada ${jornadaActual} validada correctamente! Puntos, rachas y datos guardados en Supabase.`,
-    );
   };
 
   useEffect(() => {
@@ -8981,38 +8849,12 @@ const [verPassword, setVerPassword] = useState(false);
                   </button>
                 </div>
 
-                {modoTest && CONTROLES_TEST_EMERGENCIA && (
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button
-                      onClick={handleVotacionAleatoriaYSimular}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3 px-4 rounded-xl font-['Orbitron'] uppercase shadow transition-all cursor-pointer"
-                    >
-                      VOTACIÓN ALEATORIA (JUANJO & CACE) + SIMULAR
-                    </button>
-                    <button
-                      onClick={handleSiguienteJornada}
-                      className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-3 px-4 rounded-xl font-['Orbitron'] uppercase shadow transition-all cursor-pointer"
-                    >
-                      SIGUIENTE JORNADA →
-                    </button>
-                  </div>
-                )}
               </div>
             </section>
           )}
 
           {pestanaActiva === "jornada" && (
             <section className="space-y-8 bg-[#8b0000] p-2 md:p-6 rounded-2xl">
-              {modoTest && CONTROLES_TEST_EMERGENCIA && (
-                <div className="flex justify-end py-2">
-                  <button
-                    onClick={handleValidarJornada}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-['Orbitron'] font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg uppercase transition-all cursor-pointer"
-                  >
-                    ✓ VALIDAR JORNADA (SIMULAR RESULTADOS)
-                  </button>
-                </div>
-              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {usuarios.map((usr) => {
                   const pronosticosUsr =
