@@ -7,9 +7,10 @@
   "theme_color": "#8b0000",
   "icons": [
     {
-      "src": "/redzone_logo.png",
-      "sizes": "526x146",
-      "type": "image/png"
+      "src": "/ICONO1.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
     }
   ]
 }
