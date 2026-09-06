@@ -1369,7 +1369,7 @@ export default function FranchiseHome({
                   </div>
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <div className="mb-3 border-b-2 border-red-700 pb-2">
                     <h3 className="font-['Orbitron'] text-sm font-black uppercase text-red-700 md:text-base">
                       {franchise.division}
