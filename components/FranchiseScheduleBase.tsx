@@ -280,7 +280,7 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
               Cargando calendario...
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden rounded-xl border border-zinc-200">
+            <div className="-ml-2 mr-2 flex-1 overflow-hidden rounded-xl border border-zinc-200 sm:ml-0 sm:mr-0">
               {Array.from({ length: 18 }, (_, i) => i + 1).map((jornada) => {
                 const partido = partidos.find((p) => p.jornada === jornada);
 
@@ -352,7 +352,7 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
               No hay próximo partido disponible.
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200">
+            <div className="-ml-2 mr-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-zinc-200 sm:ml-0 sm:mr-0">
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-5 bg-zinc-50 px-6 py-7">
                 <div className="flex items-center gap-3">
                   <img src={resumenComparacion.local.logo} alt="" className="h-14 w-14 object-contain" />
@@ -378,13 +378,13 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
                 </div>
               </div>
 
-              <div className="grid min-h-0 flex-1 grid-rows-2 gap-5 p-5">
+              <div className="grid min-h-0 flex-1 grid-rows-2 gap-5 px-2 py-5 sm:p-5">
                 <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-200">
                   <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-center font-['Orbitron'] text-[11px] font-black uppercase text-[#002244] md:text-xs">
                     Ataque {resumenComparacion.local.nombre} vs defensa {resumenComparacion.visitante.nombre}
                   </div>
 
-                  <div className="grid flex-1 grid-cols-[minmax(90px,1fr)_48px_minmax(88px,0.8fr)_minmax(90px,1fr)_48px] items-center gap-x-3 gap-y-4 px-4 py-5 text-[11px] md:grid-cols-[minmax(110px,1fr)_55px_minmax(110px,0.8fr)_minmax(110px,1fr)_55px] md:gap-x-5 md:text-[13px]">
+                  <div className="grid flex-1 grid-cols-[minmax(0,1fr)_32px_minmax(64px,0.8fr)_minmax(0,1fr)_32px] items-center gap-x-1 gap-y-4 px-2 py-5 text-[10px] sm:grid-cols-[minmax(70px,1fr)_40px_minmax(76px,0.8fr)_minmax(70px,1fr)_40px] sm:gap-x-2 sm:px-3 sm:text-[11px] md:grid-cols-[minmax(110px,1fr)_55px_minmax(110px,0.8fr)_minmax(110px,1fr)_55px] md:gap-x-5 md:px-4 md:text-[13px]">
                     <span className="text-center font-black text-red-700">ATAQUE</span>
                     <span className="text-center font-black text-zinc-500">RK</span>
                     <span className="text-center font-black text-zinc-500">MÉTRICA</span>
@@ -435,7 +435,7 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
                     Defensa {resumenComparacion.local.nombre} vs ataque {resumenComparacion.visitante.nombre}
                   </div>
 
-                  <div className="grid flex-1 grid-cols-[minmax(90px,1fr)_48px_minmax(88px,0.8fr)_minmax(90px,1fr)_48px] items-center gap-x-3 gap-y-4 px-4 py-5 text-[11px] md:grid-cols-[minmax(110px,1fr)_55px_minmax(110px,0.8fr)_minmax(110px,1fr)_55px] md:gap-x-5 md:text-[13px]">
+                  <div className="grid flex-1 grid-cols-[minmax(0,1fr)_32px_minmax(64px,0.8fr)_minmax(0,1fr)_32px] items-center gap-x-1 gap-y-4 px-2 py-5 text-[10px] sm:grid-cols-[minmax(70px,1fr)_40px_minmax(76px,0.8fr)_minmax(70px,1fr)_40px] sm:gap-x-2 sm:px-3 sm:text-[11px] md:grid-cols-[minmax(110px,1fr)_55px_minmax(110px,0.8fr)_minmax(110px,1fr)_55px] md:gap-x-5 md:px-4 md:text-[13px]">
                     <span className="text-center font-black text-[#002244]">DEFENSA</span>
                     <span className="text-center font-black text-zinc-500">RK</span>
                     <span className="text-center font-black text-zinc-500">MÉTRICA</span>
@@ -482,7 +482,7 @@ export default function FranchiseSchedule({ teamId, temporada }: Props) {
                 </div>
               </div>
 
-              <div className="border-t border-zinc-200 p-5">
+              <div className="border-t border-zinc-200 px-2 py-5 sm:p-5">
                 <div className="mb-4 text-center font-['Orbitron'] text-xs font-black uppercase text-red-700 md:text-sm">
                   Entregas
                 </div>
