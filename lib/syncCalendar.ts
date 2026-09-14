@@ -294,6 +294,54 @@ export async function sincronizarTemporadaCompleta(
         if (error) throw new Error(`Error actualizando Jornada ${semana}: ${error.message}`);
       }
 
+      const { data: partidosActuales, error: partidosActualesError } = await supabase
+        .from('partidos')
+        .select(
+          'id, espn_event_id, estado, resultado_oficial, fecha_partido, puntos_local, puntos_visitante, periodo, reloj, equipo_local, equipo_visitante',
+        )
+        .eq('temporada', temporada)
+        .eq('jornada', semana)
+        .eq('tipo_competicion', 'regular');
+
+      if (partidosActualesError) {
+        throw new Error(
+          `Error precargando partidos de Jornada ${semana}: ${partidosActualesError.message}`,
+        );
+      }
+
+      const partidosPorEspn = new Map<string, any>(
+        (partidosActuales || []).map((p: any) => [String(p.espn_event_id), p]),
+      );
+
+      const idsPartidosActuales = (partidosActuales || []).map((p: any) => p.id);
+      const pronosticosPendientesPorPartido = new Map<string, number>();
+
+      if (idsPartidosActuales.length > 0) {
+        const { data: pronosticosActuales, error: pronosticosActualesError } = await supabase
+          .from('pronosticos')
+          .select('partido_id, eleccion, acierto')
+          .in('partido_id', idsPartidosActuales);
+
+        if (pronosticosActualesError) {
+          throw new Error(
+            `Error precargando pronósticos de Jornada ${semana}: ${pronosticosActualesError.message}`,
+          );
+        }
+
+        for (const pronostico of pronosticosActuales || []) {
+          if (pronostico.eleccion === null) continue;
+          if (typeof pronostico.acierto === 'boolean') continue;
+
+          const partidoId = String(pronostico.partido_id);
+          pronosticosPendientesPorPartido.set(
+            partidoId,
+            (pronosticosPendientesPorPartido.get(partidoId) || 0) + 1,
+          );
+        }
+      }
+
+      let hayPartidosCompletados = false;
+
       for (const evento of eventos) {
         const comp = evento.competitions?.[0];
         if (!comp) continue;
@@ -306,65 +354,119 @@ export async function sincronizarTemporadaCompleta(
         const puntosVisitante = parseInt(visitante?.score || '0', 10);
         const completado = Boolean(comp.status?.type?.completed);
         const estado = comp.status?.type?.name || 'STATUS_SCHEDULED';
+        const fechaPartido = new Date(evento.date).toISOString();
+        const periodo = Number(comp.status?.period || 0) || null;
+        const reloj = comp.status?.displayClock || comp.status?.type?.shortDetail || null;
 
         let resultadoOficial: '1' | 'X' | '2' | null = null;
         if (completado) {
           resultadoOficial =
             puntosLocal > puntosVisitante ? '1' : puntosLocal < puntosVisitante ? '2' : 'X';
+          hayPartidosCompletados = true;
         }
 
-        const { data: partidoGuardado, error: upsertError } = await supabase
-          .from('partidos')
-          .upsert(
-            {
-              espn_event_id: evento.id,
-              temporada,
-              jornada: semana,
-              semana_competicion: semana,
-              tipo_competicion: 'regular',
-              equipo_local: localAbrev,
-              equipo_visitante: visitAbrev,
-              fecha_partido: new Date(evento.date).toISOString(),
-              estado,
-              puntos_local: puntosLocal,
-              puntos_visitante: puntosVisitante,
-              periodo: Number(comp.status?.period || 0) || null,
-              reloj: comp.status?.displayClock || comp.status?.type?.shortDetail || null,
-              resultado_oficial: resultadoOficial,
-            },
-            { onConflict: 'espn_event_id' },
-          )
-          .select('id')
-          .single();
+        const partidoExistente = partidosPorEspn.get(String(evento.id));
+        const datosSinCambios = Boolean(
+          partidoExistente &&
+            partidoExistente.estado === estado &&
+            partidoExistente.resultado_oficial === resultadoOficial &&
+            partidoExistente.fecha_partido === fechaPartido &&
+            Number(partidoExistente.puntos_local || 0) === puntosLocal &&
+            Number(partidoExistente.puntos_visitante || 0) === puntosVisitante &&
+            (partidoExistente.periodo ?? null) === periodo &&
+            (partidoExistente.reloj ?? null) === reloj &&
+            partidoExistente.equipo_local === localAbrev &&
+            partidoExistente.equipo_visitante === visitAbrev,
+        );
 
-        if (upsertError || !partidoGuardado) {
-          throw new Error(`Error guardando partido ESPN ${evento.id}: ${upsertError?.message || 'sin id'}`);
+        const futuroProgramado =
+          estado === 'STATUS_SCHEDULED' && new Date(fechaPartido).getTime() > Date.now();
+
+        const finalConsolidado = Boolean(
+          partidoExistente &&
+            completado &&
+            estado === 'STATUS_FINAL' &&
+            partidoExistente.estado === 'STATUS_FINAL' &&
+            partidoExistente.resultado_oficial === resultadoOficial &&
+            Number(partidoExistente.puntos_local || 0) === puntosLocal &&
+            Number(partidoExistente.puntos_visitante || 0) === puntosVisitante &&
+            (pronosticosPendientesPorPartido.get(String(partidoExistente.id)) || 0) === 0,
+        );
+
+        if (futuroProgramado && datosSinCambios) {
+          continue;
         }
 
-        if (completado && resultadoOficial) {
+        if (finalConsolidado && datosSinCambios) {
+          continue;
+        }
+
+        let partidoGuardadoId = partidoExistente?.id || null;
+
+        if (!datosSinCambios || !partidoGuardadoId) {
+          const { data: partidoGuardado, error: upsertError } = await supabase
+            .from('partidos')
+            .upsert(
+              {
+                espn_event_id: evento.id,
+                temporada,
+                jornada: semana,
+                semana_competicion: semana,
+                tipo_competicion: 'regular',
+                equipo_local: localAbrev,
+                equipo_visitante: visitAbrev,
+                fecha_partido: fechaPartido,
+                estado,
+                puntos_local: puntosLocal,
+                puntos_visitante: puntosVisitante,
+                periodo,
+                reloj,
+                resultado_oficial: resultadoOficial,
+              },
+              { onConflict: 'espn_event_id' },
+            )
+            .select('id')
+            .single();
+
+          if (upsertError || !partidoGuardado) {
+            throw new Error(
+              `Error guardando partido ESPN ${evento.id}: ${upsertError?.message || 'sin id'}`,
+            );
+          }
+
+          partidoGuardadoId = partidoGuardado.id;
+        }
+
+        if (completado && resultadoOficial && partidoGuardadoId) {
           const { error: aciertosError } = await supabase
             .from('pronosticos')
             .update({ acierto: true })
-            .eq('partido_id', partidoGuardado.id)
+            .eq('partido_id', partidoGuardadoId)
             .eq('eleccion', resultadoOficial);
-          if (aciertosError) throw new Error(`Error validando aciertos: ${aciertosError.message}`);
+          if (aciertosError) {
+            throw new Error(`Error validando aciertos: ${aciertosError.message}`);
+          }
 
           const { error: fallosError } = await supabase
             .from('pronosticos')
             .update({ acierto: false })
-            .eq('partido_id', partidoGuardado.id)
+            .eq('partido_id', partidoGuardadoId)
             .neq('eleccion', resultadoOficial);
-          if (fallosError) throw new Error(`Error validando fallos: ${fallosError.message}`);
-
-          await pushOnFireSiProcede({ temporada, jornada: semana });
-          await pushMadreMiaSiProcede({ temporada, jornada: semana });
-          await pushPlenoRedzoneSiProcede({ temporada, jornada: semana });
-          await pushMenudoBanoSiProcede({ temporada, jornada: semana });
-          await pushSeEscapaSiProcede({ temporada, jornada: semana });
-          await pushPlenoMagicoSiProcede({ temporada, jornada: semana });
-          await pushNoTeComesElTurronSiProcede({ temporada, jornada: semana });
-          await pushLiderSolidoSiProcede({ temporada, jornada: semana });
+          if (fallosError) {
+            throw new Error(`Error validando fallos: ${fallosError.message}`);
+          }
         }
+      }
+
+      if (hayPartidosCompletados) {
+        await pushOnFireSiProcede({ temporada, jornada: semana });
+        await pushMadreMiaSiProcede({ temporada, jornada: semana });
+        await pushPlenoRedzoneSiProcede({ temporada, jornada: semana });
+        await pushMenudoBanoSiProcede({ temporada, jornada: semana });
+        await pushSeEscapaSiProcede({ temporada, jornada: semana });
+        await pushPlenoMagicoSiProcede({ temporada, jornada: semana });
+        await pushNoTeComesElTurronSiProcede({ temporada, jornada: semana });
+        await pushLiderSolidoSiProcede({ temporada, jornada: semana });
       }
 
       const { data: partidosSemana, error: partidosSemanaError } = await supabase
