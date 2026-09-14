@@ -133,7 +133,11 @@ async function ejecutarMotorProductivo(ahora = new Date()) {
   }
 
   if (faseCompeticion === 'regular') {
-    await sincronizarTemporadaCompleta(temporada);
+    if (!Number.isInteger(jornada) || jornada < 1) {
+      throw new Error(`Jornada regular inválida: ${config.jornada_actual}`);
+    }
+
+    await sincronizarTemporadaCompleta(temporada, jornada, jornada);
 
     return {
       mode: 'production',
