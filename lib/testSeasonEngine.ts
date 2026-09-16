@@ -14,6 +14,8 @@ const TABLAS_TEST = {
   pronosticos: 'pronosticos_test',
 } as const;
 
+const ESPERA_POST_SUPERBOWL_MS = 72 * 60 * 60 * 1000;
+
 type ResultadoOficial = '1' | 'X' | '2';
 type PartidoTest = { id: string; jornada: number; fecha_partido: string; estado: string | null; puntos_local: number | null; puntos_visitante: number | null; resultado_oficial: ResultadoOficial | null; };
 
@@ -28,10 +30,79 @@ function ms(fecha: string | null | undefined) {
   return Number.isFinite(valor) ? valor : Number.POSITIVE_INFINITY;
 }
 
+async function obtenerOCrearT0Superbowl(params:{
+  temporada:number;
+  jornada:number;
+  ahora:Date;
+  t0Config:string|null|undefined;
+  temporadaT0Config:number|null|undefined;
+}) {
+  const { temporada, jornada, ahora, t0Config, temporadaT0Config } = params;
+
+  if (temporadaT0Config === temporada && t0Config) {
+    const existente = new Date(t0Config);
+    if (!Number.isNaN(existente.getTime())) return existente;
+  }
+
+  const t0 = ahora.toISOString();
+  const { data, error } = await supabase
+    .from(TABLAS_TEST.config)
+    .update({ superbowl_final_t0:t0, superbowl_final_t0_temporada:temporada })
+    .eq('id',1)
+    .eq('temporada',temporada)
+    .eq('jornada_actual',jornada)
+    .select('superbowl_final_t0, superbowl_final_t0_temporada')
+    .maybeSingle();
+
+  if (error) throw new Error(`TEST: error guardando T0 de la Super Bowl: ${error.message}`);
+  if (!data?.superbowl_final_t0 || Number(data.superbowl_final_t0_temporada) !== temporada) {
+    throw new Error('TEST: no se pudo persistir T0 de la Super Bowl');
+  }
+
+  return new Date(data.superbowl_final_t0);
+}
+
+async function resolverT72Superbowl(params:{
+  temporada:number;
+  jornada:number;
+  ahora:Date;
+  t0:Date;
+}) {
+  const { temporada, jornada, ahora, t0 } = params;
+  const finEspera = new Date(t0.getTime() + ESPERA_POST_SUPERBOWL_MS);
+  const restanteMs = Math.max(0, finEspera.getTime() - ahora.getTime());
+
+  if (restanteMs > 0) {
+    return {
+      finalizada:false as const,
+      t0:t0.toISOString(),
+      t72:finEspera.toISOString(),
+      restanteMs,
+    };
+  }
+
+  const { error } = await supabase
+    .from(TABLAS_TEST.config)
+    .update({ fase_competicion:'finalizada' })
+    .eq('id',1)
+    .eq('temporada',temporada)
+    .eq('jornada_actual',jornada)
+    .neq('fase_competicion','finalizada');
+
+  if (error) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada tras T+72: ${error.message}`);
+
+  return {
+    finalizada:true as const,
+    t0:t0.toISOString(),
+    t72:finEspera.toISOString(),
+    restanteMs:0,
+  };
+}
+
 export async function sincronizarTemporadaTestActual(ahora = new Date()) {
   const ahoraMs = ahora.getTime();
   const { data: config, error: configError } = await supabase.from(TABLAS_TEST.config)
-    .select('temporada, temporada_objetivo, jornada_actual, fase_competicion, semana_postemporada').eq('id', 1).maybeSingle();
+    .select('temporada, temporada_objetivo, jornada_actual, fase_competicion, semana_postemporada, superbowl_final_t0, superbowl_final_t0_temporada').eq('id', 1).maybeSingle();
   if (configError) throw new Error(`TEST: error leyendo app_config_test: ${configError.message}`);
   if (!config) throw new Error('TEST: app_config_test está vacío');
 
@@ -113,27 +184,45 @@ export async function sincronizarTemporadaTestActual(ahora = new Date()) {
       if(transicion.transicion) return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'transicion_playoffs',siguienteJornada:transicion.jornadaNueva,faseCompeticion:transicion.faseCompeticion,semanaPostemporada:transicion.semanaPostemporada};
 
       if(transicion.finPlayoffs && semanaPostemporada===4){
+        // T0 nace exactamente en el hito deportivo ya existente: Super Bowl finalizada.
+        // No depende del momento en que se proclame o registre CAMPEON_REDZONE.
+        const t0Superbowl=await obtenerOCrearT0Superbowl({
+          temporada,
+          jornada,
+          ahora,
+          t0Config:config.superbowl_final_t0,
+          temporadaT0Config:config.superbowl_final_t0_temporada == null ? null : Number(config.superbowl_final_t0_temporada),
+        });
+
         const desempate=await activarDesempateSuperbowlSiProcede();
 
         if(desempate.resuelto && !desempate.ganador){
           const rankingFinal=await calcularRankingCompeticion(temporada);
           const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
           if(!campeon) throw new Error('TEST: la Super Bowl terminó sin desempate pero no existe un líder único');
-          const {error}=await supabase.from(TABLAS_TEST.config).update({fase_competicion:'finalizada'}).eq('id',1).eq('temporada',temporada).eq('jornada_actual',jornada);
-          if(error) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${error.message}`);
-          return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'temporada_finalizada',faseCompeticion:'finalizada',siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,motivo:transicion.motivo};
+
+          const cierre=await resolverT72Superbowl({temporada,jornada,ahora,t0:t0Superbowl});
+          if(!cierre.finalizada){
+            return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'celebracion_t72',faseCompeticion,siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,t0Superbowl:cierre.t0,finT72:cierre.t72,restanteMs:cierre.restanteMs,motivo:'Super Bowl finalizada. REDZONE mantiene el cierre deportivo durante T+72 antes de activar Motor 4.'};
+          }
+
+          return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'temporada_finalizada',faseCompeticion:'finalizada',siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,t0Superbowl:cierre.t0,finT72:cierre.t72,motivo:transicion.motivo};
         }
 
         if(desempate.resuelto && desempate.ganador){
           const rankingFinal=await calcularRankingCompeticion(temporada);
           const campeon=rankingFinal.lideres.length===1 ? rankingFinal.lideres[0] : null;
           if(!campeon || campeon.userId!==desempate.ganador) throw new Error('TEST: el ganador del desempate no coincide con el líder único del ranking final');
-          const {error}=await supabase.from(TABLAS_TEST.config).update({fase_competicion:'finalizada'}).eq('id',1).eq('temporada',temporada).eq('jornada_actual',jornada);
-          if(error) throw new Error(`TEST: error marcando temporada ${temporada} como finalizada: ${error.message}`);
-          return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'temporada_finalizada',faseCompeticion:'finalizada',siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,motivo:transicion.motivo};
+
+          const cierre=await resolverT72Superbowl({temporada,jornada,ahora,t0:t0Superbowl});
+          if(!cierre.finalizada){
+            return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'celebracion_t72',faseCompeticion,siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,t0Superbowl:cierre.t0,finT72:cierre.t72,restanteMs:cierre.restanteMs,motivo:'Super Bowl finalizada. REDZONE mantiene el cierre deportivo durante T+72 antes de activar Motor 4.'};
+          }
+
+          return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:'temporada_finalizada',faseCompeticion:'finalizada',siguienteJornada:null,campeon:campeon.userId,puntosCampeon:campeon.puntos,ranking:rankingFinal.ranking,desempate,t0Superbowl:cierre.t0,finT72:cierre.t72,motivo:transicion.motivo};
         }
 
-        return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:desempate.activado?'desempate_superbowl':'postseason_completa',siguienteJornada:null,desempate,motivo:transicion.motivo};
+        return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:desempate.activado?'desempate_superbowl':'postseason_completa',siguienteJornada:null,desempate,t0Superbowl:t0Superbowl.toISOString(),finT72:new Date(t0Superbowl.getTime()+ESPERA_POST_SUPERBOWL_MS).toISOString(),motivo:transicion.motivo};
       }
       return {mode:'tr25_test',temporada,jornada,estado:'finalizada',fase:transicion.finPlayoffs?'postseason_completa':'esperando_siguiente_ronda',siguienteJornada:null,motivo:transicion.motivo};
     }
