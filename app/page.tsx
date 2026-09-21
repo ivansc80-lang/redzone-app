@@ -1200,17 +1200,19 @@ export default function Home() {
   // El cron productivo sincroniza ESPN -> Supabase cada 5 minutos.
   // Esta señal reutiliza la misma carga ya validada sin modificar RACHAS.
   const [refrescoCron, setRefrescoCron] = useState(0);
+  const generacionCargaDatosRef = useRef(0);
 
   useEffect(() => {
     let intervaloRefrescoCron: number | null = null;
 
     // El cron productivo sincroniza en :00:10, :05:10, :10:10...
-    // La PWA relee Supabase 10 segundos después: :00:20, :05:20, :10:20...
+    // La PWA relee Supabase en :00:55, :05:55, :10:55...
+    // Así dejamos hasta 45 segundos para que termine una sincronización larga.
     const ahora = Date.now();
     const bloqueCincoMinutos = 5 * 60 * 1000;
-    const desfaseRefresco = 20 * 1000;
+    const desfaseRefresco = 55 * 1000;
 
-    // Próximo :00:20, :05:20, :10:20...
+    // Próximo :00:55, :05:55, :10:55...
     const bloqueActual =
       Math.floor(ahora / bloqueCincoMinutos) * bloqueCincoMinutos;
     const refrescoBloqueActual = bloqueActual + desfaseRefresco;
@@ -2620,6 +2622,10 @@ const [verPassword, setVerPassword] = useState(false);
 
   useEffect(() => {
     const cargarDatosSupabase = async () => {
+      const generacion = ++generacionCargaDatosRef.current;
+      const sigueSiendoCargaActual = () =>
+        generacion === generacionCargaDatosRef.current;
+
       const maxJornadaCargar = Math.max(18, Number(jornadaActual || 1));
 
       const todasLasJornadas = await Promise.all(
@@ -2655,8 +2661,6 @@ const [verPassword, setVerPassword] = useState(false);
           fecha_partido: row.fecha_partido ?? null,
         });
       });
-      setJornadasOficiales(agrupadas);
-
       // GAMES tiene su propio calendario completo.
       // No comparte el filtro de jornada activa utilizado por PORRA/JORNADA.
       const partidosGamesData = await getPartidosGames();
@@ -2686,8 +2690,6 @@ const [verPassword, setVerPassword] = useState(false);
           fecha_partido: row.fecha_partido ?? null,
         });
       });
-
-      setJornadasGames(agrupadasGames);
 
       const { data: pronosData, error: pronosError } = await supabase
         .from("pronosticos")
@@ -2751,8 +2753,6 @@ const [verPassword, setVerPassword] = useState(false);
           }
         });
       }
-      setPronosticosPorUsuario(obj);
-
       // GAMES necesita conservar los pronósticos históricos de todas
       // las jornadas visibles de la competición, no solo de la activa.
       const objGames: Record<
@@ -2828,11 +2828,19 @@ const [verPassword, setVerPassword] = useState(false);
         });
       }
 
+      // Publicamos la fotografía completa solo si esta sigue siendo
+      // la carga más reciente. Una ejecución antigua no puede sobrescribir
+      // ningún estado con datos anteriores.
+      if (!sigueSiendoCargaActual()) return;
+
+      setJornadasOficiales(agrupadas);
+      setJornadasGames(agrupadasGames);
+      setPronosticosPorUsuario(obj);
       setPronosticosGames(objGames);
     };
 
     if (usuarioLogueado?.id) cargarDatosSupabase();
-  }, [usuarioLogueado?.id, usuarioActivoId, jornadaActual, refrescoCron]);
+  }, [usuarioLogueado?.id, jornadaActual, refrescoCron]);
 
   const cargarPerfil = async (
     userId: string,
