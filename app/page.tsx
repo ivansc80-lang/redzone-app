@@ -1195,6 +1195,7 @@ export default function Home() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchPosition, setSearchPosition] = useState<"top" | "bottom">("top");
   const [jornadaActual, setJornadaActual] = useState<number>(1);
+  const [jornadaVisualizada, setJornadaVisualizada] = useState<number>(1);
 
   // Refresco automático de los datos que pueden cambiar dentro de una jornada.
   // El cron productivo sincroniza ESPN -> Supabase cada 5 minutos.
@@ -2200,6 +2201,25 @@ const [verPassword, setVerPassword] = useState(false);
   const [jornadasGames, setJornadasGames] = useState<
     Record<number, PronosticoPartido[]>
   >({});
+
+  const [jornadaGamesAbierta, setJornadaGamesAbierta] = useState<number | null>(
+    jornadaActual,
+  );
+  const [gamesTodoAbierto, setGamesTodoAbierto] = useState(false);
+  const [vistaGames, setVistaGames] = useState<"regular" | "playoff">("regular");
+  const estabaEnGamesRef = useRef(false);
+
+  useEffect(() => {
+    const estaEnGames =
+      pestanaActiva === "equipos" && subPestanaEquipos === "games";
+
+    if (estaEnGames && !estabaEnGamesRef.current) {
+      setJornadaGamesAbierta(jornadaActual);
+      setGamesTodoAbierto(false);
+    }
+
+    estabaEnGamesRef.current = estaEnGames;
+  }, [pestanaActiva, subPestanaEquipos, jornadaActual]);
 
   const [pronosticosGames, setPronosticosGames] = useState<
     Record<
@@ -3771,6 +3791,7 @@ const [verPassword, setVerPassword] = useState(false);
         // El cambio de jornada provocará la recarga completa de datos.
         if (contextoJornada.jornada !== jornadaActual) {
           setJornadaActual(contextoJornada.jornada);
+          setJornadaVisualizada(contextoJornada.jornada);
           return;
         }
 
@@ -4374,6 +4395,10 @@ const [verPassword, setVerPassword] = useState(false);
     datosUsuarioActual.pronosticos[0] || null,
   );
 
+  const rondaJornadaVisualizada = nombreRondaPlayoff(
+    jornadasOficiales[jornadaVisualizada]?.[0] || null,
+  );
+
   const tituloBarraPrincipal =
     pestanaActiva === "clasificacion"
       ? "TABLA GENERAL DE POSICIONES"
@@ -4384,7 +4409,7 @@ const [verPassword, setVerPassword] = useState(false);
           ? "FASE DE COMPETICIÓN ACTUAL"
           : `PRONÓSTICOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
         : pestanaActiva === "jornada"
-          ? `RESULTADOS JORNADA ${jornadaActual}${rondaJornadaActiva ? ` – ${rondaJornadaActiva}` : ""}`
+          ? `RESULTADOS JORNADA ${jornadaVisualizada}${rondaJornadaVisualizada ? ` – ${rondaJornadaVisualizada}` : ""}`
           : pestanaActiva === "perfil"
             ? vistaPerfilPalmares
               ? "🏆 PALMARÉS"
@@ -8874,18 +8899,35 @@ const [verPassword, setVerPassword] = useState(false);
           )}
 
           {pestanaActiva === "jornada" && (
-            <section className="space-y-8 bg-[#8b0000] p-2 md:p-6 rounded-2xl">
+            <section className="relative space-y-8 bg-[#8b0000] px-2 pb-2 pt-8 md:px-6 md:pb-6 md:pt-5 rounded-2xl">
+              <select
+                value={jornadaVisualizada}
+                onChange={(e) =>
+                  setJornadaVisualizada(Number(e.target.value))
+                }
+                aria-label="Seleccionar jornada"
+                className="absolute right-2 top-2 md:right-6 md:top-2 px-3 py-2 rounded-lg border border-white/40 bg-white text-[#002244] font-['Orbitron'] font-black text-[8px] md:text-[9px] uppercase cursor-pointer shadow-md"
+              >
+                {Array.from({ length: jornadaActual }, (_, i) => i + 1)
+                  .reverse()
+                  .map((jornada) => (
+                    <option key={jornada} value={jornada}>
+                      JORNADA {jornada}
+                    </option>
+                  ))}
+              </select>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {usuarios.map((usr) => {
                   const pronosticosUsr =
-                    pronosticosPorUsuario[jornadaActual]?.[usr.id]
+                    pronosticosPorUsuario[jornadaVisualizada]?.[usr.id]
                       ?.pronosticos || [];
                   const confirmadoUsr =
-                    pronosticosPorUsuario[jornadaActual]?.[usr.id]
+                    pronosticosPorUsuario[jornadaVisualizada]?.[usr.id]
                       ?.confirmado || false;
-                  const puntosJornadaActual = calcularPuntosJornada(
+                  const puntosJornadaVisualizada = calcularPuntosJornada(
                     usr.id,
-                    jornadaActual,
+                    jornadaVisualizada,
                   );
 
                   const mapaUuidUsuarios: Record<string, string> = {
@@ -8995,7 +9037,7 @@ const [verPassword, setVerPassword] = useState(false);
                           faseCompeticionActual === "pretemporada"
                             ? "0 aciertos"
                             : confirmadoUsr
-                              ? `${puntosJornadaActual} aciertos`
+                              ? `${puntosJornadaVisualizada} aciertos`
                               : "0 aciertos"}
                         </div>
                         <div
@@ -9029,6 +9071,7 @@ const [verPassword, setVerPassword] = useState(false);
                           faseCompeticionActual !== "pretemporada" &&
                           pronosticosUsr.map((p) => {
                           const pronosticosVisibles =
+                            jornadaVisualizada < jornadaActual ||
                             estadoJornadaActual === "cerrada" ||
                             estadoJornadaActual === "finalizada";
                           const eleccion = pronosticosVisibles
@@ -9117,10 +9160,46 @@ const [verPassword, setVerPassword] = useState(false);
               <section
                 className={
                   subPestanaEquipos === "games"
-                    ? "space-y-6 bg-[#8b0000] p-2 md:p-6 rounded-2xl"
+                    ? "-mx-4 -mt-4 md:mx-0 md:-mt-8"
                     : "space-y-6"
                 }
               >
+                {subPestanaEquipos === "games" && (
+                  <div className="relative left-1/2 w-screen -translate-x-1/2 bg-white text-black rounded-none shadow-2xl overflow-hidden">
+                    <div className="grid grid-cols-2 border-b border-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => setVistaGames("regular")}
+                        className="relative py-4 md:py-5 font-['Orbitron'] text-sm md:text-base font-black uppercase transition-all text-red-700 hover:text-red-600"
+                      >
+                        REGULAR
+                        <span
+                          className={`absolute bottom-[2px] left-4 right-4 h-[3px] ${
+                            vistaGames === "regular"
+                              ? "bg-red-600"
+                              : "bg-transparent"
+                          }`}
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setVistaGames("playoff")}
+                        className="relative py-4 md:py-5 font-['Orbitron'] text-sm md:text-base font-black uppercase transition-all text-red-700 hover:text-red-600"
+                      >
+                        PLAYOFF
+                        <span
+                          className={`absolute bottom-[2px] left-4 right-4 h-[3px] ${
+                            vistaGames === "playoff"
+                              ? "bg-red-600"
+                              : "bg-transparent"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {subPestanaEquipos === "score" ? (
                   <div className="bg-white rounded-2xl p-3 md:p-5 shadow-xl">
                     {sincronizandoPosiciones && (
@@ -9179,8 +9258,26 @@ const [verPassword, setVerPassword] = useState(false);
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-8">
+                ) : vistaGames === "regular" ? (
+                  <div className="bg-[#8b0000] pt-4">
+                    <div className="flex justify-end mb-4 px-2 md:px-6">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (gamesTodoAbierto) {
+                            setGamesTodoAbierto(false);
+                            setJornadaGamesAbierta(null);
+                          } else {
+                            setGamesTodoAbierto(true);
+                          }
+                        }}
+                        className="px-3 py-2 rounded-lg border border-white/40 bg-white text-[#002244] font-['Orbitron'] font-black text-[8px] md:text-[9px] uppercase cursor-pointer shadow-md"
+                      >
+                        {gamesTodoAbierto ? "CERRAR TODO" : "ABRIR TODO"}
+                      </button>
+                    </div>
+
+                    <div className="space-y-8">
                     {Object.keys(jornadasGames)
                       .map(Number)
                       .filter((j) => Number.isInteger(j) && j > 0)
@@ -9194,28 +9291,109 @@ const [verPassword, setVerPassword] = useState(false);
                         partidosJornada[0] || null,
                       );
 
+                      const jornadaAbierta =
+                        gamesTodoAbierto || jornadaGamesAbierta === jNum;
+
                       return (
                         <div
                           key={jNum}
                           className="bg-white border border-white rounded-2xl p-4 md:p-6 shadow-2xl"
                         >
-                          <div className="flex items-center gap-3 border-b-2 border-red-600 pb-2 mb-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (gamesTodoAbierto) {
+                                setGamesTodoAbierto(false);
+                                setJornadaGamesAbierta(jNum);
+                                return;
+                              }
+
+                              setJornadaGamesAbierta((actual) =>
+                                actual === jNum ? null : jNum,
+                              );
+                            }}
+                            aria-expanded={jornadaAbierta}
+                            className={`w-full flex items-center gap-3 border-b-2 border-red-600 pb-2 text-left cursor-pointer ${
+                              jornadaAbierta ? "mb-4" : "mb-0"
+                            }`}
+                          >
                             <div className="w-3 h-3 bg-red-600 rounded-full flex-shrink-0" />
-                            <h3 className="text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
+                            <h3 className="flex-1 text-base md:text-xl font-black uppercase tracking-wider text-red-600 font-['Orbitron'] italic underline decoration-red-600 underline-offset-4">
                               {rondaGames
                                 ? `J${jNum} – ${rondaGames}`
                                 : `JORNADA ${jNum}`}
                             </h3>
-                          </div>
+                            <span
+                              className="text-red-600 font-['Orbitron'] font-black text-sm md:text-base flex-shrink-0"
+                              aria-hidden="true"
+                            >
+                              {jornadaAbierta ? "▲" : "▼"}
+                            </span>
+                          </button>
 
-                          <div className="grid grid-cols-1 max-lg:landscape:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {partidosJornada.map((partido: any) => {
+                          {jornadaAbierta && (
+                            <div className="bg-[#081F44] rounded-xl p-3">
+                              <div className="grid grid-cols-1 max-lg:landscape:grid-cols-2 lg:grid-cols-4 gap-4">
+                              {partidosJornada.map((partido: any, indexPartido: number) => {
                               const local =
                                 partido.local || partido.equipo_local || "";
                               const visitante =
                                 partido.visitante ||
                                 partido.equipo_visitante ||
                                 "";
+
+                              const EQUIPOS_GAMECARD: Record<
+                                string,
+                                { nombre: string; banner: string }
+                              > = {
+                                ARI: { nombre: "CARDINALS", banner: "/ARI_CARDINALS.webp" },
+                                ATL: { nombre: "FALCONS", banner: "/ATL_FALCONS.webp" },
+                                BAL: { nombre: "RAVENS", banner: "/BAL_RAVENS.webp" },
+                                BUF: { nombre: "BILLS", banner: "/BUF_BILLS.webp" },
+                                CAR: { nombre: "PANTHERS", banner: "/CAR_PANTHERS.webp" },
+                                CHI: { nombre: "BEARS", banner: "/CHI_BEARS.webp" },
+                                CIN: { nombre: "BENGALS", banner: "/CIN_BENGALS.webp" },
+                                CLE: { nombre: "BROWNS", banner: "/CLE_BROWNS.webp" },
+                                DAL: { nombre: "COWBOYS", banner: "/DAL_COWBOYS.webp" },
+                                DEN: { nombre: "BRONCOS", banner: "/DEN_BRONCOS.webp" },
+                                DET: { nombre: "LIONS", banner: "/DET_LIONS.webp" },
+                                GB: { nombre: "PACKERS", banner: "/GB_PACKERS.webp" },
+                                HOU: { nombre: "TEXANS", banner: "/HOU_TEXANS.webp" },
+                                IND: { nombre: "COLTS", banner: "/IND_COLTS.webp" },
+                                JAX: { nombre: "JAGUARS", banner: "/JAX_JAGUARS.webp" },
+                                KC: { nombre: "CHIEFS", banner: "/KC_CHIEFS.webp" },
+                                LAC: { nombre: "CHARGERS", banner: "/LAC_CHARGERS.webp" },
+                                LAR: { nombre: "RAMS", banner: "/LA_RAMS.webp" },
+                                LV: { nombre: "RAIDERS", banner: "/LV_RAIDERS.webp" },
+                                MIA: { nombre: "DOLPHINS", banner: "/MIA_DOLPHINS.webp" },
+                                MIN: { nombre: "VIKINGS", banner: "/MIN_VIKINGS.webp" },
+                                NE: { nombre: "PATRIOTS", banner: "/NE_PATRIOTS.webp" },
+                                NO: { nombre: "SAINTS", banner: "/NO_SAINTS.webp" },
+                                NYG: { nombre: "GIANTS", banner: "/NYG_GIANTS.webp" },
+                                NYJ: { nombre: "JETS", banner: "/NYJ_JETS.webp" },
+                                PHI: { nombre: "EAGLES", banner: "/PHI_EAGLES.webp" },
+                                PIT: { nombre: "STEELERS", banner: "/PIT_STEELERS.webp" },
+                                SEA: { nombre: "SEAHAWKS", banner: "/SEA_SEAHAWKS.webp" },
+                                SF: { nombre: "49ERS", banner: "/SF_49ERS.webp" },
+                                TB: { nombre: "BUCCANEERS", banner: "/TB_BUCCANEERS.webp" },
+                                TEN: { nombre: "TITANS", banner: "/TEN_TITANS.webp" },
+                                WAS: { nombre: "COMMANDERS", banner: "/WAS_COMMANDERS.webp" },
+                                WSH: { nombre: "COMMANDERS", banner: "/WAS_COMMANDERS.webp" },
+                              };
+
+                              const codigoLocal = String(local)
+                                .trim()
+                                .toUpperCase();
+
+                              const codigoVisitante = String(visitante)
+                                .trim()
+                                .toUpperCase();
+
+                              const visualLocal =
+                                EQUIPOS_GAMECARD[codigoLocal];
+
+                              const visualVisitante =
+                                EQUIPOS_GAMECARD[codigoVisitante];
 
                               const localLogo =
                                 partido.localLogo ||
@@ -9336,10 +9514,10 @@ const [verPassword, setVerPassword] = useState(false);
                               return (
                                 <div
                                   key={partido.id}
-                                  className="bg-[#A6A6A6] border border-[#8f8f8f] rounded-xl p-3 shadow-md"
+                                  className={`bg-[#1781F2] border border-[#1781F2] rounded-xl shadow-md ${"p-0"}`}
                                 >
                                   {/* CAJÓN SUPERIOR DEL PARTIDO */}
-                                  <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-2 bg-[#292929] border border-[#3a3a3a] rounded-lg px-3 py-2">
+                                  <div className={`hidden grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-2 bg-[#292929] border border-[#3a3a3a] rounded-lg px-3 py-2`}>
                                     <div className="flex items-center gap-2 min-w-0">
                                       <img
                                         src={localLogo}
@@ -9376,7 +9554,7 @@ const [verPassword, setVerPassword] = useState(false);
                                   </div>
 
                                   {/* RACHA + HORA / ESTADO */}
-                                  <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 px-1 mt-3 mb-3 overflow-hidden">
+                                  <div className={`hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 px-1 mt-3 mb-3 overflow-hidden`}>
                                     <div className="font-mono text-[9px] md:text-[8px] lg:text-[10px] xl:text-[11px] whitespace-nowrap">
                                       <span className="text-zinc-800 mr-1 font-semibold">
                                         RACHA
@@ -9396,8 +9574,77 @@ const [verPassword, setVerPassword] = useState(false);
                                     </div>
                                   </div>
 
-                                  {/* PRONÓSTICOS */}
-                                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                                    {/* GAMECARD VISUAL DINÁMICO — J1 */}
+                                    {visualLocal &&
+                                      visualVisitante && (
+                                        <div className="mb-0 flex flex-col gap-0 overflow-hidden rounded-lg">
+                                          {/* LOCAL */}
+                                          <div className="relative">
+                                            <img
+                                              src={visualLocal.banner}
+                                              alt={visualLocal.nombre}
+                                              className="block w-full h-auto "
+                                            />
+
+                                            <div className="pointer-events-none absolute inset-0 flex items-center">
+                                              <div className="ml-[36%] flex w-[59%] items-center">
+                                                <div className="relative min-w-0 flex-1 translate-y-[8px]">
+                                                  <span className="relative inline-block left-[calc(50%-8px)] -translate-x-1/2 -translate-y-[10px] font-['Orbitron'] text-[18px] leading-none font-black text-white uppercase whitespace-nowrap [text-shadow:-3px_0_black,3px_0_black,0_-3px_black,0_3px_black,-3px_-3px_black,3px_-3px_black,-3px_3px_black,3px_3px_black]">
+                                                    {visualLocal.nombre}
+                                                  </span>
+
+                                                  <span className="absolute right-[-11px] top-[18px] font-['Orbitron'] text-[9px] leading-none font-black text-white whitespace-nowrap [text-shadow:-1px_0_black,1px_0_black,0_-1px_black,0_1px_black,-1px_-1px_black,1px_-1px_black,-1px_1px_black,1px_1px_black]">
+                                                    {rachaLocal}
+                                                  </span>
+                                                </div>
+
+                                                <span className="ml-auto w-[20%] translate-x-[8px] text-center font-['Orbitron'] text-[21px] leading-none font-black text-white">
+                                                  {mostrarMarcador
+                                                    ? puntosLocal
+                                                    : ""}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* VISITANTE */}
+                                          <div className="relative -mt-[7.55px]">
+                                            <img
+                                              src={visualVisitante.banner}
+                                              alt={visualVisitante.nombre}
+                                              className="block w-full h-auto "
+                                            />
+
+                                            <div className="pointer-events-none absolute inset-0 flex items-center">
+                                              <div className="ml-[36%] flex w-[59%] items-center">
+                                                <div className="relative min-w-0 flex-1 translate-y-[8px]">
+                                                  <span className="relative inline-block left-[calc(50%-8px)] -translate-x-1/2 -translate-y-[10px] font-['Orbitron'] text-[18px] leading-none font-black text-white uppercase whitespace-nowrap [text-shadow:-3px_0_black,3px_0_black,0_-3px_black,0_3px_black,-3px_-3px_black,3px_-3px_black,-3px_3px_black,3px_3px_black]">
+                                                    {visualVisitante.nombre}
+                                                  </span>
+
+                                                  <span className="absolute right-[-11px] top-[18px] font-['Orbitron'] text-[9px] leading-none font-black text-white whitespace-nowrap [text-shadow:-1px_0_black,1px_0_black,0_-1px_black,0_1px_black,-1px_-1px_black,1px_-1px_black,-1px_1px_black,1px_1px_black]">
+                                                    {rachaVisitante}
+                                                  </span>
+                                                </div>
+
+                                                <span className="ml-auto w-[20%] translate-x-[8px] text-center font-['Orbitron'] text-[21px] leading-none font-black text-white">
+                                                  {mostrarMarcador
+                                                    ? puntosVisitante
+                                                    : ""}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                    {/* PRONÓSTICOS + ESTADO/LIVE */}
+                                  <div
+                                    className="relative mb-[7.5px]"
+                                  >
+                                    <div
+                                      className={`grid grid-cols-3 gap-1.5 text-center ${"w-[calc(50%+22.5px)] ml-[7.5px]"}`}
+                                    >
                                     {usuarios.map((usr) => {
                                       const eleccionUsr =
                                         pronosticosGames[jNum]?.[
@@ -9436,26 +9683,93 @@ const [verPassword, setVerPassword] = useState(false);
                                       return (
                                         <div
                                           key={usr.id}
-                                          className={`border rounded-lg px-1 py-2 flex flex-col items-center justify-center transition-all ${estiloPronostico}`}
+                                          className={`border rounded-lg px-1 ${"py-[2.25px]"} flex flex-col items-center justify-center transition-all ${estiloPronostico}`}
                                         >
                                           <span className="text-[9px] font-['Orbitron'] font-bold text-white uppercase">
                                             {usr.nombre}
                                           </span>
 
-                                          <span className="text-xs font-mono font-black text-amber-400 mt-0.5">
+                                          <span className="text-[13px] font-mono font-black text-white relative -top-[2px]">
                                             {eleccionUsr}
                                           </span>
                                         </div>
                                       );
                                     })}
+                                    </div>
+
+                                    {(
+                                      <div
+                                        className={`absolute top-0 bottom-0 left-[calc(50%+37.5px)] right-[7.5px] border rounded-lg bg-[#292929] flex flex-col items-center justify-center text-center ${
+                                          esFinal
+                                            ? "border-white ring-2 ring-white/70 shadow-[0_0_10px_rgba(255,255,255,0.45)]"
+                                            : enJuego
+                                              ? "border-orange-500 ring-2 ring-orange-500/70 shadow-[0_0_10px_rgba(249,115,22,0.45)]"
+                                              : "border-[#3a3a3a]"
+                                        }`}
+                                      >
+                                        {esFinal ? (
+                                          <span className="font-['Orbitron'] font-bold text-xs text-white">
+                                            FINAL
+                                          </span>
+                                        ) : enJuego ? (
+                                          <>
+                                            <span className="font-['Orbitron'] font-bold text-[9px] text-white uppercase">
+                                              {partido.periodo ?? partido.period ?? partido.cuarto
+                                                ? `${partido.periodo ?? partido.period ?? partido.cuarto}º CUARTO`
+                                                : "LIVE"}
+                                            </span>
+                                            <span className="font-mono font-black text-xs text-white mt-0.5">
+                                              {partido.reloj ??
+                                                partido.clock ??
+                                                partido.display_clock ??
+                                                "EN JUEGO"}
+                                            </span>
+                                          </>
+                                        ) : fechaPartido ? (
+                                          <>
+                                            <span className="font-['Orbitron'] font-bold text-[9px] text-white uppercase">
+                                              {new Intl.DateTimeFormat("es-ES", {
+                                                timeZone: "Europe/Madrid",
+                                                weekday: "long",
+                                                day: "numeric",
+                                              }).format(new Date(fechaPartido))}
+                                            </span>
+                                            <span className="font-mono font-black text-xs text-white mt-0.5">
+                                              {new Date(fechaPartido).toLocaleTimeString("es-ES", {
+                                                timeZone: "Europe/Madrid",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                              })}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span className="font-['Orbitron'] font-bold text-xs text-white">
+                                            --:--
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               );
                             })}
-                          </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative left-1/2 right-1/2 w-screen -ml-[50vw] -mr-[50vw] bg-[#8b0000] pt-[50px]">
+                    <div className="relative w-full aspect-[1672/941]">
+                      <img
+                        src="/REDZONE_BRACKET_PLAYOFF(2).webp"
+                        alt="REDZONE Playoff Bracket"
+                        className="absolute inset-0 block w-full h-full"
+                      />
+                    </div>
                   </div>
                 )}
               </section>
