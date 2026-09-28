@@ -2111,6 +2111,13 @@ export default function Home() {
   const [nombreEquipo, setNombreEquipo] = useState("");
   const [avatarUrlInput, setAvatarUrlInput] = useState("");
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+
+  // Cambio de contraseña del usuario autenticado.
+  const [cambiarPasswordAbierto, setCambiarPasswordAbierto] = useState(false);
+  const [passwordActual, setPasswordActual] = useState("");
+  const [passwordNueva, setPasswordNueva] = useState("");
+  const [passwordNuevaRepetida, setPasswordNuevaRepetida] = useState("");
+  const [cambiandoPassword, setCambiandoPassword] = useState(false);
   
   const [vistaPerfilPalmares, setVistaPerfilPalmares] = useState(false);
 
@@ -2899,6 +2906,53 @@ const [verPassword, setVerPassword] = useState(false);
           ),
         );
       }
+    }
+  };
+
+  const handleCambiarPassword = async () => {
+    if (!usuarioLogueado || cambiandoPassword) return;
+
+    if (!passwordActual || !passwordNueva || !passwordNuevaRepetida) {
+      alert("Completa los tres campos de contraseña.");
+      return;
+    }
+
+    if (passwordNueva.length < 8) {
+      alert("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    if (passwordNueva !== passwordNuevaRepetida) {
+      alert("Las nuevas contraseñas no coinciden.");
+      return;
+    }
+
+    if (passwordActual === passwordNueva) {
+      alert("La nueva contraseña debe ser distinta de la actual.");
+      return;
+    }
+
+    setCambiandoPassword(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordNueva,
+        current_password: passwordActual,
+      });
+
+      if (error) {
+        alert("No se pudo cambiar la contraseña: " + error.message);
+        return;
+      }
+
+      setPasswordActual("");
+      setPasswordNueva("");
+      setPasswordNuevaRepetida("");
+      setCambiarPasswordAbierto(false);
+
+      alert("Contraseña cambiada correctamente.");
+    } finally {
+      setCambiandoPassword(false);
     }
   };
 
@@ -10203,6 +10257,73 @@ const [verPassword, setVerPassword] = useState(false);
                                     : "🔔 Activar notificaciones"}
                         </button>
 
+                      </div>
+                    )}
+
+                    {usuarioLogueado?.id && (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCambiarPasswordAbierto((anterior) => !anterior)
+                          }
+                          className="w-full py-2.5 bg-[#002244] hover:bg-[#003a70] text-white text-xs font-bold rounded-lg uppercase transition-colors shadow-lg cursor-pointer"
+                        >
+                          🔐 Cambiar contraseña
+                        </button>
+
+                        {cambiarPasswordAbierto && (
+                          <div className="p-3 bg-zinc-50 border border-zinc-200 rounded-lg space-y-2">
+                            <input
+                              type={verPassword ? "text" : "password"}
+                              value={passwordActual}
+                              onChange={(e) => setPasswordActual(e.target.value)}
+                              autoComplete="current-password"
+                              placeholder="Contraseña actual"
+                              className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-zinc-900 bg-white"
+                            />
+
+                            <input
+                              type={verPassword ? "text" : "password"}
+                              value={passwordNueva}
+                              onChange={(e) => setPasswordNueva(e.target.value)}
+                              autoComplete="new-password"
+                              placeholder="Nueva contraseña"
+                              className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-zinc-900 bg-white"
+                            />
+
+                            <input
+                              type={verPassword ? "text" : "password"}
+                              value={passwordNuevaRepetida}
+                              onChange={(e) =>
+                                setPasswordNuevaRepetida(e.target.value)
+                              }
+                              autoComplete="new-password"
+                              placeholder="Repetir nueva contraseña"
+                              className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-zinc-900 bg-white"
+                            />
+
+                            <label className="flex items-center gap-2 text-xs text-zinc-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={verPassword}
+                                onChange={(e) => setVerPassword(e.target.checked)}
+                              />
+                              Mostrar contraseñas
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={handleCambiarPassword}
+                              disabled={cambiandoPassword}
+                              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-500 text-white text-xs font-bold rounded-lg uppercase transition-colors shadow cursor-pointer disabled:cursor-default"
+                            >
+                              {cambiandoPassword
+                                ? "Cambiando contraseña..."
+                                : "Guardar nueva contraseña"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
