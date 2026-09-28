@@ -9105,23 +9105,39 @@ const [verPassword, setVerPassword] = useState(false);
                                       : "w-[22px] h-[22px] md:w-[28px] md:h-[28px]"
                                   }`}
                                 />
-                                <span className="md:hidden font-['Orbitron'] font-bold text-white truncate text-[0.7rem] text-center uppercase">
+                                <button
+                                  type="button"
+                                  onClick={() => abrirFranquiciaDesdeStats(p.local)}
+                                  className="md:hidden font-['Orbitron'] font-bold text-white hover:text-red-400 truncate text-[0.7rem] text-center uppercase cursor-pointer transition-colors"
+                                >
                                   {p.local}
-                                </span>
-                                <span className="hidden md:inline font-['Orbitron'] font-bold text-white truncate text-[0.8rem] text-center uppercase">
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => abrirFranquiciaDesdeStats(p.local)}
+                                  className="hidden md:inline font-['Orbitron'] font-bold text-white hover:text-red-400 truncate text-[0.8rem] text-center uppercase cursor-pointer transition-colors"
+                                >
                                   {nombreFanEquipo(p.local)}
-                                </span>
+                                </button>
                               </div>
                               <span className="font-['Orbitron'] font-bold text-zinc-300 text-[0.65rem] md:text-[0.75rem] px-0.5 text-center">
                                 vs
                               </span>
                               <div className="flex items-center justify-center gap-1.5 min-w-0">
-                                <span className="md:hidden font-['Orbitron'] font-bold text-white truncate text-[0.7rem] text-center uppercase">
+                                <button
+                                  type="button"
+                                  onClick={() => abrirFranquiciaDesdeStats(p.visitante)}
+                                  className="md:hidden font-['Orbitron'] font-bold text-white hover:text-red-400 truncate text-[0.7rem] text-center uppercase cursor-pointer transition-colors"
+                                >
                                   {p.visitante}
-                                </span>
-                                <span className="hidden md:inline font-['Orbitron'] font-bold text-white truncate text-[0.8rem] text-center uppercase">
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => abrirFranquiciaDesdeStats(p.visitante)}
+                                  className="hidden md:inline font-['Orbitron'] font-bold text-white hover:text-red-400 truncate text-[0.8rem] text-center uppercase cursor-pointer transition-colors"
+                                >
                                   {nombreFanEquipo(p.visitante)}
-                                </span>
+                                </button>
                                 <img
                                   src={p.visitanteLogo}
                                   alt={p.visitante}
