@@ -5067,6 +5067,7 @@ const [verPassword, setVerPassword] = useState(false);
                     <TeamOffenseSummary
                       temporada={temporadaStats}
                       onTemporadaChange={setTemporadaStats}
+                      onAbrirFranquicia={abrirFranquiciaDesdeStats}
                       onVolverALideres={() => {
                         setVistaStatsCompleta(false);
                         setTipoStats("equipo");
@@ -5078,6 +5079,7 @@ const [verPassword, setVerPassword] = useState(false);
                     <TeamDefenseSummary
                       temporada={temporadaStats}
                       onTemporadaChange={setTemporadaStats}
+                      onAbrirFranquicia={abrirFranquiciaDesdeStats}
                       onVolverALideres={() => {
                         setVistaStatsCompleta(false);
                         setTipoStats("equipo");
@@ -5089,6 +5091,7 @@ const [verPassword, setVerPassword] = useState(false);
                     <TeamSpecialTeamsSummary
                       temporada={temporadaStats}
                       onTemporadaChange={setTemporadaStats}
+                      onAbrirFranquicia={abrirFranquiciaDesdeStats}
                       onVolverALideres={() => {
                         setVistaStatsCompleta(false);
                         setTipoStats("equipo");
@@ -5100,6 +5103,7 @@ const [verPassword, setVerPassword] = useState(false);
                     <TeamTurnoversSummary
                       temporada={temporadaStats}
                       onTemporadaChange={setTemporadaStats}
+                      onAbrirFranquicia={abrirFranquiciaDesdeStats}
                       onVolverALideres={() => {
                         setVistaStatsCompleta(false);
                         setTipoStats("equipo");
@@ -5241,9 +5245,15 @@ const [verPassword, setVerPassword] = useState(false);
                                           className="w-7 h-7 object-contain flex-shrink-0"
                                         />
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
@@ -5349,9 +5359,15 @@ const [verPassword, setVerPassword] = useState(false);
                                           className="w-6 h-6 lg:w-7 lg:h-7 object-contain flex-shrink-0"
                                         />
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
@@ -5460,9 +5476,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         className="w-6 h-6 lg:w-7 lg:h-7 object-contain flex-shrink-0"
                                       />
                                       <div className="min-w-0">
-                                        <div className="font-bold text-zinc-900 truncate">
-                                          {jugador.nombre}
-                                        </div>
+                                        <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
+                                            {jugador.nombre}
+                                          </a>
                                         <div className="text-[9px] text-zinc-400 font-semibold">
                                           {jugador.equipo}
                                         </div>
@@ -5599,9 +5621,15 @@ const [verPassword, setVerPassword] = useState(false);
                                       />
 
                                       <div className="min-w-0">
-                                        <div className="font-bold text-zinc-900 truncate">
-                                          {jugador.nombre}
-                                        </div>
+                                        <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
+                                            {jugador.nombre}
+                                          </a>
                                         <div className="text-[9px] text-zinc-400 font-semibold">
                                           {jugador.equipo}
                                         </div>
@@ -5699,9 +5727,15 @@ const [verPassword, setVerPassword] = useState(false);
                                       />
 
                                       <div className="min-w-0">
-                                        <div className="font-bold text-zinc-900 truncate">
-                                          {jugador.nombre}
-                                        </div>
+                                        <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
+                                            {jugador.nombre}
+                                          </a>
                                         <div className="text-[9px] text-zinc-400 font-semibold">
                                           {jugador.equipo}
                                         </div>
@@ -5801,9 +5835,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
                                           </div>
@@ -5993,9 +6033,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
 
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
@@ -6122,9 +6168,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
 
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
@@ -6254,9 +6306,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
 
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
@@ -6433,9 +6491,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
 
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
@@ -6556,9 +6620,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
 
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
@@ -6691,9 +6761,15 @@ const [verPassword, setVerPassword] = useState(false);
                                         />
 
                                         <div className="min-w-0">
-                                          <div className="font-bold text-zinc-900 truncate">
+                                          <a
+                                            href={`https://www.espn.com/nfl/player/_/id/${jugador.athleteId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block font-bold text-zinc-900 hover:text-red-700 truncate cursor-pointer transition-colors"
+                                            title={`Abrir perfil ESPN de ${jugador.nombre}`}
+                                          >
                                             {jugador.nombre}
-                                          </div>
+                                          </a>
 
                                           <div className="text-[9px] text-zinc-400 font-semibold">
                                             {jugador.equipo}
@@ -6811,6 +6887,7 @@ const [verPassword, setVerPassword] = useState(false);
                                 jugador.nombre,
                                 jugador.equipo,
                                 jugador.YDS,
+                                jugador.athleteId,
                               ]),
                             },
                             {
@@ -6820,6 +6897,7 @@ const [verPassword, setVerPassword] = useState(false);
                                 jugador.nombre,
                                 jugador.equipo,
                                 jugador.YDS,
+                                jugador.athleteId,
                               ]),
                             },
                             {
@@ -6829,6 +6907,7 @@ const [verPassword, setVerPassword] = useState(false);
                                 jugador.nombre,
                                 jugador.equipo,
                                 jugador.YDS,
+                                jugador.athleteId,
                               ]),
                             },
                           ]
@@ -6854,7 +6933,13 @@ const [verPassword, setVerPassword] = useState(false);
                                 {i + 1}
                               </span>
 
-                              <div className="flex items-center gap-2 min-w-0">
+                              <a
+                                href={`https://www.espn.com/nfl/player/_/id/${fila[3]}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={`Abrir perfil ESPN de ${fila[0]}`}
+                                className="flex items-center gap-2 min-w-0 cursor-pointer hover:text-red-700 transition-colors"
+                              >
                                 <img
                                   src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
                                   alt={fila[1]}
@@ -6866,7 +6951,7 @@ const [verPassword, setVerPassword] = useState(false);
                                     {fila[1]}
                                   </span>
                                 </span>
-                              </div>
+                              </a>
 
                               <span className="text-xs md:text-sm text-zinc-600">
                                 {fila[2]}
@@ -6991,6 +7076,7 @@ const [verPassword, setVerPassword] = useState(false);
                               jugador.nombre,
                               jugador.equipo,
                               jugador.TOT,
+                                jugador.athleteId,
                             ]),
                           },
                           {
@@ -7000,6 +7086,7 @@ const [verPassword, setVerPassword] = useState(false);
                               jugador.nombre,
                               jugador.equipo,
                               jugador.SACK,
+                                jugador.athleteId,
                             ]),
                           },
                           {
@@ -7009,6 +7096,7 @@ const [verPassword, setVerPassword] = useState(false);
                               jugador.nombre,
                               jugador.equipo,
                               jugador.INT,
+                                jugador.athleteId,
                             ]),
                           },
                         ].map((bloque) => (
@@ -7027,7 +7115,13 @@ const [verPassword, setVerPassword] = useState(false);
                                   {i + 1}
                                 </span>
 
-                                <div className="flex items-center gap-2 min-w-0">
+                                <a
+                                  href={`https://www.espn.com/nfl/player/_/id/${fila[3]}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Abrir perfil ESPN de ${fila[0]}`}
+                                  className="flex items-center gap-2 min-w-0 cursor-pointer hover:text-blue-700 transition-colors"
+                                >
                                   <img
                                     src={`https://a.espncdn.com/i/teamlogos/nfl/500/${fila[1].toLowerCase()}.png`}
                                     alt={fila[1]}
@@ -7039,7 +7133,7 @@ const [verPassword, setVerPassword] = useState(false);
                                       {fila[1]}
                                     </span>
                                   </span>
-                                </div>
+                                </a>
 
                                 <span className="text-xs md:text-sm text-zinc-600">
                                   {fila[2]}

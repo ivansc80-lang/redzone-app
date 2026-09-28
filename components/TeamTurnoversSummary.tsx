@@ -7,9 +7,10 @@ type Props = {
   temporada: number;
   onTemporadaChange: (temporada: number) => void;
   onVolverALideres: () => void;
+  onAbrirFranquicia: (abreviatura: string) => void;
 };
 
-export default function TeamTurnoversSummary({ temporada, onTemporadaChange, onVolverALideres }: Props) {
+export default function TeamTurnoversSummary({ temporada, onTemporadaChange, onVolverALideres, onAbrirFranquicia }: Props) {
   const [datos,setDatos]=useState<EspnTeamTurnoversSummary[]>([]);
   const [cargando,setCargando]=useState(true);
   const [error,setError]=useState<string|null>(null);
@@ -66,10 +67,15 @@ export default function TeamTurnoversSummary({ temporada, onTemporadaChange, onV
         :datos.length===0?<tr><td colSpan={columnas.length+2} className="px-4 py-8 text-center text-zinc-500 font-semibold">No hay estadísticas disponibles.</td></tr>
         :datos.map(e=><tr key={e.teamId} className="border-b border-zinc-100 hover:bg-zinc-50">
           <td className="sticky left-0 z-20 w-11 min-w-11 bg-white border-r border-zinc-200 px-2 py-3 text-center font-semibold text-zinc-500">{e.posicion}</td>
-          <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3"><div className="flex items-center gap-2 min-w-0">
+          <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3"><button
+            type="button"
+            onClick={() => onAbrirFranquicia(e.equipo)}
+            title={`Abrir HOME de ${e.nombre}`}
+            className="flex items-center gap-2 min-w-0 text-left cursor-pointer hover:text-red-700 transition-colors"
+          >
             <img src={`https://a.espncdn.com/i/teamlogos/nfl/500/${e.equipo.toLowerCase()}.png`} alt={e.nombre} className="w-7 h-7 object-contain flex-shrink-0" />
             <div className="min-w-0"><div className="font-bold text-zinc-900 truncate">{e.nombre}</div><div className="text-[9px] text-zinc-400 font-semibold">{e.equipo}</div></div>
-          </div></td>
+          </button></td>
           {keys.map((key,idx)=><td key={String(key)} className={`min-w-[110px] px-3 py-3 text-center whitespace-nowrap border-r border-zinc-100 ${idx===1 ? "border-l-2 border-l-zinc-300" : ""} ${idx===3 ? "font-black text-red-700" : "text-zinc-600"}`}>{String(e[key]||"-")}</td>)}
         </tr>)}</tbody>
       </table>

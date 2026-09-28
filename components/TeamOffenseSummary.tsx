@@ -7,9 +7,10 @@ type Props = {
   temporada: number;
   onTemporadaChange: (temporada: number) => void;
   onVolverALideres: () => void;
+  onAbrirFranquicia: (abreviatura: string) => void;
 };
 
-export default function TeamOffenseSummary({ temporada, onTemporadaChange, onVolverALideres }: Props) {
+export default function TeamOffenseSummary({ temporada, onTemporadaChange, onVolverALideres, onAbrirFranquicia }: Props) {
   const [datos, setDatos] = useState<EspnTeamOffenseSummary[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +163,12 @@ export default function TeamOffenseSummary({ temporada, onTemporadaChange, onVol
                       {equipo.posicion}
                     </td>
                     <td className="sticky left-11 z-20 min-w-[190px] md:min-w-[240px] bg-white border-r-2 border-zinc-300 px-3 py-3">
-                      <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => onAbrirFranquicia(equipo.equipo)}
+                        title={`Abrir HOME de ${equipo.nombre}`}
+                        className="flex items-center gap-2 min-w-0 text-left cursor-pointer hover:text-red-700 transition-colors"
+                      >
                         <img
                           src={`https://a.espncdn.com/i/teamlogos/nfl/500/${equipo.equipo.toLowerCase()}.png`}
                           alt={equipo.nombre}
@@ -172,7 +178,7 @@ export default function TeamOffenseSummary({ temporada, onTemporadaChange, onVol
                           <div className="font-bold text-zinc-900 truncate">{equipo.nombre}</div>
                           <div className="text-[9px] text-zinc-400 font-semibold">{equipo.equipo}</div>
                         </div>
-                      </div>
+                      </button>
                     </td>
                     {valores.map((valor, idx) => (
                       <td
