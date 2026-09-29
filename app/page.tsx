@@ -2862,7 +2862,33 @@ const [verPassword, setVerPassword] = useState(false);
 
       setJornadasOficiales(agrupadas);
       setJornadasGames(agrupadasGames);
-      setPronosticosPorUsuario(obj);
+      // Conservamos el borrador local de PORRA del usuario activo.
+      // Un refresco automático no debe borrar elecciones aún no confirmadas.
+      setPronosticosPorUsuario((prev) => {
+        const borradorActual = prev[jornadaActual]?.[usuarioActivoId];
+
+        if (!borradorActual || borradorActual.confirmado) {
+          return obj;
+        }
+
+        const destino = obj[jornadaActual]?.[usuarioActivoId];
+        if (!destino) {
+          return obj;
+        }
+
+        const eleccionesLocales = new Map(
+          borradorActual.pronosticos.map((p) => [p.id, p.eleccion]),
+        );
+
+        destino.pronosticos = destino.pronosticos.map((p) =>
+          eleccionesLocales.has(p.id)
+            ? { ...p, eleccion: eleccionesLocales.get(p.id) ?? null }
+            : p,
+        );
+        destino.confirmado = false;
+
+        return obj;
+      });
       setPronosticosGames(objGames);
     };
 
