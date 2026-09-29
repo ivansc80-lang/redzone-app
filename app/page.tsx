@@ -4299,9 +4299,14 @@ const [verPassword, setVerPassword] = useState(false);
                         }}
                       />
 
-                      <span className="min-w-0 truncate font-sans font-semibold text-zinc-900">
+                      <button
+                        type="button"
+                        onClick={() => abrirFranquiciaDesdeStats(eq.abrev)}
+                        title={`Abrir HOME de ${eq.nombre}`}
+                        className="min-w-0 truncate font-sans font-semibold text-zinc-900 hover:text-red-700 cursor-pointer transition-colors text-left"
+                      >
                         {eq.nombre}
-                      </span>
+                      </button>
                     </div>
                   </td>
 
