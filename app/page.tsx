@@ -2129,7 +2129,7 @@ export default function Home() {
     temporada: number;
     jornada: number;
     tipo_competicion: string;
-    tipo_logro: "PLENO_REDZONE" | "PLENO_MAGICO";
+    tipo_logro: "PLENO_REDZONE" | "PLENO_MAGICO" | "CAMPEON_REDZONE";
     detalle: string | null;
     conseguido_at: string;
   }>>([]);
@@ -3101,7 +3101,7 @@ const [verPassword, setVerPassword] = useState(false);
           "id, temporada, jornada, tipo_competicion, tipo_logro, detalle, conseguido_at"
         )
         .eq("user_id", usuarioLogueado.id)
-        .in("tipo_logro", ["PLENO_REDZONE", "PLENO_MAGICO"])
+        .in("tipo_logro", ["PLENO_REDZONE", "PLENO_MAGICO", "CAMPEON_REDZONE"])
         // Orden cronológico: los logros nuevos se añaden al final.
         .order("conseguido_at", { ascending: true });
 
@@ -10436,15 +10436,20 @@ const [verPassword, setVerPassword] = useState(false);
                                 logrosPalmares.map((logro) => {
                                   const esMagico =
                                     logro.tipo_logro === "PLENO_MAGICO";
+                                  const esCampeon =
+                                    logro.tipo_logro === "CAMPEON_REDZONE";
 
                                   const icono = esMagico ? "✨" : "🏆";
 
-                                  const tituloLogro = esMagico
-                                    ? "PLENO MÁGICO"
-                                    : "PLENO REDZONE";
+                                  const tituloLogro = esCampeon
+                                    ? "CAMPEÓN REDZONE"
+                                    : esMagico
+                                      ? "PLENO MÁGICO"
+                                      : "PLENO REDZONE";
 
-                                  const competicion =
-                                    logro.tipo_competicion === "regular"
+                                  const competicion = esCampeon
+                                    ? `TEMPORADA ${logro.temporada}`
+                                    : logro.tipo_competicion === "regular"
                                       ? `TR ${String(logro.temporada).slice(-2)}`
                                       : `${String(logro.tipo_competicion || "").toUpperCase()} ${logro.temporada}`;
 
@@ -10474,7 +10479,9 @@ const [verPassword, setVerPassword] = useState(false);
                                           </div>
 
                                           <div className="font-['Orbitron'] font-bold text-gray-700 text-[9px] md:text-xs uppercase mt-1">
-                                            JORNADA {logro.jornada} · {competicion}
+                                            {esCampeon
+                                              ? competicion
+                                              : `JORNADA ${logro.jornada} · ${competicion}`}
                                           </div>
 
                                           {logro.detalle && (

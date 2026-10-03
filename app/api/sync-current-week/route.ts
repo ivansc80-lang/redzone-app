@@ -6,6 +6,7 @@ import { activarDesempateSuperbowlSiProcede } from '@/lib/activarDesempateSuperb
 import { calcularRankingCompeticion } from '@/lib/rankingCompetition';
 import { gestionarCicloAnual } from '@/lib/seasonLifecycle';
 import { prepararNuevaTemporadaDesdeEspn } from '@/lib/newSeasonCalendar';
+import { guardarLogro } from '@/lib/pushNotifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,22 @@ async function finalizarTemporadaSiProcede(
       'El ganador del desempate no coincide con el líder único del ranking final.',
     );
   }
+
+  // Persistimos primero el campeonato. El upsert es idempotente:
+  // si el cierre administrativo falla, el siguiente pase puede reintentarlo
+  // sin crear un logro duplicado.
+  await guardarLogro({
+    userId: campeon.userId,
+    temporada,
+    jornada,
+    tipoCompeticion: 'playoffs',
+    tipoLogro: 'CAMPEON_REDZONE',
+    detalle: `Campeón REDZONE ${temporada}`,
+    metadata: {
+      origen: 'motor_productivo',
+      logro: 'campeon_redzone',
+    },
+  });
 
   const { data: configFinalizada, error } = await supabase
     .from('app_config')

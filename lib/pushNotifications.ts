@@ -179,7 +179,7 @@ export const guardarLogro = async ({
   temporada: number;
   jornada: number;
   tipoCompeticion?: string;
-  tipoLogro: "PLENO_MAGICO" | "PLENO_REDZONE";
+  tipoLogro: "PLENO_MAGICO" | "PLENO_REDZONE" | "CAMPEON_REDZONE";
   detalle?: string;
   metadata?: Record<string, unknown>;
 }) => {
