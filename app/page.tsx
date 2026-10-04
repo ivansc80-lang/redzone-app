@@ -2423,6 +2423,7 @@ const [verPassword, setVerPassword] = useState(false);
   const [gamesTodoAbierto, setGamesTodoAbierto] = useState(false);
   const [vistaGames, setVistaGames] = useState<"regular" | "playoff">("regular");
   const estabaEnGamesRef = useRef(false);
+  const scrollGamesPendienteRef = useRef<number | null>(null);
 
   useEffect(() => {
     const estaEnGames =
@@ -2434,6 +2435,7 @@ const [verPassword, setVerPassword] = useState(false);
       setVistaGames(esPlayoffs ? "playoff" : "regular");
       setJornadaGamesAbierta(esPlayoffs ? null : jornadaActual);
       setGamesTodoAbierto(false);
+      scrollGamesPendienteRef.current = esPlayoffs ? null : jornadaActual;
     }
 
     estabaEnGamesRef.current = estaEnGames;
@@ -2442,6 +2444,37 @@ const [verPassword, setVerPassword] = useState(false);
     subPestanaEquipos,
     jornadaActual,
     faseCompeticionActual,
+  ]);
+
+  useEffect(() => {
+    const jornadaPendiente = scrollGamesPendienteRef.current;
+
+    if (
+      jornadaPendiente == null ||
+      pestanaActiva !== "equipos" ||
+      subPestanaEquipos !== "games" ||
+      jornadaGamesAbierta !== jornadaPendiente
+    ) {
+      return;
+    }
+
+    const elemento = document.getElementById(
+      `games-jornada-${jornadaPendiente}`,
+    );
+
+    if (!elemento) return;
+
+    elemento.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    scrollGamesPendienteRef.current = null;
+  }, [
+    pestanaActiva,
+    subPestanaEquipos,
+    jornadaGamesAbierta,
+    jornadasGames,
   ]);
 
   const [pronosticosGames, setPronosticosGames] = useState<
@@ -4750,7 +4783,12 @@ const [verPassword, setVerPassword] = useState(false);
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setPestanaActiva(item.id)}
+                onClick={() => {
+                  if (item.id === "equipos") {
+                    setSubPestanaEquipos("score");
+                  }
+                  setPestanaActiva(item.id);
+                }}
                 className="flex flex-col items-center gap-1 px-1 py-1 transition-all relative cursor-pointer"
               >
                 <div className="w-[35px] h-[35px] flex items-center justify-center">
@@ -9708,7 +9746,8 @@ const [verPassword, setVerPassword] = useState(false);
                       return (
                         <div
                           key={jNum}
-                          className="bg-white border border-white rounded-2xl p-4 md:p-6 shadow-2xl"
+                          id={`games-jornada-${jNum}`}
+                          className="bg-white border border-white rounded-2xl p-4 md:p-6 shadow-2xl scroll-mt-4"
                         >
                           <button
                             type="button"
