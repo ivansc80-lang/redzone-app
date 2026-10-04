@@ -1202,6 +1202,143 @@ export default function Home() {
   // Esta señal reutiliza la misma carga ya validada sin modificar RACHAS.
   const [refrescoCron, setRefrescoCron] = useState(0);
   const generacionCargaDatosRef = useRef(0);
+  type FilaPlayoffPicture = {
+    equipo: string;
+    conferencia: "AFC" | "NFC";
+    seed: number;
+    g: number;
+    p: number;
+    e: number;
+    pct: number;
+    home: string;
+    road: string;
+    clincher: string;
+    momento: "APERTURA" | "SABADO" | "LUNES";
+    capturado_at: string;
+  };
+
+    const EQUIPOS_PLAYOFF_PICTURE: Record<
+      string,
+      { nombre: string; banner: string }
+    > = {
+      ARI: { nombre: "CARDINALS", banner: "/ARI_CARDINALS.webp" },
+      ATL: { nombre: "FALCONS", banner: "/ATL_FALCONS.webp" },
+      BAL: { nombre: "RAVENS", banner: "/BAL_RAVENS.webp" },
+      BUF: { nombre: "BILLS", banner: "/BUF_BILLS.webp" },
+      CAR: { nombre: "PANTHERS", banner: "/CAR_PANTHERS.webp" },
+      CHI: { nombre: "BEARS", banner: "/CHI_BEARS.webp" },
+      CIN: { nombre: "BENGALS", banner: "/CIN_BENGALS.webp" },
+      CLE: { nombre: "BROWNS", banner: "/CLE_BROWNS.webp" },
+      DAL: { nombre: "COWBOYS", banner: "/DAL_COWBOYS.webp" },
+      DEN: { nombre: "BRONCOS", banner: "/DEN_BRONCOS.webp" },
+      DET: { nombre: "LIONS", banner: "/DET_LIONS.webp" },
+      GB: { nombre: "PACKERS", banner: "/GB_PACKERS.webp" },
+      HOU: { nombre: "TEXANS", banner: "/HOU_TEXANS.webp" },
+      IND: { nombre: "COLTS", banner: "/IND_COLTS.webp" },
+      JAX: { nombre: "JAGUARS", banner: "/JAX_JAGUARS.webp" },
+      KC: { nombre: "CHIEFS", banner: "/KC_CHIEFS.webp" },
+      LAC: { nombre: "CHARGERS", banner: "/LAC_CHARGERS.webp" },
+      LAR: { nombre: "RAMS", banner: "/LA_RAMS.webp" },
+      LV: { nombre: "RAIDERS", banner: "/LV_RAIDERS.webp" },
+      MIA: { nombre: "DOLPHINS", banner: "/MIA_DOLPHINS.webp" },
+      MIN: { nombre: "VIKINGS", banner: "/MIN_VIKINGS.webp" },
+      NE: { nombre: "PATRIOTS", banner: "/NE_PATRIOTS.webp" },
+      NO: { nombre: "SAINTS", banner: "/NO_SAINTS.webp" },
+      NYG: { nombre: "GIANTS", banner: "/NYG_GIANTS.webp" },
+      NYJ: { nombre: "JETS", banner: "/NYJ_JETS.webp" },
+      PHI: { nombre: "EAGLES", banner: "/PHI_EAGLES.webp" },
+      PIT: { nombre: "STEELERS", banner: "/PIT_STEELERS.webp" },
+      SEA: { nombre: "SEAHAWKS", banner: "/SEA_SEAHAWKS.webp" },
+      SF: { nombre: "49ERS", banner: "/SF_49ERS.webp" },
+      TB: { nombre: "BUCCANEERS", banner: "/TB_BUCCANEERS.webp" },
+      TEN: { nombre: "TITANS", banner: "/TEN_TITANS.webp" },
+      WAS: { nombre: "COMMANDERS", banner: "/WAS_COMMANDERS.webp" },
+      WSH: { nombre: "COMMANDERS", banner: "/WAS_COMMANDERS.webp" },
+    };
+
+  const [playoffVistaMovilAmpliada, setPlayoffVistaMovilAmpliada] = useState(false);
+  const [playoffConferenciaMovil, setPlayoffConferenciaMovil] = useState<"NFC" | "AFC">("NFC");
+
+  const [playoffPictureActual, setPlayoffPictureActual] = useState<
+    FilaPlayoffPicture[]
+  >([]);
+
+
+
+  useEffect(() => {
+    let activo = true;
+
+    const cargarPlayoffPicture = async () => {
+      try {
+        const contexto = await getContextoJornadaActiva();
+
+        if (!activo) return;
+
+        if (
+          contexto.tipoCompeticion !== "regular" ||
+          contexto.jornada < 1 ||
+          contexto.jornada > 18
+        ) {
+          setPlayoffPictureActual([]);
+          return;
+        }
+
+        // Playoff Picture disponible desde J5.
+        if (contexto.jornada < 5) {
+          setPlayoffPictureActual([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("playoff_picture")
+          .select(
+            "equipo, conferencia, seed, g, p, e, pct, home, road, clincher, momento, capturado_at",
+          )
+          .eq("temporada", contexto.temporada)
+          .eq("jornada", contexto.jornada)
+          .order("capturado_at", { ascending: false });
+
+        if (error) {
+          throw new Error(
+            `Error leyendo Playoff Picture: ${error.message}`,
+          );
+        }
+
+        const filas = (data || []) as FilaPlayoffPicture[];
+
+        if (!filas.length) {
+          setPlayoffPictureActual([]);
+          return;
+        }
+
+        const ultimoInstante = filas[0].capturado_at;
+        const fotografia = filas.filter(
+          (fila) => fila.capturado_at === ultimoInstante,
+        );
+
+        if (fotografia.length !== 32) {
+          console.warn(
+            `Playoff Picture incompleto para ${contexto.temporada} J${contexto.jornada}: ${fotografia.length}/32 filas.`,
+          );
+          setPlayoffPictureActual([]);
+          return;
+        }
+
+        setPlayoffPictureActual(fotografia);
+      } catch (error) {
+        console.error("Error al cargar Playoff Picture:", error);
+        if (activo) setPlayoffPictureActual([]);
+      }
+    };
+
+    void cargarPlayoffPicture();
+
+    return () => {
+      activo = false;
+    };
+  }, [jornadaActual, refrescoCron]);
+
+
 
   useEffect(() => {
     let intervaloRefrescoCron: number | null = null;
@@ -1252,6 +1389,77 @@ export default function Home() {
   // FINALIZADA, DRAFT y PRETEMPORADA antes de abrir la nueva TR.
   const [faseCompeticionActual, setFaseCompeticionActual] =
     useState<string>("regular");
+
+  type EquipoBraketVisual = {
+    seed: number;
+    equipo: string;
+    conferencia: "AFC" | "NFC";
+    temporada: number;
+    eliminada: boolean;
+  };
+
+  type EstadoBraketVisual = {
+    temporada: number;
+    afc: EquipoBraketVisual[];
+    nfc: EquipoBraketVisual[];
+    vivosAfc: EquipoBraketVisual[];
+    vivosNfc: EquipoBraketVisual[];
+  };
+
+  const [estadoBraket, setEstadoBraket] =
+    useState<EstadoBraketVisual | null>(null);
+
+  const bracketPlayoffActivo =
+    jornadaActual >= 19 && jornadaActual <= 22;
+
+  useEffect(() => {
+    let activo = true;
+
+    if (!bracketPlayoffActivo) {
+      setEstadoBraket(null);
+      return () => {
+        activo = false;
+      };
+    }
+
+    const cargarBraket = async () => {
+      try {
+        const respuesta = await fetch(
+          `/api/braket?temporada=${temporadaRegular}`,
+          { cache: "no-store" },
+        );
+
+        if (!respuesta.ok) {
+          throw new Error(`HTTP ${respuesta.status}`);
+        }
+
+        const estado = (await respuesta.json()) as EstadoBraketVisual;
+
+        if (!activo) return;
+
+        if (estado.afc.length !== 7 || estado.nfc.length !== 7) {
+          console.warn(
+            "[braket] Se esperaban 7 equipos AFC y 7 NFC",
+            estado,
+          );
+          setEstadoBraket(null);
+          return;
+        }
+
+        setEstadoBraket(estado);
+      } catch (error) {
+        console.error("[braket] No se pudo cargar el bracket:", error);
+        if (activo) setEstadoBraket(null);
+      }
+    };
+
+    void cargarBraket();
+
+    return () => {
+      activo = false;
+    };
+  }, [temporadaRegular, bracketPlayoffActivo]);
+
 
   // STATS parte automáticamente de la temporada activa,
   // pero conserva su selector manual para consultar temporadas anteriores.
@@ -2221,12 +2429,20 @@ const [verPassword, setVerPassword] = useState(false);
       pestanaActiva === "equipos" && subPestanaEquipos === "games";
 
     if (estaEnGames && !estabaEnGamesRef.current) {
-      setJornadaGamesAbierta(jornadaActual);
+      const esPlayoffs = faseCompeticionActual === "playoffs";
+
+      setVistaGames(esPlayoffs ? "playoff" : "regular");
+      setJornadaGamesAbierta(esPlayoffs ? null : jornadaActual);
       setGamesTodoAbierto(false);
     }
 
     estabaEnGamesRef.current = estaEnGames;
-  }, [pestanaActiva, subPestanaEquipos, jornadaActual]);
+  }, [
+    pestanaActiva,
+    subPestanaEquipos,
+    jornadaActual,
+    faseCompeticionActual,
+  ]);
 
   const [pronosticosGames, setPronosticosGames] = useState<
     Record<
@@ -9958,12 +10174,1324 @@ const [verPassword, setVerPassword] = useState(false);
                   </div>
                 ) : (
                   <div className="relative left-1/2 right-1/2 w-screen -ml-[50vw] -mr-[50vw] bg-[#8b0000] pt-[50px]">
-                    <div className="relative w-full aspect-[1672/941]">
+
+                    {/* CONTROLES PLAYOFF — SOLO MÓVIL VERTICAL */}
+                    <div className="absolute left-3 top-[8px] z-50 hidden max-sm:portrait:flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlayoffVistaMovilAmpliada((actual) => !actual);
+                          setPlayoffConferenciaMovil("NFC");
+                        }}
+                        className="min-w-[54px] rounded-xl bg-white px-3 py-2 font-['Orbitron'] text-[10px] font-black text-[#002d52] shadow-md"
+                      >
+                        {playoffVistaMovilAmpliada ? "100%" : "50%"}
+                      </button>
+
+                      {playoffVistaMovilAmpliada && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPlayoffConferenciaMovil((actual) =>
+                              actual === "NFC" ? "AFC" : "NFC"
+                            )
+                          }
+                          className="min-w-[54px] rounded-xl bg-white px-3 py-2 font-['Orbitron'] text-[10px] font-black text-[#002d52] shadow-md"
+                        >
+                          {playoffConferenciaMovil === "NFC" ? "AFC" : "NFC"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div
+                      className={`relative w-full overflow-hidden ${
+                        playoffVistaMovilAmpliada
+                          ? "aspect-[1672/1050]"
+                          : "aspect-[1672/941]"
+                      }`}
+                    >
+                      <div
+                        className="absolute inset-0 w-full h-full origin-center transition-transform duration-300"
+                        style={
+                          playoffVistaMovilAmpliada
+                            ? {
+                                transform:
+                                  playoffConferenciaMovil === "NFC"
+                                    ? "translateX(35%) scale(1.55)"
+                                    : "translateX(-35%) scale(1.55)",
+                              }
+                            : undefined
+                        }
+                      >
+                      {/* FONDO — comparte exactamente el mismo lienzo 1678 × 937 */}
                       <img
                         src="/REDZONE_BRACKET_PLAYOFF(2).webp"
                         alt="REDZONE Playoff Bracket"
                         className="absolute inset-0 block w-full h-full"
                       />
+
+                      {/* OVERLAY TRANSPARENTE — Playoff Picture + Bracket */}
+                      <div className="absolute inset-0 w-full h-full overflow-hidden [container-type:inline-size]">
+
+                      {/* ===== PLAYOFF PICTURE — CLASIFICACIÓN PROVISIONAL ===== */}
+                      {(() => {
+
+                        const contarPartidosBalance = (
+                          balance: string,
+                        ): number | null => {
+                          if (!balance.trim()) {
+                            return null;
+                          }
+
+                          const partes = balance
+                            .split("-")
+                            .map((valor) => Number(valor.trim()));
+
+                          if (
+                            partes.length < 2 ||
+                            partes.length > 3 ||
+                            partes.some(
+                              (valor) =>
+                                !Number.isInteger(valor) || valor < 0,
+                            )
+                          ) {
+                            return null;
+                          }
+
+                          return partes.reduce(
+                            (total, valor) => total + valor,
+                            0,
+                          );
+                        };
+
+                        const estaEnLaPelea = (
+                          equipo: FilaPlayoffPicture,
+                          seed7: FilaPlayoffPicture,
+                        ) => {
+                          if (
+                            equipo.seed < 8 ||
+                            equipo.seed > 11 ||
+                            equipo.clincher.trim().toLowerCase() === "e"
+                          ) {
+                            return false;
+                          }
+
+                          const homeEquipo =
+                            contarPartidosBalance(equipo.home);
+                          const roadEquipo =
+                            contarPartidosBalance(equipo.road);
+                          const homeSeed7 =
+                            contarPartidosBalance(seed7.home);
+                          const roadSeed7 =
+                            contarPartidosBalance(seed7.road);
+
+                          if (
+                            homeEquipo === null ||
+                            roadEquipo === null ||
+                            homeSeed7 === null ||
+                            roadSeed7 === null
+                          ) {
+                            return false;
+                          }
+
+                          const partidosEquipo =
+                            homeEquipo + roadEquipo;
+                          const partidosSeed7 =
+                            homeSeed7 + roadSeed7;
+
+                          if (
+                            partidosEquipo > 17 ||
+                            partidosSeed7 > 17
+                          ) {
+                            return false;
+                          }
+
+                          const balanceEquipo =
+                            equipo.pct * partidosEquipo;
+                          const balanceSeed7 =
+                            seed7.pct * partidosSeed7;
+
+                          const diferencia =
+                            balanceSeed7 - balanceEquipo;
+
+                          const partidosRestantes =
+                            17 - partidosEquipo;
+
+                          return (
+                            diferencia <= 2 &&
+                            diferencia <= partidosRestantes
+                          );
+                        };
+
+                        const renderBannerPlayoffPicture = (
+                          fila: FilaPlayoffPicture,
+                        ) => {
+                          const codigo = fila.equipo;
+                          const seed = fila.seed;
+                          const equipo = EQUIPOS_PLAYOFF_PICTURE[codigo];
+
+                          if (!equipo) {
+                            return null;
+                          }
+
+                          const racha = obtenerRachaEquipo(
+                            codigo,
+                            jornadaActual,
+                          );
+
+                          const clincher =
+                            fila.clincher.trim().toLowerCase();
+
+                          let bordeClincher = "";
+
+                          if (clincher === "*") {
+                            bordeClincher =
+                              fila.conferencia === "NFC"
+                                ? "border-blue-500"
+                                : "border-red-500";
+                          } else if (clincher === "z") {
+                            bordeClincher = "border-green-500";
+                          } else if (clincher === "y") {
+                            bordeClincher = "border-orange-500";
+                          }
+
+                          return (
+                            <div
+                              key={`${codigo}-${seed}`}
+                              className="relative w-full aspect-[830/180]"
+                            >
+                              <img
+                                src={equipo.banner}
+                                alt={equipo.nombre}
+                                className="absolute inset-0 block w-full h-full object-contain"
+                              />
+
+                              {bordeClincher && (
+                                <div
+                                  aria-hidden="true"
+                                  className={`absolute inset-[0.10cqw] z-[5] rounded-[0.35cqw] border-[0.18cqw] ${bordeClincher} pointer-events-none`}
+                                />
+                              )}
+
+
+                              <div className="absolute inset-0 pointer-events-none">
+                                <span className={`absolute left-[calc(50%+1.196cqw)] top-1/2 -translate-x-1/2 -translate-y-[55%] font-['Orbitron'] ${
+                                    seed === 1
+                                      ? "text-[1.196cqw]"
+                                      : "text-[0.957cqw]"
+                                  } font-black text-white whitespace-nowrap [text-shadow:-2px_0_black,2px_0_black,0_-2px_black,0_2px_black,-2px_-2px_black,2px_-2px_black,-2px_2px_black,2px_2px_black]`}>
+                                  {equipo.nombre}
+                                </span>
+
+                                <span className="absolute right-[14%] top-[calc(27%+1.196cqw)] font-['Orbitron'] text-[0.538cqw] font-black text-white whitespace-nowrap [text-shadow:-1px_0_black,1px_0_black,0_-1px_black,0_1px_black]">
+                                  {racha}
+                                </span>
+
+                                <span className={`absolute right-[4%] top-1/2 -translate-y-1/2 font-['Orbitron'] ${
+                                    seed === 1
+                                      ? "text-[1.570cqw]"
+                                      : "text-[1.256cqw]"
+                                  } font-black text-white [text-shadow:-2px_0_black,2px_0_black,0_-2px_black,0_2px_black]`}>
+                                  {seed}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        };
+
+                        const renderConferencia = (
+                          equipos: FilaPlayoffPicture[],
+                          lado: "nfc" | "afc",
+                        ) => {
+                          const ordenados = [...equipos].sort(
+                            (a, b) => a.seed - b.seed,
+                          );
+
+                          const seed1 = ordenados.find(
+                            (equipo) => equipo.seed === 1,
+                          );
+                          const wildCard = ordenados.filter(
+                            (equipo) =>
+                              equipo.seed >= 2 && equipo.seed <= 7,
+                          );
+                          const seed7 = ordenados.find(
+                            (equipo) => equipo.seed === 7,
+                          );
+                          const enLaPelea = seed7
+                            ? ordenados.filter((equipo) =>
+                                estaEnLaPelea(equipo, seed7),
+                              )
+                            : [];
+
+                          if (!seed1 || wildCard.length !== 6) {
+                            return null;
+                          }
+
+                          return (
+                            <div
+                              className={`absolute ${
+                                lado === "nfc" ? "left-[3%]" : "right-[3%]"
+                              } top-[calc(8%+7.177cqw)] w-[35%] text-center`}
+                            >
+                              {/* SEED 1 */}
+                              <div className="font-['Orbitron'] font-black italic uppercase text-white text-[1.794cqw] [text-shadow:0_2px_3px_#000]">
+                                SEED Nº 1
+                              </div>
+
+                              <div className="mx-auto mt-[0.598cqw] w-[60%]">
+                                {renderBannerPlayoffPicture(seed1)}
+                              </div>
+
+                              {/* WILD CARD */}
+                              <div className="mt-[1.675cqw] font-['Orbitron'] font-black italic uppercase text-white text-[1.794cqw] [text-shadow:0_2px_3px_#000]">
+                                WILD CARD
+                              </div>
+
+                              <div className="mt-[0.598cqw] grid grid-cols-2 gap-x-[0.598cqw] gap-y-[0.239cqw]">
+                                {wildCard.map((equipo) =>
+                                  renderBannerPlayoffPicture(equipo),
+                                )}
+                              </div>
+
+                              {/* EN LA PELEA */}
+                              <div className="mt-[1.675cqw] font-['Orbitron'] font-black italic uppercase text-white text-[1.794cqw] [text-shadow:0_2px_3px_#000]">
+                                EN LA PELEA
+                              </div>
+
+                              <div className="mt-[0.598cqw] grid grid-cols-2 gap-x-[0.598cqw] gap-y-[0.239cqw]">
+                                {enLaPelea.map((equipo) =>
+                                  renderBannerPlayoffPicture(equipo),
+                                )}
+                              </div>
+                            </div>
+                          );
+                        };
+
+                        if (playoffPictureActual.length !== 32) {
+                          return null;
+                        }
+
+                        const nfc = playoffPictureActual.filter(
+                          (equipo) => equipo.conferencia === "NFC",
+                        );
+                        const afc = playoffPictureActual.filter(
+                          (equipo) => equipo.conferencia === "AFC",
+                        );
+
+                        if (nfc.length !== 16 || afc.length !== 16) {
+                          return null;
+                        }
+
+                        return (
+                          <>
+                            {renderConferencia(nfc, "nfc")}
+                            {renderConferencia(afc, "afc")}
+                          </>
+                        );
+                      })()}
+
+                      {/* ===== ELEMENTOS VISUALES PROPIOS — PLAYOFF PICTURE J1 A J18 ===== */}
+                      {jornadaActual >= 1 && jornadaActual <= 18 && (
+                        <>
+                          {/* ===== GRUPO CENTRAL PLAYOFF PICTURE — unidad visual responsive ===== */}
+                          <div className="absolute inset-0 w-full h-full [container-type:inline-size]">
+                          <img
+                            src="/LOMBARDI_TROPHY.webp"
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute left-1/2 top-[17.016%] w-[11.2%] h-auto -translate-x-1/2 pointer-events-none"
+                          />
+
+                          {/* LEYENDA DE CLASIFICACIÓN — PLAYOFF PICTURE */}
+                          <div className="absolute left-1/2 top-[51%] -translate-x-1/2 pointer-events-none font-['Orbitron'] text-white">
+                            <div className="inline-flex flex-col rounded-[0.3cqw] border-[0.08cqw] border-white/80 bg-black/65 px-[0.55cqw] py-[0.45cqw]">
+
+                              <div className="flex items-center gap-[0.55cqw]">
+                                <span className="block w-[1.35cqw] h-[0.72cqw] rounded-[0.12cqw] border-[0.16cqw] border-blue-500 shrink-0" />
+                                <span className="text-[0.64cqw] font-black whitespace-nowrap">
+                                  SEES 1 NFC
+                                </span>
+                              </div>
+
+                              <div className="mt-[0.35cqw] flex items-center gap-[0.55cqw]">
+                                <span className="block w-[1.35cqw] h-[0.72cqw] rounded-[0.12cqw] border-[0.16cqw] border-red-500 shrink-0" />
+                                <span className="text-[0.64cqw] font-black whitespace-nowrap">
+                                  SEED 1 AFC
+                                </span>
+                              </div>
+
+                              <div className="mt-[0.35cqw] flex items-center gap-[0.55cqw]">
+                                <span className="block w-[1.35cqw] h-[0.72cqw] rounded-[0.12cqw] border-[0.16cqw] border-green-500 shrink-0" />
+                                <span className="text-[0.64cqw] font-black whitespace-nowrap">
+                                  CAMPEÓN DIVISIÓN
+                                </span>
+                              </div>
+
+                              <div className="mt-[0.35cqw] flex items-center gap-[0.55cqw]">
+                                <span className="block w-[1.35cqw] h-[0.72cqw] rounded-[0.12cqw] border-[0.16cqw] border-orange-500 shrink-0" />
+                                <span className="text-[0.64cqw] font-black whitespace-nowrap">
+                                  PUESTO WILD CARD
+                                </span>
+                              </div>
+
+                            </div>
+                          </div>
+
+                          <img
+                            src="/REDZONE_LOGO.webp"
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute left-1/2 top-[70.937%] w-[8%] h-auto -translate-x-1/2 pointer-events-none"
+                          />
+
+                          <img
+                            src="/EVERY_GAME_COUNTS.webp"
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute left-1/2 top-[85.031%] w-[35.7%] h-auto -translate-x-1/2 pointer-events-none"
+                          />
+                          </div>{/* FIN GRUPO CENTRAL PLAYOFF PICTURE */}
+                        </>
+                      )}
+
+                      {/* ===== BRACKET — SOLO J19 A J22 ===== */}
+                      {jornadaActual >= 19 && jornadaActual <= 22 && (
+                        <>
+                      {/* ===== GRUPO SUPER BOWL — unidad visual responsive ===== */}
+                      <div className="absolute inset-0 w-full h-full [container-type:inline-size]">
+
+                      {/* ===== LÍNEAS BRACKET NFC — AZUL ELÉCTRICO ===== */}
+                      <div className="absolute inset-0 pointer-events-none z-[1]">
+
+                        {/*
+                          X:
+                          Divisional NFC centro = 21.1746%
+                          ancho = 12.474%
+                          borde derecho = 27.4116%
+
+                          3,75 px del lienzo de 451,33 px = 0.8309%
+                          vertical de cruce = 28.2425%
+
+                          Conference NFC:
+                          borde izquierdo = 29.6273%
+                          borde derecho = 42.1013%
+
+                          SB borde izquierdo = 43.763%
+
+                          Y:
+                          Todos parten de top 52.953%.
+
+                          Divisional superior usa translateY(-150%)
+                          Conference usa translateY(-50%)
+                          Divisional inferior usa translateY(50%).
+
+                          Por tanto, tomando H como la altura real del GameCard:
+                          centro superior = 52.953% - H
+                          centro Conference = 52.953%
+                          centro inferior = 52.953% + H
+
+                          Las líneas verticales usan calc() con el ancho del
+                          GameCard para obtener H responsive mediante su ratio.
+                        */}
+
+                        {/* DIVISIONAL SUPERIOR -> CRUCE */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#00A8FF] shadow-[0_0_0.32cqw_#00A8FF]"
+                          style={{
+                            left: "27.4116%",
+                            width: "calc(0.8309% + 0.08cqw)",
+                            top: "calc(52.953% - 6.96vw)",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                        {/* DIVISIONAL INFERIOR -> CRUCE */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#00A8FF] shadow-[0_0_0.32cqw_#00A8FF]"
+                          style={{
+                            left: "27.4116%",
+                            width: "calc(0.8309% + 0.08cqw)",
+                            top: "calc(52.953% + 6.96vw)",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                        {/* VERTICAL QUE UNE LOS DOS DIVISIONAL */}
+                        <div
+                          className="absolute w-[0.16cqw] bg-[#00A8FF] shadow-[0_0_0.32cqw_#00A8FF]"
+                          style={{
+                            left: "28.2425%",
+                            top: "calc(52.953% - 6.96vw)",
+                            height: "13.92vw",
+                            transform: "translateX(-50%)",
+                          }}
+                        />
+
+                        {/* CRUCE -> CONFERENCE NFC */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#00A8FF] shadow-[0_0_0.32cqw_#00A8FF]"
+                          style={{
+                            left: "calc(28.2425% - 0.08cqw)",
+                            width: "calc(1.3848% + 0.08cqw)",
+                            top: "52.953%",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                        {/* CONFERENCE NFC -> SUPER BOWL */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#00A8FF] shadow-[0_0_0.32cqw_#00A8FF]"
+                          style={{
+                            left: "42.1013%",
+                            width: "1.6617%",
+                            top: "52.953%",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                      </div>
+
+                      {/* ===== LÍNEAS BRACKET AFC — ROJO ELÉCTRICO ===== */}
+                      <div className="absolute inset-0 pointer-events-none z-[1]">
+
+                        {/*
+                          Espejo exacto del NFC.
+
+                          AFC:
+                          Divisional centro = 78.8254%
+                          borde izquierdo = 72.5884%
+
+                          Vertical de cruce:
+                          3,75 px hacia Conference
+                          x = 71.7575%
+
+                          Conference AFC:
+                          centro = 64.1357%
+                          borde derecho = 70.3727%
+                          borde izquierdo = 57.8987%
+
+                          SB:
+                          borde derecho = 56.237%
+                        */}
+
+                        {/* DIVISIONAL SUPERIOR -> CRUCE */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#FF1744] shadow-[0_0_0.32cqw_#FF1744]"
+                          style={{
+                            left: "calc(71.7575% - 0.08cqw)",
+                            width: "calc(0.8309% + 0.08cqw)",
+                            top: "calc(52.953% - 6.96vw)",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                        {/* DIVISIONAL INFERIOR -> CRUCE */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#FF1744] shadow-[0_0_0.32cqw_#FF1744]"
+                          style={{
+                            left: "calc(71.7575% - 0.08cqw)",
+                            width: "calc(0.8309% + 0.08cqw)",
+                            top: "calc(52.953% + 6.96vw)",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                        {/* VERTICAL QUE UNE LOS DOS DIVISIONAL */}
+                        <div
+                          className="absolute w-[0.16cqw] bg-[#FF1744] shadow-[0_0_0.32cqw_#FF1744]"
+                          style={{
+                            left: "71.7575%",
+                            top: "calc(52.953% - 6.96vw)",
+                            height: "13.92vw",
+                            transform: "translateX(-50%)",
+                          }}
+                        />
+
+                        {/* CRUCE -> CONFERENCE AFC */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#FF1744] shadow-[0_0_0.32cqw_#FF1744]"
+                          style={{
+                            left: "70.3727%",
+                            width: "calc(1.3848% + 0.08cqw)",
+                            top: "52.953%",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                        {/* CONFERENCE AFC -> SUPER BOWL */}
+                        <div
+                          className="absolute h-[0.16cqw] bg-[#FF1744] shadow-[0_0_0.32cqw_#FF1744]"
+                          style={{
+                            left: "56.237%",
+                            width: "1.6617%",
+                            top: "52.953%",
+                            transform: "translateY(-50%)",
+                          }}
+                        />
+
+                      </div>
+
+                      {/* ===== TÍTULOS DE RONDAS — RESPONSIVE ===== */}
+                      <div className="absolute inset-0 pointer-events-none z-[3]">
+
+                        {/* NFC — WILD CARD */}
+                        <div
+                          className="absolute -translate-x-1/2 font-['Orbitron'] text-[1.05cqw] leading-none font-black whitespace-nowrap text-[#00A8FF] [text-shadow:0_0_0.35cqw_#00A8FF]"
+                          style={{
+                            left: "7.0388%",
+                            top: "calc(14.5% + 2.2cqw)",
+                          }}
+                        >
+                          WILD CARD
+                        </div>
+
+                        {/* NFC — DIVISIONAL */}
+                        <div
+                          className="absolute -translate-x-1/2 lg:-mt-[10px] font-['Orbitron'] text-[1.05cqw] leading-none font-black whitespace-nowrap text-[#00A8FF] [text-shadow:0_0_0.35cqw_#00A8FF]"
+                          style={{
+                            left: "21.1746%",
+                            top: "calc(28.5% + 2.2cqw - 5px)",
+                          }}
+                        >
+                          DIVISIONAL
+                        </div>
+
+                        {/* NFC — CONFERENCIA */}
+                        <div
+                          className="absolute -translate-x-1/2 font-['Orbitron'] text-[1.05cqw] leading-none font-black whitespace-nowrap text-[#00A8FF] [text-shadow:0_0_0.35cqw_#00A8FF]"
+                          style={{
+                            left: "35.8643%",
+                            top: "calc(39.5% + 2.2cqw)",
+                          }}
+                        >
+                          CONFERENCIA
+                        </div>
+
+                        {/* AFC — CONFERENCIA */}
+                        <div
+                          className="absolute -translate-x-1/2 font-['Orbitron'] text-[1.05cqw] leading-none font-black whitespace-nowrap text-[#FF1744] [text-shadow:0_0_0.35cqw_#FF1744]"
+                          style={{
+                            left: "64.1357%",
+                            top: "calc(39.5% + 2.2cqw)",
+                          }}
+                        >
+                          CONFERENCIA
+                        </div>
+
+                        {/* AFC — DIVISIONAL */}
+                        <div
+                          className="absolute -translate-x-1/2 lg:-mt-[10px] font-['Orbitron'] text-[1.05cqw] leading-none font-black whitespace-nowrap text-[#FF1744] [text-shadow:0_0_0.35cqw_#FF1744]"
+                          style={{
+                            left: "78.8254%",
+                            top: "calc(28.5% + 2.2cqw - 5px)",
+                          }}
+                        >
+                          DIVISIONAL
+                        </div>
+
+                        {/* AFC — WILD CARD */}
+                        <div
+                          className="absolute -translate-x-1/2 font-['Orbitron'] text-[1.05cqw] leading-none font-black whitespace-nowrap text-[#FF1744] [text-shadow:0_0_0.35cqw_#FF1744]"
+                          style={{
+                            left: "92.9612%",
+                            top: "calc(14.5% + 2.2cqw)",
+                          }}
+                        >
+                          WILD CARD
+                        </div>
+
+                      </div>
+
+                       {/* GameCards reales del bracket */}
+                       {(() => {
+                        const renderSeed1Divisional = (
+                          equipoBraket: EquipoBraketVisual,
+                          left: string,
+                          translateY: string,
+                          esAfc: boolean = false,
+                        ) => {
+                          const visual =
+                            EQUIPOS_PLAYOFF_PICTURE[equipoBraket.equipo];
+
+                          if (!visual) {
+                            return null;
+                          }
+
+                          return (
+                            <div
+                              key={`seed1-bye-${equipoBraket.conferencia}`}
+                              className="absolute top-[52.953%] w-[12.474%] -translate-x-1/2 [container-type:inline-size]"
+                              style={{
+                                left,
+                                transform: `translate(-50%, ${translateY})`,
+                              }}
+                            >
+                              <div
+                                className={`relative h-[52cqw] border rounded-[3.5cqw] shadow-md p-0 overflow-hidden ${
+                                  esAfc
+                                    ? "bg-[#D91E36] border-[#D91E36]"
+                                    : "bg-[#1781F2] border-[#1781F2]"
+                                }`}
+                              >
+                                {/* LOCAL: seed #1 en la posición superior del marco Divisional */}
+                                <div className="absolute top-0 left-0 w-full">
+                                  <img
+                                    src={visual.banner}
+                                    alt={visual.nombre}
+                                    className="block w-full h-auto"
+                                  />
+
+                                  <div className="pointer-events-none absolute inset-0 flex items-center">
+                                    <div className="ml-[36%] flex w-[59%] items-center">
+                                      <div className="relative min-w-0 flex-1">
+                                        <span className="relative inline-block left-[calc(50%-6.4cqw)] -translate-x-1/2 -top-[5cqw] max-lg:portrait:-top-[8cqw] lg:-top-[2.5cqw] font-['Orbitron'] text-[5.4cqw] leading-none font-black text-white uppercase whitespace-nowrap [text-shadow:-1.2cqw_0_black,1.2cqw_0_black,0_-1.2cqw_black,0_1.2cqw_black,-1.2cqw_-1.2cqw_black,1.2cqw_-1.2cqw_black,-1.2cqw_1.2cqw_black,1.2cqw_1.2cqw_black]">
+                                          {visual.nombre}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        };
+
+                        const renderPartidoBracketCompleto = (
+                          partido: PronosticoPartido,
+                          jornada: number,
+                          left: string,
+                          translateY: string = "-50%",
+                          esSuperBowl: boolean = false,
+                          esAfc: boolean = false,
+                        ) => {
+                          const visualLocal =
+                            EQUIPOS_PLAYOFF_PICTURE[partido.local];
+                          const visualVisitante =
+                            EQUIPOS_PLAYOFF_PICTURE[partido.visitante];
+
+                          if (!visualLocal || !visualVisitante) {
+                            return null;
+                          }
+
+                          const puntosLocal = partido.puntos_local;
+                          const puntosVisitante = partido.puntos_visitante;
+                          const marcadorDisponible =
+                            puntosLocal != null && puntosVisitante != null;
+
+                          const resultadoFinal: "1" | "X" | "2" | null =
+                            !marcadorDisponible
+                              ? null
+                              : puntosLocal > puntosVisitante
+                                ? "1"
+                                : puntosLocal < puntosVisitante
+                                  ? "2"
+                                  : "X";
+
+                          return (
+                            <div
+                              key={partido.id}
+                              className="absolute top-[52.953%] w-[12.474%] -translate-x-1/2 [container-type:inline-size]"
+                              style={{ left, transform: `translate(-50%, ${translateY})` }}
+                            >
+                              <div
+                                className={`border rounded-[3.5cqw] shadow-md p-0 ${
+                                  esSuperBowl
+                                    ? "bg-[#BFC3C7] border-[#BFC3C7]"
+                                    : esAfc
+                                      ? "bg-[#D91E36] border-[#D91E36]"
+                                      : "bg-[#1781F2] border-[#1781F2]"
+                                }`}
+                              >
+
+                                {/* BANNERS */}
+                                <div className="mb-0 flex flex-col gap-0 overflow-hidden rounded-[2.7cqw]">
+
+                                  {/* LOCAL */}
+                                  <div className="relative">
+                                    <img
+                                      src={visualLocal.banner}
+                                      alt={visualLocal.nombre}
+                                      className="block w-full h-auto"
+                                    />
+
+                                    <div className="pointer-events-none absolute inset-0 flex items-center">
+                                      <div className="ml-[36%] flex w-[59%] items-center">
+                                        <div className="relative min-w-0 flex-1">
+                                          <span className="relative inline-block left-[calc(50%-6.4cqw)] -translate-x-1/2 -top-[5cqw] max-lg:portrait:-top-[8cqw] lg:-top-[2.5cqw] font-['Orbitron'] text-[5.4cqw] leading-none font-black text-white uppercase whitespace-nowrap [text-shadow:-1.2cqw_0_black,1.2cqw_0_black,0_-1.2cqw_black,0_1.2cqw_black,-1.2cqw_-1.2cqw_black,1.2cqw_-1.2cqw_black,-1.2cqw_1.2cqw_black,1.2cqw_1.2cqw_black]">
+                                            {visualLocal.nombre}
+                                          </span>
+                                        </div>
+
+                                        <span className="ml-auto w-[20%] translate-x-[2.5cqw] text-center font-['Orbitron'] text-[6.5cqw] leading-none font-black text-white">
+                                          {puntosLocal}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* VISITANTE */}
+                                  <div className="relative -mt-[2.4cqw]">
+                                    <img
+                                      src={visualVisitante.banner}
+                                      alt={visualVisitante.nombre}
+                                      className="block w-full h-auto"
+                                    />
+
+                                    <div className="pointer-events-none absolute inset-0 flex items-center">
+                                      <div className="ml-[36%] flex w-[59%] items-center">
+                                        <div className="relative min-w-0 flex-1">
+                                          <span className="relative inline-block left-[calc(50%-6.4cqw)] -translate-x-1/2 -top-[5cqw] max-lg:portrait:-top-[8cqw] lg:-top-[2.5cqw] font-['Orbitron'] text-[5.4cqw] leading-none font-black text-white uppercase whitespace-nowrap [text-shadow:-1.2cqw_0_black,1.2cqw_0_black,0_-1.2cqw_black,0_1.2cqw_black,-1.2cqw_-1.2cqw_black,1.2cqw_-1.2cqw_black,-1.2cqw_1.2cqw_black,1.2cqw_1.2cqw_black]">
+                                            {visualVisitante.nombre}
+                                          </span>
+                                        </div>
+
+                                        <span className="ml-auto w-[20%] translate-x-[2.5cqw] text-center font-['Orbitron'] text-[6.5cqw] leading-none font-black text-white">
+                                          {puntosVisitante}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* PRONÓSTICOS + ESTADO */}
+                                <div className="relative mb-[2.9cqw]">
+                                  <div className="grid grid-cols-3 gap-[2.3cqw] text-center w-[58.7%] ml-[2.9cqw]">
+                                    {usuarios.map((usr) => {
+                                      const eleccionUsr =
+                                        pronosticosGames[jornada]?.[
+                                          usr.id
+                                        ]?.pronosticos?.find(
+                                          (p) => p.id === partido.id,
+                                        )?.eleccion || "-";
+
+                                      const pronosticoValidado =
+                                        eleccionUsr !== "-";
+
+                                      const pronosticoCorrecto =
+                                        pronosticoValidado &&
+                                        eleccionUsr === resultadoFinal;
+
+                                      const estiloPronostico =
+                                        !pronosticoValidado
+                                          ? "bg-[#292929] border-[0.8cqw] border-[#3a3a3a]"
+                                          : pronosticoCorrecto
+                                            ? "bg-[#292929] border-[0.8cqw] border-green-500 ring-[0.8cqw] ring-green-500/70 shadow-[0_0_4cqw_rgba(34,197,94,0.45)]"
+                                            : "bg-[#292929] border-[0.8cqw] border-red-500 ring-[0.8cqw] ring-red-500/70 shadow-[0_0_4cqw_rgba(239,68,68,0.45)]";
+
+                                      return (
+                                        <div
+                                          key={usr.id}
+                                          className={`border rounded-[2.7cqw] px-[1.5cqw] py-[0.9cqw] flex flex-col items-center justify-center transition-all ${estiloPronostico}`}
+                                        >
+                                          <span className="text-[3.5cqw] leading-none font-['Orbitron'] font-bold text-white uppercase">
+                                            {{
+                                              CACE: "KC",
+                                              JUANJO: "JJ",
+                                              IVAN: "IVI",
+                                              "IVÁN": "IVI",
+                                            }[usr.nombre.toUpperCase()] ??
+                                              usr.nombre}
+                                          </span>
+
+                                          <span className="text-[5cqw] leading-none font-mono font-black text-white relative -top-[0.8cqw]">
+                                            {eleccionUsr}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  <div className="absolute top-0 bottom-0 left-[64.5%] right-[2.9cqw] border-[0.8cqw] rounded-[2.7cqw] bg-[#292929] border-white ring-[0.8cqw] ring-white/70 shadow-[0_0_4cqw_rgba(255,255,255,0.45)] flex flex-col items-center justify-center text-center">
+                                    <span className="font-['Orbitron'] font-bold text-[4.6cqw] leading-none text-white">
+                                      FINAL
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        };
+                         const renderMarcoBracketVacio = (
+                          id: string,
+                          left: string,
+                          translateY: string = "-50%",
+                          esSuperBowl: boolean = false,
+                          esAfc: boolean = false,
+                        ) => (
+                          <div
+                            key={id}
+                            className="absolute top-[52.953%] w-[12.474%] -translate-x-1/2 [container-type:inline-size]"
+                            style={{ left, transform: `translate(-50%, ${translateY})` }}
+                          >
+                            <div
+                              className={`border rounded-[3.5cqw] shadow-md p-0 ${
+                                esSuperBowl
+                                  ? "bg-[#BFC3C7] border-[#BFC3C7]"
+                                  : esAfc
+                                    ? "bg-[#D91E36] border-[#D91E36]"
+                                    : "bg-[#1781F2] border-[#1781F2]"
+                              }`}
+                            >
+                              <div
+                                className={`h-[52cqw] rounded-[2.7cqw] ${
+                                  esSuperBowl
+                                    ? "bg-[#BFC3C7]"
+                                    : esAfc
+                                      ? "bg-[#D91E36]"
+                                      : "bg-[#1781F2]"
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        );
+
+                        const normalizarEquipoBracket = (equipo: string) =>
+                          equipo.trim().toUpperCase();
+
+                        const equiposBracket = estadoBraket
+                          ? [...estadoBraket.afc, ...estadoBraket.nfc]
+                          : [];
+
+                        const buscarEquipoBracket = (equipo: string) => {
+                          const codigo = normalizarEquipoBracket(equipo);
+                          return equiposBracket.find(
+                            (item) =>
+                              normalizarEquipoBracket(item.equipo) === codigo,
+                          );
+                        };
+
+                        type PartidoWildCardVisual = {
+                          partido: PronosticoPartido;
+                          mejorSeed: number;
+                          peorSeed: number;
+                          conferencia: "AFC" | "NFC";
+                        };
+
+                        const partidosWildCard: PartidoWildCardVisual[] =
+                          (19 <= jornadaActual ? jornadasGames[19] ?? [] : []).flatMap(
+                            (partido) => {
+                            const equipoLocal = buscarEquipoBracket(partido.local);
+                            const equipoVisitante = buscarEquipoBracket(
+                              partido.visitante,
+                            );
+
+                            if (
+                              !equipoLocal ||
+                              !equipoVisitante ||
+                              equipoLocal.conferencia !==
+                                equipoVisitante.conferencia
+                            ) {
+                              return [];
+                            }
+
+                            const mejorEquipo =
+                              equipoLocal.seed < equipoVisitante.seed
+                                ? equipoLocal
+                                : equipoVisitante;
+                            const peorEquipo =
+                              equipoLocal.seed < equipoVisitante.seed
+                                ? equipoVisitante
+                                : equipoLocal;
+
+                            const partidoVisual: PronosticoPartido =
+                              mejorEquipo.equipo === equipoLocal.equipo
+                                ? partido
+                                : {
+                                    ...partido,
+                                    local: partido.visitante,
+                                    localLogo: partido.visitanteLogo,
+                                    visitante: partido.local,
+                                    visitanteLogo: partido.localLogo,
+                                    puntos_local: partido.puntos_visitante,
+                                    puntos_visitante: partido.puntos_local,
+                                  };
+
+                            return [
+                              {
+                                partido: partidoVisual,
+                                mejorSeed: mejorEquipo.seed,
+                                peorSeed: peorEquipo.seed,
+                                conferencia: mejorEquipo.conferencia,
+                              },
+                            ];
+                          });
+
+                        const buscarWildCard = (
+                          conferencia: "AFC" | "NFC",
+                          mejorSeed: number,
+                        ) =>
+                          partidosWildCard.find(
+                            (item) =>
+                              item.conferencia === conferencia &&
+                              item.mejorSeed === mejorSeed,
+                          )?.partido ?? null;
+
+                        const wcNfc2 = buscarWildCard("NFC", 2);
+                        const wcNfc3 = buscarWildCard("NFC", 3);
+                        const wcNfc4 = buscarWildCard("NFC", 4);
+
+                        const wcAfc2 = buscarWildCard("AFC", 2);
+                        const wcAfc3 = buscarWildCard("AFC", 3);
+                        const wcAfc4 = buscarWildCard("AFC", 4);
+
+                        const orientarMejorSeedComoLocal = (
+                          partido: PronosticoPartido,
+                        ) => {
+                          const equipoLocal = buscarEquipoBracket(partido.local);
+                          const equipoVisitante = buscarEquipoBracket(
+                            partido.visitante,
+                          );
+
+                          if (
+                            !equipoLocal ||
+                            !equipoVisitante ||
+                            equipoLocal.conferencia !==
+                              equipoVisitante.conferencia
+                          ) {
+                            return null;
+                          }
+
+                          const mejorLocal =
+                            equipoLocal.seed < equipoVisitante.seed;
+
+                          return {
+                            partido: mejorLocal
+                              ? partido
+                              : {
+                                  ...partido,
+                                  local: partido.visitante,
+                                  localLogo: partido.visitanteLogo,
+                                  visitante: partido.local,
+                                  visitanteLogo: partido.localLogo,
+                                  puntos_local: partido.puntos_visitante,
+                                  puntos_visitante: partido.puntos_local,
+                                },
+                            conferencia: equipoLocal.conferencia,
+                            seedLocal: equipoLocal.seed,
+                            seedVisitante: equipoVisitante.seed,
+                            contieneSeed1:
+                              equipoLocal.seed === 1 ||
+                              equipoVisitante.seed === 1,
+                          };
+                        };
+
+                        const divisionales = (
+                          20 <= jornadaActual ? jornadasGames[20] ?? [] : []
+                        )
+                          .map(orientarMejorSeedComoLocal)
+                          .filter(
+                            (
+                              item,
+                            ): item is NonNullable<typeof item> =>
+                              item !== null,
+                          );
+
+                        const buscarDivisional = (
+                          conferencia: "AFC" | "NFC",
+                          superior: boolean,
+                        ) => {
+                          const conferenciaPartidos = divisionales.filter(
+                            (item) => item.conferencia === conferencia,
+                          );
+
+                          return superior
+                            ? conferenciaPartidos.find(
+                                (item) => item.contieneSeed1,
+                              )?.partido ?? null
+                            : conferenciaPartidos.find(
+                                (item) => !item.contieneSeed1,
+                              )?.partido ?? null;
+                        };
+
+                        const divNfc1 = buscarDivisional("NFC", true);
+                        const divNfc2 = buscarDivisional("NFC", false);
+                        const divAfc1 = buscarDivisional("AFC", true);
+                        const divAfc2 = buscarDivisional("AFC", false);
+
+                        // El seed #1 tiene BYE en Wild Card. Durante J19 se
+                        // representa directamente desde el bracket congelado
+                        // en su posición de Divisional, hasta existir J20.
+                        const seed1Nfc =
+                          estadoBraket?.nfc.find((equipo) => equipo.seed === 1) ??
+                          null;
+                        const seed1Afc =
+                          estadoBraket?.afc.find((equipo) => equipo.seed === 1) ??
+                          null;
+
+                        const conferencias = (
+                          21 <= jornadaActual ? jornadasGames[21] ?? [] : []
+                        )
+                          .map(orientarMejorSeedComoLocal)
+                          .filter(
+                            (
+                              item,
+                            ): item is NonNullable<typeof item> =>
+                              item !== null,
+                          );
+
+                        const confNfc =
+                          conferencias.find(
+                            (item) => item.conferencia === "NFC",
+                          )?.partido ?? null;
+
+                        const confAfc =
+                          conferencias.find(
+                            (item) => item.conferencia === "AFC",
+                          )?.partido ?? null;
+
+                        // SUPER BOWL: sede neutral. No se reordena por seed;
+                        // se conserva LOCAL/VISITANTE oficial del partido.
+                        const superBowl =
+                          22 <= jornadaActual
+                            ? (jornadasGames[22] ?? [])[0] ?? null
+                            : null;
+
+                        return (
+                          <>
+                            {wcNfc2
+                              ? renderPartidoBracketCompleto(
+                                  wcNfc2,
+                                  19,
+                                  "7.0388%",
+                                  "-250%",
+                                )
+                              : renderMarcoBracketVacio(
+                                  "wc-nfc-1",
+                                  "7.0388%",
+                                  "-250%",
+                                )}
+
+                            {wcNfc3
+                              ? renderPartidoBracketCompleto(
+                                  wcNfc3,
+                                  19,
+                                  "7.0388%",
+                                  "-50%",
+                                )
+                              : renderMarcoBracketVacio(
+                                  "wc-nfc-2",
+                                  "7.0388%",
+                                  "-50%",
+                                )}
+
+                            {wcNfc4
+                              ? renderPartidoBracketCompleto(
+                                  wcNfc4,
+                                  19,
+                                  "7.0388%",
+                                  "150%",
+                                )
+                              : renderMarcoBracketVacio(
+                                  "wc-nfc-3",
+                                  "7.0388%",
+                                  "150%",
+                                )}
+
+                            {wcAfc2
+                              ? renderPartidoBracketCompleto(
+                                  wcAfc2,
+                                  19,
+                                  "92.9612%",
+                                  "-250%",
+                                  false,
+                                  true,
+                                )
+                              : renderMarcoBracketVacio(
+                                  "wc-afc-1",
+                                  "92.9612%",
+                                  "-250%",
+                                  false,
+                                  true,
+                                )}
+
+                            {wcAfc3
+                              ? renderPartidoBracketCompleto(
+                                  wcAfc3,
+                                  19,
+                                  "92.9612%",
+                                  "-50%",
+                                  false,
+                                  true,
+                                )
+                              : renderMarcoBracketVacio(
+                                  "wc-afc-2",
+                                  "92.9612%",
+                                  "-50%",
+                                  false,
+                                  true,
+                                )}
+
+                            {wcAfc4
+                              ? renderPartidoBracketCompleto(
+                                  wcAfc4,
+                                  19,
+                                  "92.9612%",
+                                  "150%",
+                                  false,
+                                  true,
+                                )
+                              : renderMarcoBracketVacio(
+                                  "wc-afc-3",
+                                  "92.9612%",
+                                  "150%",
+                                  false,
+                                  true,
+                                )}
+
+                            {divNfc1
+                              ? renderPartidoBracketCompleto(
+                                  divNfc1,
+                                  20,
+                                  "21.1746%",
+                                  "-150%",
+                                )
+                              : jornadaActual === 19 && seed1Nfc
+                                ? renderSeed1Divisional(
+                                    seed1Nfc,
+                                    "21.1746%",
+                                    "-150%",
+                                  )
+                                : renderMarcoBracketVacio(
+                                    "div-nfc-1",
+                                    "21.1746%",
+                                    "-150%",
+                                  )}
+
+                            {divNfc2
+                              ? renderPartidoBracketCompleto(
+                                  divNfc2,
+                                  20,
+                                  "21.1746%",
+                                  "50%",
+                                )
+                              : renderMarcoBracketVacio(
+                                  "div-nfc-2",
+                                  "21.1746%",
+                                  "50%",
+                                )}
+
+                            {divAfc1
+                              ? renderPartidoBracketCompleto(
+                                  divAfc1,
+                                  20,
+                                  "78.8254%",
+                                  "-150%",
+                                  false,
+                                  true,
+                                )
+                              : jornadaActual === 19 && seed1Afc
+                                ? renderSeed1Divisional(
+                                    seed1Afc,
+                                    "78.8254%",
+                                    "-150%",
+                                    true,
+                                  )
+                                : renderMarcoBracketVacio(
+                                    "div-afc-1",
+                                    "78.8254%",
+                                    "-150%",
+                                    false,
+                                    true,
+                                  )}
+
+                            {divAfc2
+                              ? renderPartidoBracketCompleto(
+                                  divAfc2,
+                                  20,
+                                  "78.8254%",
+                                  "50%",
+                                  false,
+                                  true,
+                                )
+                              : renderMarcoBracketVacio(
+                                  "div-afc-2",
+                                  "78.8254%",
+                                  "50%",
+                                  false,
+                                  true,
+                                )}
+
+                            {confNfc
+                              ? renderPartidoBracketCompleto(
+                                  confNfc,
+                                  21,
+                                  "35.8643%",
+                                  "-50%",
+                                )
+                              : renderMarcoBracketVacio(
+                                  "conf-nfc",
+                                  "35.8643%",
+                                  "-50%",
+                                )}
+
+                            {superBowl
+                              ? renderPartidoBracketCompleto(
+                                  superBowl,
+                                  22,
+                                  "50%",
+                                  "-50%",
+                                  true,
+                                )
+                              : renderMarcoBracketVacio(
+                                  "super-bowl",
+                                  "50%",
+                                  "-50%",
+                                  true,
+                                )}
+
+                            {confAfc
+                              ? renderPartidoBracketCompleto(
+                                  confAfc,
+                                  21,
+                                  "64.1357%",
+                                  "-50%",
+                                  false,
+                                  true,
+                                )
+                              : renderMarcoBracketVacio(
+                                  "conf-afc",
+                                  "64.1357%",
+                                  "-50%",
+                                  false,
+                                  true,
+                                )}
+                          </>
+                        );
+                       })()}
+
+
+                      {/* ===== ELEMENTOS VISUALES INDEPENDIENTES DEL PLAYOFF ===== */}
+
+                      {/* LOMBARDI — misma referencia central que el partido SB */}
+                      <img
+                        src="/LOMBARDI_TROPHY.webp"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-[17.016%] w-[11.2%] h-auto -translate-x-1/2 pointer-events-none"
+                      />
+
+                      {/* LOGO REDZONE INFERIOR */}
+                      <img
+                        src="/REDZONE_LOGO.webp"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-[70.937%] w-[8%] h-auto -translate-x-1/2 pointer-events-none"
+                      />
+
+                      {/* EVERY GAME COUNTS */}
+                      <img
+                        src="/EVERY_GAME_COUNTS.webp"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-[85.031%] w-[35.7%] h-auto -translate-x-1/2 pointer-events-none"
+                      />
+
+                      </div>{/* FIN GRUPO SUPER BOWL */}
+                        </>
+                      )}
+
+                      </div>
+                      </div>{/* FIN LIENZO MÓVIL AMPLIABLE */}
                     </div>
                   </div>
                 )}
@@ -10587,3 +12115,4 @@ const [verPassword, setVerPassword] = useState(false);
     </div>
   );
 }
+
