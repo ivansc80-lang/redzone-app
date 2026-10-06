@@ -1,7 +1,16 @@
 import { supabaseServer as supabase } from '@/lib/supabaseServer';
-import { evaluarCheckpointsAdministrativos } from '@/lib/nflAdministrativeClock';
+import {
+  evaluarCheckpointsAdministrativos,
+  clasificarFranjaNFL,
+  FRANJAS_NFL,
+  type FranjaNFL,
+} from '@/lib/nflAdministrativeClock';
 import { descubrirEstructuraTemporadaNFL } from '@/lib/nflSeasonStructure';
 import { intentarTransicionRegularAWildCard } from '@/lib/playoffTransition';
+import {
+  obtenerPlayoffPictureEspn,
+  persistirPlayoffPicture,
+} from '@/lib/playoffPicture';
 import {
   pushCierrePorraSiProcede,
   pushResultadosAperturaSiProcede,
@@ -15,6 +24,40 @@ import {
   pushLiderSolidoSiProcede,
   pushRecordatorioPronosticosSiProcede,
 } from '@/lib/pushAutomatic';
+
+type MomentoPlayoffPicture = 'APERTURA' | 'SABADO' | 'LUNES';
+
+async function capturarPlayoffPictureSiProcede(
+  temporada: number,
+  jornada: number,
+  momento: MomentoPlayoffPicture,
+) {
+  if (jornada < 5 || jornada > 18) return;
+
+  const { count: filasExistentes, error: existentesError } = await supabase
+    .from('playoff_picture')
+    .select('equipo', { count: 'exact', head: true })
+    .eq('temporada', temporada)
+    .eq('jornada', jornada)
+    .eq('momento', momento);
+
+  if (existentesError) {
+    throw new Error(
+      `error comprobando fotografía existente: ${existentesError.message}`,
+    );
+  }
+
+  if (filasExistentes !== null && filasExistentes > 32) {
+    throw new Error(
+      `fotografía inválida: existen ${filasExistentes} filas para ${temporada} J${jornada} ${momento}`,
+    );
+  }
+
+  if (filasExistentes === 32) return;
+
+  const equipos = await obtenerPlayoffPictureEspn(temporada);
+  await persistirPlayoffPicture(temporada, jornada, momento, equipos);
+}
 
 async function prepararSiguienteJornadaRegular(
   temporada: number,
@@ -499,6 +542,59 @@ export async function sincronizarTemporadaCompleta(
         throw new Error(`Error actualizando checkpoints Jornada ${semana}: ${checkpointError.message}`);
       }
 
+      // PLAYOFF PICTURE — fotografía SÁBADO.
+      // Conserva la semántica TEST: checkpoint de late_games alcanzado.
+      const checkpointLateGames = checkpoints.cambios.late_games;
+      const lateGamesAlcanzado =
+        typeof checkpointLateGames === 'string' &&
+        Date.now() >= new Date(checkpointLateGames).getTime();
+
+      if (lateGamesAlcanzado) {
+        try {
+          await capturarPlayoffPictureSiProcede(
+            temporada,
+            semana,
+            'SABADO',
+          );
+        } catch (error) {
+          console.error(
+            `Playoff Picture SÁBADO J${semana} no pudo capturarse; el motor continúa:`,
+            error,
+          );
+        }
+      }
+
+      // PLAYOFF PICTURE — fotografía LUNES.
+      // Se captura cuando la última franja realmente usada queda validada.
+      const franjasUsadas = new Set(
+        partidosSemana
+          .map((p: any) => clasificarFranjaNFL(p.fecha_partido))
+          .filter((franja: FranjaNFL | null): franja is FranjaNFL => franja !== null),
+      );
+
+      const ultimaFranjaUsada = [...FRANJAS_NFL]
+        .reverse()
+        .find((franja) => franjasUsadas.has(franja));
+
+      const ultimoCheckpointValidado =
+        ultimaFranjaUsada !== undefined &&
+        checkpoints.cambios[`${ultimaFranjaUsada}_validado`] === true;
+
+      if (ultimoCheckpointValidado) {
+        try {
+          await capturarPlayoffPictureSiProcede(
+            temporada,
+            semana,
+            'LUNES',
+          );
+        } catch (error) {
+          console.error(
+            `Playoff Picture LUNES J${semana} no pudo capturarse; el motor continúa:`,
+            error,
+          );
+        }
+      }
+
       const todosFinalizados = partidosSemana.every(
         (p: any) => p.estado === 'STATUS_FINAL' && p.resultado_oficial !== null,
       );
@@ -574,6 +670,21 @@ export async function sincronizarTemporadaCompleta(
 
       if (activarError) {
         throw new Error(`Error activando Jornada ${siguienteJornada}: ${activarError.message}`);
+      }
+
+      // PLAYOFF PICTURE — fotografía APERTURA.
+      // Auxiliar: cualquier fallo nunca bloquea la transición.
+      try {
+        await capturarPlayoffPictureSiProcede(
+          temporada,
+          siguienteJornada,
+          'APERTURA',
+        );
+      } catch (error) {
+        console.error(
+          `Playoff Picture APERTURA J${siguienteJornada} no pudo capturarse; la transición continúa:`,
+          error,
+        );
       }
 
       console.log(`✅ Transición segura J${semana} -> J${siguienteJornada}`, {
