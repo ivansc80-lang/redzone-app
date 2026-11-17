@@ -26,7 +26,7 @@ import {
 } from '@/lib/pushAutomatic';
 
 import {
-  validarFechaEspnRegular,
+  validarFechasJornadaEspn,
   cierreGuardadoCoincideConEspn,
   debeCerrarPorra,
 } from '@/lib/regularPickDateGuard';
@@ -101,9 +101,7 @@ async function prepararSiguienteJornadaRegular(
 
   const data = await res.json();
   const eventos = data.events || [];
-  for (const evento of eventos) {
-    validarFechaEspnRegular(evento.date, temporada, jornada, evento.id);
-  }
+  validarFechasJornadaEspn(eventos, temporada, jornada);
   eventos.sort(
     (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
@@ -292,9 +290,8 @@ export async function sincronizarTemporadaCompleta(
 
       const data = await res.json();
       const eventos = data.events || [];
-      for (const evento of eventos) {
-        validarFechaEspnRegular(evento.date, temporada, semana, evento.id);
-      }
+      if (eventos.length === 0) continue;
+      validarFechasJornadaEspn(eventos, temporada, semana);
       eventos.sort(
         (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
