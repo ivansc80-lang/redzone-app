@@ -10,7 +10,7 @@ const js = ts.transpileModule(source, {
 }).outputText;
 const sandbox = { exports: {} };
 vm.runInNewContext(js, sandbox, { filename: 'regularPickDateGuard.js' });
-const { validarFechaEspnRegular, cierreGuardadoCoincideConEspn, debeCerrarPorra } = sandbox.exports;
+const { validarFechaEspnRegular, cierreGuardadoCoincideConEspn, debeCerrarPorra, validarFechasJornadaEspn } = sandbox.exports;
 const cierre = '2026-11-20T00:45:00.000Z';
 const antes = new Date('2026-11-19T12:00:00Z');
 const despues = new Date('2026-11-20T01:00:00Z');
@@ -25,4 +25,18 @@ assert.equal(debeCerrarPorra('pendiente', cierre, cierre, antes), false);
 assert.equal(debeCerrarPorra('pendiente', cierre, cierre, despues), true);
 assert.equal(debeCerrarPorra('cerrada', cierre, cierre, despues), false);
 assert.equal(debeCerrarPorra('pendiente', null, cierre, despues), false);
-console.log('OK: 10 comprobaciones aisladas; ninguna escritura ni llamada de red');
+const semana = [
+  { id: '1', date: '2026-11-20T01:15:00Z' },
+  { id: '2', date: '2026-11-23T01:15:00Z' },
+];
+assert.doesNotThrow(() => validarFechasJornadaEspn(semana, 2026, 11));
+assert.throws(() => validarFechasJornadaEspn([
+  ...semana, { id: '3', date: '1993-01-31T23:30:00Z' },
+], 2026, 11), /incompatible/);
+assert.throws(() => validarFechasJornadaEspn([
+  ...semana, { id: '3', date: '2026-12-15T01:15:00Z' },
+], 2026, 11), /14 días/);
+assert.throws(() => validarFechasJornadaEspn([
+  ...semana, { id: '2', date: '2026-11-24T01:15:00Z' },
+], 2026, 11), /duplicado/);
+console.log('OK: 14 comprobaciones aisladas; ninguna escritura ni llamada de red');
