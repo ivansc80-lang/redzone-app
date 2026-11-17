@@ -1,0 +1,21 @@
+name: Guard regular pick dates
+on:
+  push:
+    branches:
+      - fix/guard-regular-pick-dates-20261117
+  workflow_dispatch:
+
+jobs:
+  isolated-date-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node scripts/test-regular-pick-date-guard.cjs
+      - run: npx tsc --noEmit --incremental false
