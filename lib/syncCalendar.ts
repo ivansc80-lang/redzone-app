@@ -27,6 +27,50 @@ import {
 
 type MomentoPlayoffPicture = 'APERTURA' | 'SABADO' | 'LUNES';
 
+// Rechazamos fechas imposibles antes de permitir escrituras o cierres.
+// La temporada regular puede continuar en enero del año siguiente.
+function validarFechaEspnRegular(
+  fecha: unknown,
+  temporada: number,
+  jornada: number,
+  eventoId: unknown,
+): Date {
+  if (typeof fecha !== 'string' || !fecha.trim()) {
+    throw new Error(`ESPN J${jornada} evento ${String(eventoId)}: fecha ausente`);
+  }
+
+  const parsed = new Date(fecha);
+  const timestamp = parsed.getTime();
+  if (!Number.isFinite(timestamp)) {
+    throw new Error(`ESPN J${jornada} evento ${String(eventoId)}: fecha inválida ${fecha}`);
+  }
+
+  const year = parsed.getUTCFullYear();
+  const month = parsed.getUTCMonth() + 1;
+  const correspondeTemporada =
+    (year === temporada && month >= 8) ||
+    (year === temporada + 1 && month <= 2);
+
+  if (!correspondeTemporada) {
+    throw new Error(
+      `ESPN J${jornada} evento ${String(eventoId)}: fecha ${fecha} incompatible con temporada ${temporada}`,
+    );
+  }
+
+  return parsed;
+}
+
+function cierreGuardadoCoincideConEspn(
+  cierreGuardado: string | null,
+  cierreEspn: string,
+): boolean {
+  if (!cierreGuardado) return false;
+  const guardadoMs = new Date(cierreGuardado).getTime();
+  const espnMs = new Date(cierreEspn).getTime();
+  return Number.isFinite(guardadoMs) &&
+    Math.abs(guardadoMs - espnMs) <= 60_000;
+}
+
 async function capturarPlayoffPictureSiProcede(
   temporada: number,
   jornada: number,
@@ -94,7 +138,11 @@ async function prepararSiguienteJornadaRegular(
   }
 
   const data = await res.json();
-  const eventos = (data.events || []).sort(
+  const eventos = data.events || [];
+  for (const evento of eventos) {
+    validarFechaEspnRegular(evento.date, temporada, jornada, evento.id);
+  }
+  eventos.sort(
     (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
 
@@ -281,7 +329,11 @@ export async function sincronizarTemporadaCompleta(
       if (!res.ok) throw new Error(`ESPN respondió HTTP ${res.status}`);
 
       const data = await res.json();
-      const eventos = (data.events || []).sort(
+      const eventos = data.events || [];
+      for (const evento of eventos) {
+        validarFechaEspnRegular(evento.date, temporada, semana, evento.id);
+      }
+      eventos.sort(
         (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
       if (eventos.length === 0) continue;
@@ -304,8 +356,11 @@ export async function sincronizarTemporadaCompleta(
 
       if (
         jornadaEvento?.estado === 'pendiente' &&
-        jornadaEvento.cierre_pronosticos &&
-        new Date() >= new Date(jornadaEvento.cierre_pronosticos)
+        cierreGuardadoCoincideConEspn(
+          jornadaEvento.cierre_pronosticos,
+          cierrePronosticos,
+        ) &&
+        new Date() >= new Date(cierrePronosticos)
       ) {
         const { error } = await supabase
           .from('jornadas_eventos')
@@ -317,11 +372,19 @@ export async function sincronizarTemporadaCompleta(
 
         await pushCierrePorraSiProcede({ temporada, jornada: semana, estado: 'cerrada' });
       } else if (jornadaEvento?.estado === 'pendiente') {
-        if (jornadaEvento.cierre_pronosticos) {
+        // Primero reconciliamos la fecha con ESPN; nunca cerramos con
+        // una fecha almacenada anómala ni enviamos recordatorios con ella.
+        if (
+          cierreGuardadoCoincideConEspn(
+            jornadaEvento.cierre_pronosticos,
+            cierrePronosticos,
+          ) &&
+          new Date() < new Date(cierrePronosticos)
+        ) {
           await pushRecordatorioPronosticosSiProcede({
             temporada,
             jornada: semana,
-            cierrePronosticos: jornadaEvento.cierre_pronosticos,
+            cierrePronosticos,
           });
         }
 
