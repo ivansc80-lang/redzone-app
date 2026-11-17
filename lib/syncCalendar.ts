@@ -25,51 +25,13 @@ import {
   pushRecordatorioPronosticosSiProcede,
 } from '@/lib/pushAutomatic';
 
+import {
+  validarFechaEspnRegular,
+  cierreGuardadoCoincideConEspn,
+  debeCerrarPorra,
+} from '@/lib/regularPickDateGuard';
+
 type MomentoPlayoffPicture = 'APERTURA' | 'SABADO' | 'LUNES';
-
-// Rechazamos fechas imposibles antes de permitir escrituras o cierres.
-// La temporada regular puede continuar en enero del año siguiente.
-function validarFechaEspnRegular(
-  fecha: unknown,
-  temporada: number,
-  jornada: number,
-  eventoId: unknown,
-): Date {
-  if (typeof fecha !== 'string' || !fecha.trim()) {
-    throw new Error(`ESPN J${jornada} evento ${String(eventoId)}: fecha ausente`);
-  }
-
-  const parsed = new Date(fecha);
-  const timestamp = parsed.getTime();
-  if (!Number.isFinite(timestamp)) {
-    throw new Error(`ESPN J${jornada} evento ${String(eventoId)}: fecha inválida ${fecha}`);
-  }
-
-  const year = parsed.getUTCFullYear();
-  const month = parsed.getUTCMonth() + 1;
-  const correspondeTemporada =
-    (year === temporada && month >= 8) ||
-    (year === temporada + 1 && month <= 2);
-
-  if (!correspondeTemporada) {
-    throw new Error(
-      `ESPN J${jornada} evento ${String(eventoId)}: fecha ${fecha} incompatible con temporada ${temporada}`,
-    );
-  }
-
-  return parsed;
-}
-
-function cierreGuardadoCoincideConEspn(
-  cierreGuardado: string | null,
-  cierreEspn: string,
-): boolean {
-  if (!cierreGuardado) return false;
-  const guardadoMs = new Date(cierreGuardado).getTime();
-  const espnMs = new Date(cierreEspn).getTime();
-  return Number.isFinite(guardadoMs) &&
-    Math.abs(guardadoMs - espnMs) <= 60_000;
-}
 
 async function capturarPlayoffPictureSiProcede(
   temporada: number,
@@ -355,12 +317,12 @@ export async function sincronizarTemporadaCompleta(
       }
 
       if (
-        jornadaEvento?.estado === 'pendiente' &&
-        cierreGuardadoCoincideConEspn(
-          jornadaEvento.cierre_pronosticos,
+        debeCerrarPorra(
+          jornadaEvento?.estado ?? null,
+          jornadaEvento?.cierre_pronosticos ?? null,
           cierrePronosticos,
-        ) &&
-        new Date() >= new Date(cierrePronosticos)
+          new Date(),
+        )
       ) {
         const { error } = await supabase
           .from('jornadas_eventos')
