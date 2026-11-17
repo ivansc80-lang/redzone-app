@@ -10,7 +10,7 @@ const js = ts.transpileModule(source, {
 }).outputText;
 const sandbox = { exports: {} };
 vm.runInNewContext(js, sandbox, { filename: 'regularPickDateGuard.js' });
-const { validarFechaEspnRegular, cierreGuardadoCoincideConEspn, debeCerrarPorra, validarFechasJornadaEspn } = sandbox.exports;
+const { validarFechaEspnRegular, cierreGuardadoCoincideConEspn, debeCerrarPorra, validarFechasJornadaEspn, validarIdentidadJornadaEspn } = sandbox.exports;
 const cierre = '2026-11-20T00:45:00.000Z';
 const antes = new Date('2026-11-19T12:00:00Z');
 const despues = new Date('2026-11-20T01:00:00Z');
@@ -39,4 +39,10 @@ assert.throws(() => validarFechasJornadaEspn([
 assert.throws(() => validarFechasJornadaEspn([
   ...semana, { id: '2', date: '2026-11-24T01:15:00Z' },
 ], 2026, 11), /duplicado/);
-console.log('OK: 14 comprobaciones aisladas; ninguna escritura ni llamada de red');
+const identidad = { week: { number: 11 }, season: { year: 2026, type: 2 } };
+assert.doesNotThrow(() => validarIdentidadJornadaEspn(identidad, 2026, 11));
+assert.throws(() => validarIdentidadJornadaEspn(identidad, 2026, 12), /semana coincidente/);
+assert.throws(() => validarIdentidadJornadaEspn(identidad, 2025, 11), /temporada o fase/);
+assert.throws(() => validarIdentidadJornadaEspn({ ...identidad, season: { year: 2026, type: 3 } }, 2026, 11), /temporada o fase/);
+assert.throws(() => validarIdentidadJornadaEspn(null, 2026, 11), /semana coincidente/);
+console.log('OK: 19 comprobaciones aisladas; ninguna escritura ni llamada de red');
