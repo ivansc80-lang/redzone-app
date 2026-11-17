@@ -27,7 +27,6 @@ import {
 
 import {
   validarFechasJornadaEspn,
-  cierreGuardadoCoincideConEspn,
   debeCerrarPorra,
 } from '@/lib/regularPickDateGuard';
 
@@ -313,41 +312,10 @@ export async function sincronizarTemporadaCompleta(
         throw new Error(`Error leyendo Jornada ${semana}: ${jornadaEventoError.message}`);
       }
 
-      if (
-        debeCerrarPorra(
-          jornadaEvento?.estado ?? null,
-          jornadaEvento?.cierre_pronosticos ?? null,
-          cierrePronosticos,
-          new Date(),
-        )
-      ) {
-        const { error } = await supabase
-          .from('jornadas_eventos')
-          .update({ estado: 'cerrada' })
-          .eq('temporada', temporada)
-          .eq('jornada', semana)
-          .eq('estado', 'pendiente');
-        if (error) throw new Error(`Error cerrando Jornada ${semana}: ${error.message}`);
-
-        await pushCierrePorraSiProcede({ temporada, jornada: semana, estado: 'cerrada' });
-      } else if (jornadaEvento?.estado === 'pendiente') {
-        // Primero reconciliamos la fecha con ESPN; nunca cerramos con
-        // una fecha almacenada anómala ni enviamos recordatorios con ella.
-        if (
-          cierreGuardadoCoincideConEspn(
-            jornadaEvento.cierre_pronosticos,
-            cierrePronosticos,
-          ) &&
-          new Date() < new Date(cierrePronosticos)
-        ) {
-          await pushRecordatorioPronosticosSiProcede({
-            temporada,
-            jornada: semana,
-            cierrePronosticos,
-          });
-        }
-
-        const { error } = await supabase
+      if (jornadaEvento?.estado === 'pendiente') {
+        // ESPN ya fue validado. Primero persistimos el reloj correcto;
+        // una fecha corrupta almacenada nunca puede cerrar la porra.
+        const { data: relojActualizado, error: relojError } = await supabase
           .from('jornadas_eventos')
           .update({
             inicio_jornada: primerPartidoFecha.toISOString(),
@@ -355,8 +323,52 @@ export async function sincronizarTemporadaCompleta(
           })
           .eq('temporada', temporada)
           .eq('jornada', semana)
-          .eq('estado', 'pendiente');
-        if (error) throw new Error(`Error actualizando Jornada ${semana}: ${error.message}`);
+          .eq('estado', 'pendiente')
+          .select('jornada')
+          .maybeSingle();
+
+        if (relojError) {
+          throw new Error(`Error actualizando Jornada ${semana}: ${relojError.message}`);
+        }
+
+        // Si otro proceso cambió el estado, no lo reabrimos ni cerramos.
+        if (relojActualizado) {
+          if (
+            debeCerrarPorra(
+              'pendiente',
+              cierrePronosticos,
+              cierrePronosticos,
+              new Date(),
+            )
+          ) {
+            const { data: cierreAplicado, error: cierreError } = await supabase
+              .from('jornadas_eventos')
+              .update({ estado: 'cerrada' })
+              .eq('temporada', temporada)
+              .eq('jornada', semana)
+              .eq('estado', 'pendiente')
+              .eq('cierre_pronosticos', cierrePronosticos)
+              .select('jornada')
+              .maybeSingle();
+
+            if (cierreError) {
+              throw new Error(`Error cerrando Jornada ${semana}: ${cierreError.message}`);
+            }
+            if (cierreAplicado) {
+              await pushCierrePorraSiProcede({
+                temporada,
+                jornada: semana,
+                estado: 'cerrada',
+              });
+            }
+          } else {
+            await pushRecordatorioPronosticosSiProcede({
+              temporada,
+              jornada: semana,
+              cierrePronosticos,
+            });
+          }
+        }
       }
 
       const { data: partidosActuales, error: partidosActualesError } = await supabase
