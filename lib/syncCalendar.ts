@@ -27,6 +27,7 @@ import {
 
 import {
   validarFechasJornadaEspn,
+  validarIdentidadJornadaEspn,
   debeCerrarPorra,
 } from '@/lib/regularPickDateGuard';
 
@@ -99,6 +100,7 @@ async function prepararSiguienteJornadaRegular(
   }
 
   const data = await res.json();
+  validarIdentidadJornadaEspn(data, temporada, jornada);
   const eventos = data.events || [];
   validarFechasJornadaEspn(eventos, temporada, jornada);
   eventos.sort(
@@ -288,14 +290,15 @@ export async function sincronizarTemporadaCompleta(
       if (!res.ok) throw new Error(`ESPN respondió HTTP ${res.status}`);
 
       const data = await res.json();
+      validarIdentidadJornadaEspn(data, temporada, semana);
       const eventos = data.events || [];
-      if (eventos.length === 0) continue;
+      if (eventos.length === 0) {
+        throw new Error(`ESPN J${semana}: respuesta sin partidos; no se modifica la jornada`);
+      }
       validarFechasJornadaEspn(eventos, temporada, semana);
       eventos.sort(
         (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
-      if (eventos.length === 0) continue;
-
       const primerPartidoFecha = new Date(eventos[0].date);
       const cierrePronosticos = new Date(
         primerPartidoFecha.getTime() - 30 * 60 * 1000,
