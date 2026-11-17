@@ -82,3 +82,25 @@ export function validarFechasJornadaEspn(
     );
   }
 }
+
+/**
+ * ESPN scoreboard incluye metadatos de semana y temporada.
+ * Rechazamos respuestas de otra semana aun si sus fechas son plausibles.
+ */
+export function validarIdentidadJornadaEspn(
+  respuesta: unknown,
+  temporada: number,
+  jornada: number,
+): void {
+  const data = respuesta as {
+    week?: { number?: unknown };
+    season?: { year?: unknown; type?: unknown };
+  } | null;
+
+  if (!data || Number(data.week?.number) !== jornada) {
+    throw new Error(`ESPN J${jornada}: respuesta sin semana coincidente`);
+  }
+  if (Number(data.season?.year) !== temporada || Number(data.season?.type) !== 2) {
+    throw new Error(`ESPN J${jornada}: temporada o fase regular no coincidente`);
+  }
+}
