@@ -47,3 +47,38 @@ export function debeCerrarPorra(
     Number.isFinite(ahora.getTime()) &&
     ahora.getTime() >= new Date(cierreEspn).getTime();
 }
+
+/**
+ * La fotografía ESPN debe representar una sola jornada.
+ * El margen de 14 días permite partidos especiales/reprogramaciones
+ * sin aceptar mezclas de semanas separadas.
+ */
+export function validarFechasJornadaEspn(
+  eventos: ReadonlyArray<{ id: unknown; date: unknown }>,
+  temporada: number,
+  jornada: number,
+): void {
+  if (!Array.isArray(eventos) || eventos.length === 0) {
+    throw new Error(`ESPN J${jornada}: calendario vacío o inválido`);
+  }
+
+  const ids = new Set<string>();
+  const timestamps: number[] = [];
+  for (const evento of eventos) {
+    const id = String(evento?.id ?? '');
+    if (!id || id === 'null' || id === 'undefined' || ids.has(id)) {
+      throw new Error(`ESPN J${jornada}: identificador ausente o duplicado ${id}`);
+    }
+    ids.add(id);
+    timestamps.push(
+      validarFechaEspnRegular(evento?.date, temporada, jornada, evento?.id).getTime(),
+    );
+  }
+
+  const intervaloMs = Math.max(...timestamps) - Math.min(...timestamps);
+  if (intervaloMs > 14 * 24 * 60 * 60 * 1000) {
+    throw new Error(
+      `ESPN J${jornada}: partidos separados más de 14 días; revisar calendario antes de actualizar`,
+    );
+  }
+}
